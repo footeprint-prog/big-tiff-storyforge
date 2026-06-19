@@ -1,1 +1,74 @@
-/tmp/Big_Tiff_Scene_Structure_FINAL.json
+{
+  "schemaVersion": "1.0",
+  "lastSyncTimestamp": "2026-06-19T01:55:00Z",
+  "lastUpdatedBy": "Sammy",
+  "syncChangeLog": [
+    {
+      "timestamp": "2026-06-19T01:55:00Z",
+      "updatedBy": "Sammy",
+      "description": "Correct manual content - Rich structured prompts for first 5 scenes (Act 1). All scenes set to 'review' with detailed needsReviewReason."
+    }
+  ],
+  "scenes": [
+    {
+      "id": "act1-ch1-s1",
+      "title": "The Silver Thread",
+      "act": 1,
+      "chapter": 1,
+      "order": 1,
+      "status": "review",
+      "prompt": "SCENE PURPOSE: Introduce Tiff’s post-NDE sensitivity and the golden emotional thread only she can see. Establish her role at Rays of Hope and her quiet grief.\n\nKEY CANON TO HONOR: 5 years after parents’ death in the storm. Tiff is 14 and stayed at the Home to care for younger kids. She has heightened sensitivity to emotional frequencies after her recent NDE. The Home sits on a ley line nexus.\n\nEMOTIONAL STATE: Tiff feels both comforted and unsettled by the new perception. Subtle overwhelm mixed with curiosity.\n\nMUST-HAPPEN BEATS: Tiff wakes in early morning quiet. Notices the thin golden thread of light. Interacts gently with the younger children (Tia and Mia). Something small and uncanny happens (bobby pin appearing, tray rebalancing). She senses something watching or calling from the woods.\n\nSETTING & TONE: Soft morning light at the children’s Home. Gentle, slightly uncanny, warm but with underlying tension. Ironic world polarity subtle in background.\n\nSUCCESS FOR THIS SCENE: Reader feels Tiff’s new sensitivity is both gift and burden. We understand her nurturing role and quiet loneliness. The golden thread is introduced as a tangible symbol of emotional frequency.",
+      "promptLastUpdated": "2026-06-19T01:55:00Z",
+      "needsReviewReason": "Correct content with rich structured prompt. Grounded in Master Story Bible.",
+      "lastUpdatedBy": "Sammy"
+    },
+    {
+      "id": "act1-ch1-s2",
+      "title": "The First Visitor",
+      "act": 1,
+      "chapter": 1,
+      "order": 2,
+      "status": "review",
+      "prompt": "SCENE PURPOSE: Tiff’s first direct encounter with Lumi (Lumenora). Establish the fairy guide’s personality and the emotional frequency world bleeding into reality.\n\nKEY CANON TO HONOR: Lumi is a bouncy, poetic fairy who speaks in Dr. Seuss-style rhyming with satirical bite. She was assigned to Tiff years ago but connection strengthens after NDE. Emotional frequencies manifest as creatures. Tiff is still adjusting to her sensitivity.\n\nEMOTIONAL STATE: Tiff feels comforted by Lumi’s presence but also overwhelmed by the emotional frequency. Mix of wonder, anxiety, and recognition.\n\nMUST-HAPPEN BEATS: During a storm or heightened emotional moment, a small glowing figure appears at the window. Lumi introduces herself with rhyming speech. Tiff feels both seen and exposed. First hint that Lumi and Thornak work as a balancing pair.\n\nSETTING & TONE: Stormy window scene or quiet night. Magical but grounded. Lumi’s presence brings both light and gentle chaos.\n\nSUCCESS FOR THIS SCENE: Reader meets Lumi and understands she is a guide, not just a hallucination. Tiff’s internal conflict (comfort vs. overwhelm) is clear. The emotional frequency world is introduced as real and interactive.",
+      "promptLastUpdated": "2026-06-19T01:55:00Z",
+      "needsReviewReason": "Correct content with rich structured prompt including Lumi’s speech style.",
+      "lastUpdatedBy": "Sammy"
+    },
+    {
+      "id": "act1-ch1-s3",
+      "title": "Whispers in the Leaves",
+      "act": 1,
+      "chapter": 1,
+      "order": 3,
+      "status": "review",
+      "prompt": "SCENE PURPOSE: Tiff follows the golden thread into the woods. First hint of the larger imbalance and the presence of portals or watching entities.\n\nKEY CANON TO HONOR: The woods behind the Home contain weakened portals. Insects act as cosmic repair crew. The ley line nexus amplifies emotional frequencies. Timmy’s unresolved trauma is beginning to affect the balance.\n\nEMOTIONAL STATE: Tiff’s curiosity battles her anxiety. She feels pulled toward something important but fears what she might find.\n\nMUST-HAPPEN BEATS: Tiff follows the golden thread into the trees. She senses something watching. Subtle signs of imbalance (strange insect behavior, emotional static, or a small portal flicker). She finds a small object or clue connected to her past or Timmy.\n\nSETTING & TONE: Dim forest light, slightly eerie but not scary. Ironic world elements (inconvenient path leading to something meaningful). Growing sense of the veil thinning.\n\nSUCCESS FOR THIS SCENE: The woods feel alive with unseen forces. Reader senses larger stakes beyond Tiff’s personal sensitivity. A thread is planted toward Timmy’s story and the coming imbalance.",
+      "promptLastUpdated": "2026-06-19T01:55:00Z",
+      "needsReviewReason": "Correct content with rich structured prompt including portal and imbalance hints.",
+      "lastUpdatedBy": "Sammy"
+    },
+    {
+      "id": "act1-ch2-s1",
+      "title": "Thornak's Shadow",
+      "act": 1,
+      "chapter": 2,
+      "order": 4,
+      "status": "review",
+      "prompt": "SCENE PURPOSE: Tiff’s first meeting with Thornak. Establish the goblin guide’s chaotic, pushy personality and his role as the one who forces confrontation with difficult emotions.\n\nKEY CANON TO HONOR: Thornak is enthusiastic, chaotic, playful, occasionally crass (kid-appropriate). He speaks in fragmented, choppy sentences with occasional clumsy rhyming. He was originally assigned to Timmy but was pulled to Tiff instead, contributing to imbalance. He pushes Tiff to face anxiety and imbalance directly.\n\nEMOTIONAL STATE: Tiff is startled and wary. Thornak’s energy feels both helpful and overwhelming.\n\nMUST-HAPPEN BEATS: Thornak appears suddenly in the woods or near the Home. He teases or challenges Tiff in his fragmented style. First bickering dynamic with Lumi is hinted at. Tiff feels both repelled and strangely drawn to his honesty.\n\nSETTING & TONE: Forest edge or shadowed area near the Home. Chaotic, direct, slightly comedic but with underlying seriousness.\n\nSUCCESS FOR THIS SCENE: Reader understands Thornak is a necessary counterbalance to Lumi. Tiff’s resistance and eventual reluctant listening sets up her growth. The guide pair dynamic is introduced.",
+      "promptLastUpdated": "2026-06-19T01:55:00Z",
+      "needsReviewReason": "Correct content with rich structured prompt including Thornak’s speech style and history.",
+      "lastUpdatedBy": "Sammy"
+    },
+    {
+      "id": "act1-ch2-s2",
+      "title": "The Warning",
+      "act": 1,
+      "chapter": 2,
+      "order": 5,
+      "status": "review",
+      "prompt": "SCENE PURPOSE: Thornak delivers a cryptic warning about growing imbalance. Tiff must begin to decide whether to trust these strange guides and her own new sensitivity.\n\nKEY CANON TO HONOR: The celestial imbalance is tied to Timmy’s unresolved trauma and repression. The Home’s ley line nexus amplifies everything. Lumi and Thornak work as a pair even when they bicker. Tiff’s gift is meant to help restore balance, starting with herself and the children.\n\nEMOTIONAL STATE: Tiff feels the weight of responsibility mixed with fear of being “broken” or overwhelmed. Small spark of hope or determination.\n\nMUST-HAPPEN BEATS: Thornak gives a fragmented, urgent warning about “the boy who won’t feel” and the thinning veils. Lumi appears to soften or translate. Tiff is left with a choice: ignore this or begin engaging with her sensitivity on purpose.\n\nSETTING & TONE: Tense but not terrifying. The guides’ dynamic provides moments of dark humor. Emotional frequency feels thicker in the air.\n\nSUCCESS FOR THIS SCENE: Reader understands the larger stakes (imbalance linked to Timmy). Tiff’s internal dilemma is clear. The scene ends with a decision point that propels her into active engagement with her gift.",
+      "promptLastUpdated": "2026-06-19T01:55:00Z",
+      "needsReviewReason": "Correct content with rich structured prompt tied to Timmy and imbalance theme.",
+      "lastUpdatedBy": "Sammy"
+    }
+  ]
+}
