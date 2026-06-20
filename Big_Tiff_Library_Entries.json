@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "1.0",
+  "lastSyncTimestamp": "",
+  "lastUpdatedBy": "",
+  "categories": [
+    {
+      "id": "",
+      "name": "",
+      "description": "",
+      "entries": [
+        {
+          "id": "",
+          "title": "",
+          "type": "",
+          "status": "unfinished",
+          "summary": "",
+          "content": "",
+          "tags": [],
+          "relatedEntries": [],
+          "relatedScenes": [],
+          "needsReviewReason": null,
+          "lastUpdated": "",
+          "lastUpdatedBy": "",
+          "canonical": true
+        }
+      ]
+    }
+  ]
+}
