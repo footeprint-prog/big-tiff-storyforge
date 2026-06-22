@@ -83,6 +83,30 @@
             font-weight: 600;
         }
 
+        /* Status dropdown - mirrors the .scene-status pill appearance exactly */
+        .scene-status-dropdown {
+            font-size: 0.65rem;
+            padding: 1px 22px 1px 10px;
+            border-radius: 9999px;
+            border: 1px solid #D4AF37;
+            text-align: center;
+            white-space: nowrap;
+            font-weight: 500;
+            cursor: pointer;
+            outline: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path fill='%23D4AF37' d='M2 4l4 4 4-4z'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 6px center;
+            background-size: 9px;
+        }
+
+        .scene-status-dropdown option {
+            font-weight: 500;
+        }
+
         .sliding-panel {
             transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
         }
@@ -324,6 +348,13 @@
                         <span class="font-medium text-xs tracking-wider">NOTEPAD</span>
                     </button>
 
+                    <!-- Draft Pad (per-scene) -->
+                    <button onclick="openDraftPad()"
+                            class="h-8 px-3 py-1 text-sm rounded-2xl border border-[#D4AF37]/50 hover:bg-[#4A3A2E] transition-colors flex items-center gap-x-2">
+                        <i class="fa-solid fa-layer-group"></i>
+                        <span class="font-medium text-xs tracking-wider">DRAFTS</span>
+                    </button>
+
                     <!-- Container: Progress + Stats -->
                     <div class="flex items-center h-8 gap-x-2 bg-[#3D2B1F]/70 pl-3 pr-2.5 rounded-2xl border border-[#D4AF37]/60">
                         
@@ -475,9 +506,23 @@
                             </div>
                         </div>
 
+                        <!-- Review Note - only visible when scene.status === 'review' -->
+                        <div id="review-note-box" class="hidden mb-3 bg-[#D4AF37]/15 border border-[#D4AF37] rounded-2xl p-4">
+                            <div class="flex gap-x-3">
+                                <div class="flex-shrink-0 pt-0.5">
+                                    <i class="fa-solid fa-triangle-exclamation text-[#D4AF37] text-lg"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="uppercase text-[10px] tracking-[1.5px] text-[#D4AF37] font-semibold mb-1">Review Note — What Changed</div>
+                                    <div id="review-note-text" class="text-sm leading-relaxed text-[#F4EDE4]"></div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div>
                             <div class="flex items-center justify-between mb-1.5">
-                                <span class="section-label text-[#D4AF37]">DRAFT • SCENE 1</span>
+                                <span id="scene-label" class="section-label text-[#D4AF37]">DRAFT</span>
+                                <select id="scene-status-select" class="scene-status-dropdown" style="display:none;"></select>
                             </div>
 
                             <div class="flex items-center justify-between mb-2 border-b border-[#D4AF37]/20 pb-2">
@@ -670,6 +715,87 @@
                         Cancel
                     </button>
                     <button onclick="confirmDeleteNote()" 
+                            class="px-4 py-1 text-xs bg-red-500 text-white font-bold rounded-2xl hover:bg-red-600">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ==================== DRAFT PAD ==================== -->
+    <div id="draftpad-window" class="notepad hidden" style="left: 580px; top: 420px; width: 480px; height: 380px;">
+
+        <!-- Header -->
+        <div class="notepad-header" id="draftpad-header">
+            <div class="flex items-center gap-x-2">
+                <i class="fa-solid fa-layer-group text-[#D4AF37]"></i>
+                <h3 id="draftpad-scene-title">Draft Pad</h3>
+            </div>
+            <button onclick="hideDraftPad()" class="notepad-close">
+                <i class="fa-solid fa-times"></i>
+            </button>
+        </div>
+
+        <div class="notepad-body">
+
+            <!-- Sidebar: Current Draft (live) + list of saved snapshots -->
+            <div class="notepad-sidebar p-2 text-sm flex flex-col">
+                <div class="flex justify-between items-center mb-2 px-1">
+                    <span class="text-xs font-medium text-[#D4AF37]/80">Drafts</span>
+                    <button onclick="createNewDraftSnapshot()" class="text-[10px] px-2 py-0.5 bg-[#D4AF37] text-[#3D2B1F] rounded font-semibold">+ New</button>
+                </div>
+
+                <div id="draftpad-list" class="space-y-0.5 flex-1 overflow-y-auto text-xs pr-1"></div>
+
+                <div class="flex justify-between items-center pt-2 mt-auto">
+                    <button onclick="requestDeleteDraftSnapshot()" class="text-red-400 hover:text-red-300 px-2 py-1">
+                        <i class="fa-solid fa-trash fa-lg"></i>
+                    </button>
+
+                    <div class="relative group">
+                        <button onclick="restoreDraftSnapshotToEditor()" class="text-[#D4AF37] hover:text-[#E8C86B] px-2 py-1">
+                            <i class="fa-solid fa-arrow-rotate-left fa-lg"></i>
+                        </button>
+                        <div class="tooltip">Load into Editor</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Area: read-only preview of the selected draft -->
+            <div class="notepad-main flex flex-col">
+
+                <div id="draftpad-meta" class="text-xs text-[#D4AF37]/70 mb-2 px-1">Current Draft (live)</div>
+
+                <input id="draftpad-title" type="text" placeholder="Snapshot name..."
+                       class="bg-[#4A3A2E] border border-[#D4AF37]/40 rounded-xl px-3 py-1.5 text-sm font-medium mb-2 focus:outline-none focus:border-[#D4AF37]">
+
+                <div id="draftpad-content" 
+                     class="flex-1 bg-[#4A3A2E] border border-[#D4AF37]/40 rounded-xl p-3 text-sm overflow-y-auto opacity-90"></div>
+
+                <div class="flex justify-start mt-2">
+                    <button onclick="saveDraftSnapshotName()" 
+                            class="px-5 py-1.5 text-xs bg-[#D4AF37] text-[#3D2B1F] font-bold rounded-2xl">
+                        Rename
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resize Handle -->
+        <div id="draftpad-resize-handle" class="notepad-resize-handle"></div>
+
+        <!-- Delete Confirmation Modal -->
+        <div id="draftpad-delete-confirm-modal" class="hidden absolute inset-0 bg-black/60 flex items-center justify-center z-[500]">
+            <div class="bg-[#3D2B1F] border border-[#D4AF37] rounded-2xl p-5 w-[260px] text-center">
+                <p class="text-sm mb-4">Delete this draft snapshot?</p>
+                <div class="flex justify-center gap-x-4">
+                    <button onclick="cancelDeleteDraftSnapshot()" 
+                            class="px-4 py-1 text-xs border border-[#D4AF37] rounded-2xl hover:bg-[#4A3A2E]">
+                        Cancel
+                    </button>
+                    <button onclick="confirmDeleteDraftSnapshot()" 
                             class="px-4 py-1 text-xs bg-red-500 text-white font-bold rounded-2xl hover:bg-red-600">
                         Delete
                     </button>
@@ -1465,6 +1591,328 @@
             document.getElementById('delete-confirm-modal').classList.add('hidden');
         }
 
+        // ==================== DRAFT PAD ====================
+        // Per-scene draft management. Two kinds of "draft":
+        //  1. The CURRENT draft - whatever's live in the main editor right now.
+        //     Autosaved continuously + manual Save button (see saveDraft() below).
+        //     Stored at current-draft:<sceneId>.
+        //  2. SAVED SNAPSHOTS - full alternate rewrites the user explicitly creates.
+        //     Stored as an array at draft-snapshots:<sceneId>, each one independent.
+        let draftPadSelectedId = null;  // null = viewing "Current Draft"; otherwise a snapshot id
+        let draftSnapshotToDeleteId = null;
+
+        function draftSnapshotsStorageKey(sceneId) {
+            return `draft-snapshots:${sceneId}`;
+        }
+
+        function loadDraftSnapshots(sceneId) {
+            try {
+                return JSON.parse(localStorage.getItem(draftSnapshotsStorageKey(sceneId)) || '[]');
+            } catch {
+                return [];
+            }
+        }
+
+        function saveDraftSnapshots(sceneId, snapshots) {
+            localStorage.setItem(draftSnapshotsStorageKey(sceneId), JSON.stringify(snapshots));
+        }
+
+        function renderDraftPadList() {
+            const container = document.getElementById('draftpad-list');
+            if (!container || !currentScene) return;
+            container.innerHTML = '';
+
+            // "Current Draft" is always the first, pinned entry - it's not a stored
+            // snapshot, it's a live view of whatever's in the main editor right now.
+            const currentDiv = document.createElement('div');
+            const isCurrentSelected = draftPadSelectedId === null;
+            currentDiv.className = `px-2.5 py-1.5 rounded-xl cursor-pointer hover:bg-[#4A3A2E] flex items-center justify-between text-xs ${isCurrentSelected ? 'bg-[#4A3A2E]' : ''}`;
+            currentDiv.innerHTML = `
+                <div class="flex-1 min-w-0 pr-2">
+                    <div class="font-medium truncate"><i class="fa-solid fa-pen-nib mr-1 text-[#D4AF37]/70"></i>Current Draft</div>
+                    <div class="text-[10px] text-[#D4AF37]/50">Live · autosaving</div>
+                </div>
+            `;
+            currentDiv.onclick = () => selectDraftPadEntry(null);
+            container.appendChild(currentDiv);
+
+            const snapshots = loadDraftSnapshots(currentScene.id);
+            snapshots.sort((a, b) => new Date(b.created) - new Date(a.created));
+
+            snapshots.forEach(snap => {
+                const div = document.createElement('div');
+                const isSelected = draftPadSelectedId === snap.id;
+                const time = new Date(snap.created).toLocaleDateString([], { month: 'short', day: 'numeric' }) +
+                             ' ' + new Date(snap.created).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                div.className = `px-2.5 py-1.5 rounded-xl cursor-pointer hover:bg-[#4A3A2E] flex items-center justify-between text-xs ${isSelected ? 'bg-[#4A3A2E]' : ''}`;
+                div.innerHTML = `
+                    <div class="flex-1 min-w-0 pr-2">
+                        <div class="font-medium truncate">${snap.title || 'Untitled Draft'}</div>
+                        <div class="text-[10px] text-[#D4AF37]/50">${time}</div>
+                    </div>
+                `;
+                div.onclick = () => selectDraftPadEntry(snap.id);
+                container.appendChild(div);
+            });
+        }
+
+        function selectDraftPadEntry(snapshotId) {
+            draftPadSelectedId = snapshotId;
+            const metaEl = document.getElementById('draftpad-meta');
+            const titleEl = document.getElementById('draftpad-title');
+            const contentEl = document.getElementById('draftpad-content');
+            if (!currentScene) return;
+
+            if (snapshotId === null) {
+                // Viewing the live current draft - read-only preview, pulled straight
+                // from the same storage the main editor autosaves to.
+                metaEl.textContent = 'Current Draft (live)';
+                titleEl.value = '';
+                titleEl.disabled = true;
+                titleEl.placeholder = 'Current Draft cannot be renamed';
+                contentEl.innerHTML = localStorage.getItem(currentDraftStorageKey(currentScene.id)) || '<span class="opacity-50 italic">Nothing written yet.</span>';
+            } else {
+                const snapshots = loadDraftSnapshots(currentScene.id);
+                const snap = snapshots.find(s => s.id === snapshotId);
+                if (!snap) return;
+                metaEl.textContent = `Saved snapshot · ${new Date(snap.created).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'})}`;
+                titleEl.disabled = false;
+                titleEl.placeholder = 'Snapshot name...';
+                titleEl.value = snap.title || '';
+                contentEl.innerHTML = snap.content || '<span class="opacity-50 italic">Empty draft.</span>';
+            }
+
+            renderDraftPadList();
+        }
+
+        /**
+         * Creates a new saved snapshot from whatever is currently in the main
+         * editor right now - a deliberate full-rewrite checkpoint the user can
+         * come back to, separate from the continuously-autosaving Current Draft.
+         */
+        function createNewDraftSnapshot() {
+            if (!currentScene) return;
+            const editor = document.getElementById('editor');
+            const snapshots = loadDraftSnapshots(currentScene.id);
+
+            const newSnapshot = {
+                id: Date.now().toString(),
+                title: '',
+                content: editor.innerHTML,
+                created: new Date().toISOString()
+            };
+            snapshots.unshift(newSnapshot);
+            saveDraftSnapshots(currentScene.id, snapshots);
+
+            selectDraftPadEntry(newSnapshot.id);
+            setTimeout(() => {
+                const t = document.getElementById('draftpad-title');
+                if (t) { t.focus(); t.select(); }
+            }, 40);
+        }
+
+        function saveDraftSnapshotName() {
+            if (!currentScene || draftPadSelectedId === null) return;
+            const snapshots = loadDraftSnapshots(currentScene.id);
+            const idx = snapshots.findIndex(s => s.id === draftPadSelectedId);
+            if (idx === -1) return;
+
+            snapshots[idx].title = document.getElementById('draftpad-title').value.trim();
+            saveDraftSnapshots(currentScene.id, snapshots);
+            renderDraftPadList();
+        }
+
+        /**
+         * Loads the selected snapshot's content into the live main editor,
+         * replacing whatever's currently there. The snapshot itself remains
+         * untouched in the list - this is a copy-into-editor action, not a move.
+         */
+        function restoreDraftSnapshotToEditor() {
+            if (!currentScene) return;
+            if (draftPadSelectedId === null) return; // Already viewing current draft
+
+            const snapshots = loadDraftSnapshots(currentScene.id);
+            const snap = snapshots.find(s => s.id === draftPadSelectedId);
+            if (!snap) return;
+
+            const confirmed = confirm(`Load "${snap.title || 'this draft'}" into the editor? This will replace what's currently in the Current Draft.`);
+            if (!confirmed) return;
+
+            const editor = document.getElementById('editor');
+            editor.innerHTML = snap.content || '';
+            localStorage.setItem(currentDraftStorageKey(currentScene.id), editor.innerHTML);
+            updateWordCount();
+
+            selectDraftPadEntry(null);
+        }
+
+        function requestDeleteDraftSnapshot() {
+            if (draftPadSelectedId === null) return; // Can't delete the Current Draft itself
+            draftSnapshotToDeleteId = draftPadSelectedId;
+            document.getElementById('draftpad-delete-confirm-modal').classList.remove('hidden');
+            document.getElementById('draftpad-delete-confirm-modal').classList.add('flex');
+        }
+
+        function cancelDeleteDraftSnapshot() {
+            document.getElementById('draftpad-delete-confirm-modal').classList.remove('flex');
+            document.getElementById('draftpad-delete-confirm-modal').classList.add('hidden');
+            draftSnapshotToDeleteId = null;
+        }
+
+        function confirmDeleteDraftSnapshot() {
+            if (!draftSnapshotToDeleteId || !currentScene) return;
+
+            let snapshots = loadDraftSnapshots(currentScene.id);
+            snapshots = snapshots.filter(s => s.id !== draftSnapshotToDeleteId);
+            saveDraftSnapshots(currentScene.id, snapshots);
+
+            document.getElementById('draftpad-delete-confirm-modal').classList.remove('flex');
+            document.getElementById('draftpad-delete-confirm-modal').classList.add('hidden');
+            draftSnapshotToDeleteId = null;
+
+            selectDraftPadEntry(null);
+        }
+
+        /**
+         * Called whenever the editor content changes while the Draft Pad happens
+         * to be open and showing "Current Draft", so the live preview stays in
+         * sync without requiring the user to close and reopen the panel.
+         */
+        function refreshDraftPadIfOpen() {
+            const draftpad = document.getElementById('draftpad-window');
+            if (!draftpad || draftpad.style.display === 'none' || !draftpad.classList.contains('active')) return;
+            if (!currentScene) return;
+
+            const titleEl = document.getElementById('draftpad-scene-title');
+            if (titleEl) titleEl.textContent = `Draft Pad · ${currentScene.title || currentScene.id}`;
+
+            renderDraftPadList();
+            if (draftPadSelectedId === null) {
+                selectDraftPadEntry(null);
+            }
+        }
+
+        function openDraftPad() {
+            if (!currentScene) {
+                alert('Select a scene first to view its drafts.');
+                return;
+            }
+            const draftpad = document.getElementById('draftpad-window');
+            draftpad.style.display = 'flex';
+            draftpad.classList.add('active');
+
+            restoreDraftPadState();
+
+            const titleEl = document.getElementById('draftpad-scene-title');
+            if (titleEl) titleEl.textContent = `Draft Pad · ${currentScene.title || currentScene.id}`;
+
+            draftPadSelectedId = null;
+            renderDraftPadList();
+            selectDraftPadEntry(null);
+        }
+
+        function hideDraftPad() {
+            const draftpad = document.getElementById('draftpad-window');
+            saveDraftPadState();
+            draftpad.style.display = 'none';
+            draftpad.classList.remove('active');
+
+            document.getElementById('draftpad-delete-confirm-modal').classList.remove('flex');
+            document.getElementById('draftpad-delete-confirm-modal').classList.add('hidden');
+        }
+
+        // ---- Dragging & resizing (mirrors notepad's pattern) ----
+        function makeDraftPadDraggable() {
+            const draftpad = document.getElementById('draftpad-window');
+            const header = document.getElementById('draftpad-header');
+            let offsetX = 0, offsetY = 0, isDragging = false;
+
+            header.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                offsetX = e.clientX - draftpad.offsetLeft;
+                offsetY = e.clientY - draftpad.offsetTop;
+                document.body.style.userSelect = 'none';
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                draftpad.style.left = (e.clientX - offsetX) + 'px';
+                draftpad.style.top = (e.clientY - offsetY) + 'px';
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    document.body.style.userSelect = '';
+                    saveDraftPadState();
+                }
+            });
+        }
+
+        function makeDraftPadResizable() {
+            const draftpad = document.getElementById('draftpad-window');
+            const handle = document.getElementById('draftpad-resize-handle');
+            let startX, startY, startWidth, startHeight;
+
+            handle.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                startX = e.clientX;
+                startY = e.clientY;
+                startWidth = parseInt(document.defaultView.getComputedStyle(draftpad).width, 10);
+                startHeight = parseInt(document.defaultView.getComputedStyle(draftpad).height, 10);
+
+                document.addEventListener('mousemove', resizeMove);
+                document.addEventListener('mouseup', resizeEnd, { once: true });
+            });
+
+            function resizeMove(e) {
+                const newWidth = startWidth + (e.clientX - startX);
+                const newHeight = startHeight + (e.clientY - startY);
+
+                draftpad.style.width = Math.max(320, newWidth) + 'px';
+                draftpad.style.height = Math.max(280, newHeight) + 'px';
+            }
+
+            function resizeEnd() {
+                document.removeEventListener('mousemove', resizeMove);
+                saveDraftPadState();
+            }
+        }
+
+        const DRAFTPAD_STATE_KEY = 'draftpad-state';
+
+        function saveDraftPadState() {
+            const draftpad = document.getElementById('draftpad-window');
+            if (!draftpad) return;
+            const state = {
+                left: draftpad.style.left,
+                top: draftpad.style.top,
+                width: draftpad.style.width,
+                height: draftpad.style.height
+            };
+            localStorage.setItem(DRAFTPAD_STATE_KEY, JSON.stringify(state));
+        }
+
+        function restoreDraftPadState() {
+            const draftpad = document.getElementById('draftpad-window');
+            if (!draftpad) return;
+            try {
+                const state = JSON.parse(localStorage.getItem(DRAFTPAD_STATE_KEY));
+                if (state) {
+                    if (state.left) draftpad.style.left = state.left;
+                    if (state.top) draftpad.style.top = state.top;
+                    if (state.width) draftpad.style.width = state.width;
+                    if (state.height) draftpad.style.height = state.height;
+                }
+            } catch {
+                draftpad.style.left = '580px';
+                draftpad.style.top = '420px';
+                draftpad.style.width = '480px';
+                draftpad.style.height = '380px';
+            }
+        }
+
         // ==================== MAIN EDITOR FUNCTIONS ====================
         function formatEditorText(command) {
             const editor = document.getElementById('editor');
@@ -1473,10 +1921,23 @@
             updateWordCount();
         }
 
+        function currentDraftStorageKey(sceneId) {
+            return `current-draft:${sceneId}`;
+        }
+
+        /**
+         * Manual "Save" - explicitly persists the live editor content as the
+         * scene's current draft. Autosave (on every input) already keeps this
+         * up to date continuously; this button gives the user a deliberate,
+         * visible save action as well, per spec ("current draft... grabbed by
+         * an autosave & save button").
+         */
         function saveDraft() {
             const editor = document.getElementById('editor');
-            localStorage.setItem('current-draft', editor.innerHTML);
-            
+            if (!currentScene) return;
+
+            localStorage.setItem(currentDraftStorageKey(currentScene.id), editor.innerHTML);
+
             const status = document.getElementById('auto-save-status');
             const originalText = status.textContent;
             status.textContent = 'Draft saved!';
@@ -1486,6 +1947,22 @@
                 status.textContent = originalText;
                 status.style.color = '';
             }, 1500);
+
+            // Keep the Draft Pad's "Current Draft" preview in sync if it's open
+            if (typeof refreshDraftPadIfOpen === 'function') refreshDraftPadIfOpen();
+        }
+
+        /**
+         * Loads the correct scene's current draft into the main editor.
+         * Called whenever a scene is selected, so each scene shows its own
+         * text rather than one shared global draft.
+         */
+        function loadCurrentDraftForScene(sceneId) {
+            const editor = document.getElementById('editor');
+            if (!editor) return;
+            const saved = localStorage.getItem(currentDraftStorageKey(sceneId));
+            editor.innerHTML = saved || '';
+            updateWordCount();
         }
 
         function updateWordCount() {
@@ -1502,17 +1979,14 @@
         function init() {
             // Initialize main editor
             const editor = document.getElementById('editor');
-            
-            // Load saved draft
-            const saved = localStorage.getItem('current-draft');
-            if (saved) {
-                editor.innerHTML = saved;
-            }
 
-            // Live word count
+            // Live word count + per-scene autosave on every keystroke
             editor.addEventListener('input', () => {
-                localStorage.setItem('current-draft', editor.innerHTML);
+                if (currentScene) {
+                    localStorage.setItem(currentDraftStorageKey(currentScene.id), editor.innerHTML);
+                }
                 updateWordCount();
+                refreshDraftPadIfOpen();
             });
 
             // Initial word count
@@ -1526,6 +2000,10 @@
             setupNotepadBorderBehavior();
             setupKeyboardShortcuts();
 
+            // Draft Pad setup (single initialization)
+            makeDraftPadDraggable();
+            makeDraftPadResizable();
+
             console.log('%c[Big Tiff StoryForge] Writing sanctuary ready.', 'color:#8B6F47');
         }
 
@@ -1537,6 +2015,7 @@
         // Repo: https://github.com/footeprint-prog/big-tiff-storyforge
         // This is now the single source of truth for the dynamic outline.
         const CANON_JSON_URL = "https://raw.githubusercontent.com/footeprint-prog/big-tiff-storyforge/main/Big_Tiff_Scene_Structure.json";
+        const STATUS_STORAGE_KEY = 'bigtiff-scene-statuses'; // { [sceneId]: { status, needsReviewReason } }
 
         let currentCanonData = null;
         let previousCanonData = null;
@@ -1545,8 +2024,30 @@
         let currentScene = null;   // Currently selected scene object
 
         /**
-         * Fetches the latest scene structure from Google Drive (single source of truth).
-         * Core of the Safe Sync system. Never modifies Erica's drafts.
+         * Local status persistence.
+         * Sammy's JSON is read-only canon content - the web tool never writes back to it.
+         * Instead, the tool keeps its own local record of what status the user has set
+         * for each scene, so a status survives across syncs and page reloads even though
+         * the canon file itself doesn't carry it forward.
+         */
+        function loadSavedStatuses() {
+            try {
+                return JSON.parse(localStorage.getItem(STATUS_STORAGE_KEY)) || {};
+            } catch {
+                return {};
+            }
+        }
+
+        function saveSceneStatus(sceneId, status, needsReviewReason = null) {
+            const saved = loadSavedStatuses();
+            saved[sceneId] = { status, needsReviewReason };
+            localStorage.setItem(STATUS_STORAGE_KEY, JSON.stringify(saved));
+        }
+
+        /**
+         * Fetches the latest scene structure from GitHub (single source of truth for content).
+         * Core of the Safe Sync system. Never modifies Erica's drafts, and never writes
+         * back to the canon JSON itself - Sammy owns that file.
          */
         async function fetchLatestFromCanon() {
             if (!CANON_JSON_URL || CANON_JSON_URL.includes("YOUR_PUBLIC")) {
@@ -1567,18 +2068,15 @@
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
                 const data = await response.json();
+
+                // Reconcile Sammy's content with the user's locally-saved statuses.
+                const changeResult = reconcileSceneStatuses(data);
+
                 currentCanonData = data;
                 lastSyncTimestamp = new Date();
-
-                // Run change detection and apply "review" flags where appropriate
-                const changeResult = detectAndApplyReviewFlags(data, previousCanonData);
-
-                // Store current data for next comparison (deep clone)
                 previousCanonData = JSON.parse(JSON.stringify(data));
 
-                // Render the (possibly updated) outline
                 renderDynamicOutline();
-
                 showSyncSummaryReport(data, changeResult);
                 updateLastSyncDisplay();
 
@@ -1608,7 +2106,7 @@
             if (flaggedCount > 0 || newScenesCount > 0) {
                 changeMessage = `<div class="mt-1.5 text-xs text-[#E8C86B]">`;
                 if (newScenesCount > 0) changeMessage += `${newScenesCount} new scene(s) added. `;
-                if (flaggedCount > 0) changeMessage += `${flaggedCount} scene(s) flagged for review.`;
+                if (flaggedCount > 0) changeMessage += `${flaggedCount} scene(s) flagged for review by Sammy.`;
                 changeMessage += `</div>`;
             }
 
@@ -1658,52 +2156,54 @@
         }
 
         /**
-         * Compares the newly fetched canon against the previous version stored in memory.
+         * Reconciles the freshly-synced canon against locally-saved user statuses.
+         *
+         * Sammy is the storytelling expert - whether a change warrants review is HIS
+         * call, expressed by setting status: "review" + needsReviewReason directly in
+         * the JSON. The web tool does not diff text or make that judgment itself.
          *
          * Rules:
-         * - If a scene's prompt text has changed in the Master Story Bible → flag as "review"
-         *   (this applies even if the scene was previously marked "complete").
-         * - If a brand new scene appears in the canon → flag it as "review".
-         * - Erica must still intentionally change the status away from "review".
-         *
-         * This is a core part of the Safe Sync system.
+         * - If Sammy flagged a scene as "review" in this sync, that always wins -
+         *   it's a fresh editorial decision and takes priority over whatever the
+         *   user had previously set.
+         * - If Sammy did NOT flag a scene as review, the tool restores whatever
+         *   status the user last saved locally for that scene (so a sync doesn't
+         *   silently reset "complete" back to "unfinished").
+         * - If a scene has never been seen before (no local record at all) and
+         *   Sammy didn't explicitly set a status, default it to "review" - an
+         *   unseen scene hasn't been reviewed yet, so review is the honest starting
+         *   state rather than assuming it's simply "unfinished".
          */
-        function detectAndApplyReviewFlags(newData, previousData) {
-            if (!previousData || !previousData.scenes || !newData.scenes) {
-                return { flaggedCount: 0, newScenesCount: 0 };
-            }
+        function reconcileSceneStatuses(newData) {
+            if (!newData || !newData.scenes) return { flaggedCount: 0, newScenesCount: 0 };
 
+            const saved = loadSavedStatuses();
             let flaggedCount = 0;
             let newScenesCount = 0;
 
-            // Build a quick lookup map of previous scenes
-            const previousMap = {};
-            previousData.scenes.forEach(scene => {
-                previousMap[scene.id] = scene;
-            });
-
             newData.scenes.forEach(scene => {
-                const previousScene = previousMap[scene.id];
+                const hasLocalRecord = Object.prototype.hasOwnProperty.call(saved, scene.id);
+                const sammyFlaggedReview = scene.status === 'review' && !!scene.needsReviewReason;
 
-                if (!previousScene) {
-                    // This is a brand new scene
-                    newScenesCount++;
-                    scene.status = "review";
-                    scene.needsReviewReason = "New scene added to the canon by Sammy.";
+                if (sammyFlaggedReview) {
+                    // Sammy's editorial call wins, always.
+                    if (!hasLocalRecord) newScenesCount++;
                     flaggedCount++;
+                    saveSceneStatus(scene.id, 'review', scene.needsReviewReason);
                     return;
                 }
 
-                // Compare prompts (trim to ignore minor whitespace differences)
-                const newPrompt = (scene.prompt || "").trim();
-                const oldPrompt = (previousScene.prompt || "").trim();
-
-                if (newPrompt !== oldPrompt) {
-                    // Prompt changed in the canon → flag for review
-                    // (even if it was previously marked "complete")
-                    scene.status = "review";
-                    scene.needsReviewReason = "Prompt was updated in the Master Story Bible.";
+                if (hasLocalRecord) {
+                    // Restore the user's previously saved status; Sammy made no review claim this sync.
+                    scene.status = saved[scene.id].status;
+                    scene.needsReviewReason = saved[scene.id].needsReviewReason || null;
+                } else {
+                    // Never seen before, and Sammy didn't flag it - default to review.
+                    newScenesCount++;
                     flaggedCount++;
+                    scene.status = 'review';
+                    scene.needsReviewReason = scene.needsReviewReason || 'New scene synced from the Master Story Bible. Not yet reviewed.';
+                    saveSceneStatus(scene.id, 'review', scene.needsReviewReason);
                 }
             });
 
@@ -1716,8 +2216,11 @@
 
         /**
          * Updates the status dropdown based on the current scene.
-         * - If status is "review", only show Unfinished and Complete as options.
-         * - Otherwise show all three, but Review is not selectable by user.
+         * - Review is a tool-only status: it only appears as an option when it is
+         *   the scene's current synced state. The user can never select "Review"
+         *   themselves; they can only move away from it to Unfinished or Complete.
+         * - Mirrors the outline's pill styling via the scene-status-dropdown +
+         *   scene-complete / scene-unfinished / scene-review classes.
          */
         function updateStatusSelector(scene) {
             const select = document.getElementById('scene-status-select');
@@ -1731,65 +2234,33 @@
 
             const currentStatus = scene.status || 'unfinished';
 
-            // Style the closed dropdown to match the outline badge style
-            if (currentStatus === 'review') {
-                select.style.backgroundColor = '#D4AF37';
-                select.style.color = '#8B1E1E';
-                select.style.borderColor = '#D4AF37';
-                select.style.fontWeight = '600';
-            } else if (currentStatus === 'complete') {
-                select.style.backgroundColor = '#2A5F4E';
-                select.style.color = '#A3E6C9';
-                select.style.borderColor = '#D4AF37';
-                select.style.fontWeight = '500';
-            } else {
-                select.style.backgroundColor = '#5C4033';
-                select.style.color = '#E8C86B';
-                select.style.borderColor = '#D4AF37';
-                select.style.fontWeight = '500';
-            }
+            // Reset classes, then apply the one matching current status (mirrors outline pills)
+            select.classList.remove('scene-complete', 'scene-unfinished', 'scene-review');
+            select.classList.add(
+                currentStatus === 'complete' ? 'scene-complete' :
+                currentStatus === 'review' ? 'scene-review' : 'scene-unfinished'
+            );
 
             if (currentStatus === 'review') {
-                // Special case: Show Review (styled), only allow changing to Unfinished or Complete
+                // Review is shown as the current state, but is not a state the user can pick back into.
                 const optionReview = document.createElement('option');
                 optionReview.value = 'review';
                 optionReview.textContent = 'Review';
                 optionReview.selected = true;
-                optionReview.style.backgroundColor = '#D4AF37';
-                optionReview.style.color = '#8B1E1E';
                 select.appendChild(optionReview);
-
-                const optionUnfinished = document.createElement('option');
-                optionUnfinished.value = 'unfinished';
-                optionUnfinished.textContent = 'Unfinished';
-                optionUnfinished.style.backgroundColor = '#5C4033';
-                optionUnfinished.style.color = '#E8C86B';
-                select.appendChild(optionUnfinished);
-
-                const optionComplete = document.createElement('option');
-                optionComplete.value = 'complete';
-                optionComplete.textContent = 'Complete';
-                optionComplete.style.backgroundColor = '#2A5F4E';
-                optionComplete.style.color = '#A3E6C9';
-                select.appendChild(optionComplete);
-            } else {
-                // Normal mode: Only Unfinished and Complete (styled to match outline)
-                const optionUnfinished = document.createElement('option');
-                optionUnfinished.value = 'unfinished';
-                optionUnfinished.textContent = 'Unfinished';
-                if (currentStatus === 'unfinished') optionUnfinished.selected = true;
-                optionUnfinished.style.backgroundColor = '#5C4033';
-                optionUnfinished.style.color = '#E8C86B';
-                select.appendChild(optionUnfinished);
-
-                const optionComplete = document.createElement('option');
-                optionComplete.value = 'complete';
-                optionComplete.textContent = 'Complete';
-                if (currentStatus === 'complete') optionComplete.selected = true;
-                optionComplete.style.backgroundColor = '#2A5F4E';
-                optionComplete.style.color = '#A3E6C9';
-                select.appendChild(optionComplete);
             }
+
+            const optionUnfinished = document.createElement('option');
+            optionUnfinished.value = 'unfinished';
+            optionUnfinished.textContent = 'Unfinished';
+            if (currentStatus === 'unfinished') optionUnfinished.selected = true;
+            select.appendChild(optionUnfinished);
+
+            const optionComplete = document.createElement('option');
+            optionComplete.value = 'complete';
+            optionComplete.textContent = 'Complete';
+            if (currentStatus === 'complete') optionComplete.selected = true;
+            select.appendChild(optionComplete);
 
             // Remove old listener and add fresh one
             select.onchange = () => handleStatusChange(select.value, scene);
@@ -1797,26 +2268,60 @@
 
         /**
          * Handles when the user changes the status via the dropdown.
+         * If the scene is currently in "review", confirm before clearing that flag —
+         * this is the only way review status can be removed (tool-only to set,
+         * user-only to clear, and only via deliberate confirmation).
          */
         function handleStatusChange(newStatus, scene) {
-            if (!scene || !currentCanonData) return;
+            if (!scene) return;
 
-            // Only allow changing away from "review" or between unfinished/complete
             if (scene.status === 'review' && newStatus === 'review') {
                 return; // No change
+            }
+
+            if (scene.status === 'review') {
+                const label = newStatus === 'complete' ? 'Complete' : 'Unfinished';
+                const confirmed = confirm(
+                    `This scene is flagged for review:\n\n"${scene.needsReviewReason || 'Content was updated.'}"\n\nMark this scene as ${label} and clear the review flag?`
+                );
+                if (!confirmed) {
+                    // Revert the dropdown back to Review without applying any change
+                    updateStatusSelector(scene);
+                    return;
+                }
             }
 
             scene.status = newStatus;
             scene.needsReviewReason = null; // Clear reason once user intentionally changes it
 
+            // Persist locally so this status survives the next sync (Sammy's JSON stays read-only).
+            saveSceneStatus(scene.id, newStatus, null);
+
             // Re-style the dropdown to match the new status
             updateStatusSelector(scene);
+            updateReviewNoteBox(scene);
 
             // Update the outline to reflect new status
             renderDynamicOutline();
 
-            // Optional: gentle feedback
             console.log(`%c[Status] Scene ${scene.id} status changed to: ${newStatus}`, 'color:#8B6F47');
+        }
+
+        /**
+         * Shows/hides the Review Note box below the Scene Summary.
+         * Populated directly from Sammy's needsReviewReason field.
+         */
+        function updateReviewNoteBox(scene) {
+            const box = document.getElementById('review-note-box');
+            const text = document.getElementById('review-note-text');
+            if (!box || !text) return;
+
+            if (scene && scene.status === 'review' && scene.needsReviewReason) {
+                text.textContent = scene.needsReviewReason;
+                box.classList.remove('hidden');
+            } else {
+                box.classList.add('hidden');
+            }
         }
 
         /**
@@ -1942,25 +2447,6 @@
             });
         }
 
-        /**
-         * Placeholder for loading a scene from canon data into the editor.
-         * Will be expanded when we connect DraftPad + scene selection.
-         */
-                function updateStatusSelector(scene) {
-            const select = document.getElementById('scene-status-select');
-            if (!select || !scene) return;
-
-            select.style.display = 'block';
-            select.value = scene.status || 'unfinished';
-
-            select.onchange = function() {
-                if (scene) {
-                    scene.status = select.value;
-                    console.log("Scene status changed to: " + select.value);
-                }
-            };
-        }
-
         function populateGuidance(scene) {
             if (!scene) return;
 
@@ -1993,7 +2479,21 @@
             setText('guidance-success', scene.successForThisScene);
         }
 
+        /**
+         * Entry point for clicking a scene in the outline.
+         * If the currently open scene is still flagged "review" and the user is
+         * navigating away without having changed its status, confirm they meant
+         * to leave it unreviewed (it's fine to come back later - this just guards
+         * against accidentally losing track of a flagged scene).
+         */
         function selectSceneFromCanon(scene) {
+            if (currentScene && currentScene.status === 'review' && currentScene.id !== scene.id) {
+                const leave = confirm(
+                    `"${currentScene.title}" is still flagged for review and hasn't been marked Unfinished or Complete.\n\nLeave it in review status for now and continue to the next scene?`
+                );
+                if (!leave) return;
+            }
+
             currentScene = scene;
 
             const placeholder = document.getElementById('no-scene-placeholder');
@@ -2003,14 +2503,18 @@
 
             const label = document.getElementById('scene-label');
             if (label) {
-                label.textContent = scene.title || scene.id;
+                label.textContent = `DRAFT • ${scene.title || scene.id}`;
             }
 
             populateGuidance(scene);
             updateStatusSelector(scene);
+            updateReviewNoteBox(scene);
+            loadCurrentDraftForScene(scene.id);
+            if (typeof refreshDraftPadIfOpen === 'function') refreshDraftPadIfOpen();
 
             console.log("%c[Scene] Loaded into writing area with guidance:", "color:#8B6F47", scene.id, scene.title);
         }
+
         // Make renderer available
         window.renderDynamicOutline = renderDynamicOutline;
 
