@@ -107,6 +107,41 @@
             font-weight: 500;
         }
 
+        .changelog-filter-tab {
+            background-color: #4A3A2E;
+            color: #D4AF37;
+            opacity: 0.6;
+            border: 1px solid transparent;
+            cursor: pointer;
+            font-weight: 500;
+            transition: opacity 0.15s ease;
+        }
+
+        .changelog-filter-tab:hover {
+            opacity: 0.85;
+        }
+
+        .changelog-filter-tab.active {
+            opacity: 1;
+            border-color: #D4AF37;
+            background-color: #5C4033;
+        }
+
+        .changelog-entry {
+            background-color: #4A3A2E;
+            border-radius: 12px;
+            padding: 10px 12px;
+            border-left: 3px solid #D4AF37;
+        }
+
+        .changelog-entry.type-library {
+            border-left-color: #6FA88A;
+        }
+
+        .changelog-entry.type-structural {
+            border-left-color: #A38FD8;
+        }
+
         .sliding-panel {
             transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
         }
@@ -353,6 +388,13 @@
                             class="h-8 px-3 py-1 text-sm rounded-2xl border border-[#D4AF37]/50 hover:bg-[#4A3A2E] transition-colors flex items-center gap-x-2">
                         <i class="fa-solid fa-layer-group"></i>
                         <span class="font-medium text-xs tracking-wider">DRAFTS</span>
+                    </button>
+
+                    <!-- Global Changelog -->
+                    <button onclick="openChangelog()"
+                            class="h-8 px-3 py-1 text-sm rounded-2xl border border-[#D4AF37]/50 hover:bg-[#4A3A2E] transition-colors flex items-center gap-x-2">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                        <span class="font-medium text-xs tracking-wider">CHANGELOG</span>
                     </button>
 
                     <!-- Container: Progress + Stats -->
@@ -607,10 +649,11 @@
                     </button>
                 </div>
 
-                <div class="flex items-center justify-between px-1 mb-3">
+                <div class="flex items-center justify-between px-1 mb-1">
                     <span class="section-label text-[#D4AF37]">STORY LIBRARY</span>
                     <span class="text-[10px] px-2 py-0.5 bg-[#D4AF37]/10 text-[#D4AF37] rounded-full">42 entries</span>
                 </div>
+                <div id="library-last-sync-time" class="text-[10px] text-[#D4AF37]/40 px-1 mb-3">Not yet synced this session</div>
 
                 <!-- Search Bar -->
                 <div class="mb-3">
@@ -805,6 +848,44 @@
 
     </div>
 
+    <!-- ==================== GLOBAL CHANGELOG ==================== -->
+    <div id="changelog-window" class="notepad hidden" style="left: 580px; top: 80px; width: 460px; height: 420px;">
+
+        <!-- Header -->
+        <div class="notepad-header" id="changelog-header">
+            <div class="flex items-center gap-x-2">
+                <i class="fa-solid fa-clock-rotate-left text-[#D4AF37]"></i>
+                <h3>Changelog</h3>
+            </div>
+            <button onclick="hideChangelog()" class="notepad-close">
+                <i class="fa-solid fa-times"></i>
+            </button>
+        </div>
+
+        <!-- Filter tabs -->
+        <div class="flex items-center gap-x-1 px-3 pt-2 pb-1 border-b border-[#D4AF37]/20">
+            <button onclick="setChangelogFilter('all')" id="changelog-filter-all"
+                    class="changelog-filter-tab text-[10px] px-2.5 py-1 rounded-full">All</button>
+            <button onclick="setChangelogFilter('scene')" id="changelog-filter-scene"
+                    class="changelog-filter-tab text-[10px] px-2.5 py-1 rounded-full">Scenes</button>
+            <button onclick="setChangelogFilter('library')" id="changelog-filter-library"
+                    class="changelog-filter-tab text-[10px] px-2.5 py-1 rounded-full">Library</button>
+            <button onclick="setChangelogFilter('structural')" id="changelog-filter-structural"
+                    class="changelog-filter-tab text-[10px] px-2.5 py-1 rounded-full">Structure</button>
+        </div>
+
+        <!-- Body: single scrollable list, no sidebar - this is read-only -->
+        <div class="flex-1 overflow-y-auto p-3">
+            <div id="changelog-list" class="space-y-2 text-xs"></div>
+            <div id="changelog-empty" class="hidden text-center text-[#D4AF37]/40 italic mt-8 text-sm">
+                No changes logged yet. This fills in automatically as Sammy updates the canon.
+            </div>
+        </div>
+
+        <!-- Resize Handle -->
+        <div id="changelog-resize-handle" class="notepad-resize-handle"></div>
+    </div>
+
     <script>
         // ==================== PANEL + BUTTON VISIBILITY ====================
         function hideSideButton(id) {
@@ -909,6 +990,11 @@
         }
 
         // ==================== LIBRARY DATA (From Sammy) ====================
+        // Holds Sammy's synced Library canon once fetched (see fetchLatestLibraryFromCanon).
+        // Until a sync happens, the Library panel falls back to the hardcoded
+        // bibleData below, which represents the last manually-placed snapshot.
+        let currentLibraryData = null;
+
         let bibleData = {
             "Characters": [
                 {
@@ -1012,6 +1098,23 @@
             ]
         };
 
+        const LIBRARY_FALLBACK_STORAGE_KEY = 'bigtiff-library-last-good-sync';
+
+        /**
+         * True if this data has at least one real, populated entry - not just
+         * an empty schema skeleton (blank ids/titles, e.g. before Sammy has
+         * actually populated Big_Tiff_Library_Entries.json).
+         */
+        function isUsableLibraryData(data) {
+            return !!data
+                && Array.isArray(data.categories)
+                && data.categories.some(cat =>
+                    (cat.name || cat.id) &&
+                    Array.isArray(cat.entries) &&
+                    cat.entries.some(e => e.title && e.title.trim())
+                );
+        }
+
         function renderLibrary() {
             const container = document.getElementById('library-content');
             container.innerHTML = '';
@@ -1020,14 +1123,66 @@
             const ericaSection = createCategorySection("Erica's Entries", [], true);
             container.appendChild(ericaSection);
 
-            // Render Bible categories
-            Object.keys(bibleData).forEach(categoryName => {
-                const entries = bibleData[categoryName];
-                const section = createCategorySection(categoryName, entries, false);
-                container.appendChild(section);
-            });
+            // Three-tier fallback:
+            //   1. This session's live synced data, if it actually has real content.
+            //   2. The last successful real sync, persisted in localStorage -
+            //      this is what makes the fallback "live" rather than frozen at
+            //      whatever bibleData happened to contain when the page was built.
+            //   3. The original hardcoded bibleData snapshot, only if neither
+            //      of the above has ever existed (e.g. very first load, ever).
+            let dataToRender = null;
+
+            if (isUsableLibraryData(currentLibraryData)) {
+                dataToRender = currentLibraryData;
+            } else {
+                try {
+                    const lastGood = JSON.parse(localStorage.getItem(LIBRARY_FALLBACK_STORAGE_KEY));
+                    if (isUsableLibraryData(lastGood)) dataToRender = lastGood;
+                } catch { /* fall through to bibleData */ }
+            }
+
+            if (dataToRender) {
+                // Maps categories[].entries[] (title/summary/content/status/
+                // needsReviewReason) onto the same render path bibleData used,
+                // so the existing UI doesn't need a second rendering function.
+                dataToRender.categories.forEach(category => {
+                    const categoryLabel = category.name || category.id;
+                    const realEntries = (category.entries || []).filter(e => e.title && e.title.trim());
+                    if (!categoryLabel || realEntries.length === 0) return; // skip empty/unnamed categories
+
+                    const mappedEntries = realEntries.map(e => ({
+                        id: e.id,
+                        title: e.title,
+                        content: e.summary || e.content || '',
+                        status: e.status,
+                        needsReviewReason: e.needsReviewReason
+                    }));
+                    const section = createCategorySection(categoryLabel, mappedEntries, false);
+                    container.appendChild(section);
+                });
+            } else {
+                // Truly nothing real has ever synced - fall back to the original
+                // hand-placed snapshot baked into the page.
+                Object.keys(bibleData).forEach(categoryName => {
+                    const entries = bibleData[categoryName];
+                    const section = createCategorySection(categoryName, entries, false);
+                    container.appendChild(section);
+                });
+            }
 
             renderEricaEntriesInLibrary();
+            updateLibraryLastSyncDisplay();
+        }
+
+        function updateLibraryLastSyncDisplay() {
+            const el = document.getElementById('library-last-sync-time');
+            if (!el) return;
+            if (currentLibraryData && lastSyncTimestamp) {
+                const timeStr = lastSyncTimestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                el.textContent = `Last synced ${timeStr}`;
+            } else {
+                el.textContent = 'Not yet synced this session';
+            }
         }
 
         function createCategorySection(categoryName, entries, isCustom) {
@@ -1913,6 +2068,199 @@
             }
         }
 
+        // ==================== GLOBAL CHANGELOG ====================
+        // A single, append-only, read-only log of canon-driven changes:
+        // scene review flags (Sammy's editorial calls) and structural/lore-level
+        // changes detected from the canon JSON's own metadata. Library changes
+        // will log here too once Library canon sync itself is built (currently
+        // the Library panel is local-only and has no canon sync yet - see
+        // CHECKLIST.md). No human notation required anywhere in this system;
+        // every entry here is generated automatically.
+        const CHANGELOG_STORAGE_KEY = 'bigtiff-global-changelog';
+        const CHANGELOG_STATE_KEY = 'changelog-window-state';
+        let changelogFilter = 'all';
+
+        function loadChangelogEntries() {
+            try {
+                return JSON.parse(localStorage.getItem(CHANGELOG_STORAGE_KEY) || '[]');
+            } catch {
+                return [];
+            }
+        }
+
+        function addChangelogEntry(entry) {
+            const entries = loadChangelogEntries();
+            entries.unshift({
+                id: Date.now().toString() + Math.random().toString(36).slice(2, 7),
+                timestamp: new Date().toISOString(),
+                ...entry
+            });
+            localStorage.setItem(CHANGELOG_STORAGE_KEY, JSON.stringify(entries));
+            refreshChangelogIfOpen();
+        }
+
+        function setChangelogFilter(filter) {
+            changelogFilter = filter;
+            ['all', 'scene', 'library', 'structural'].forEach(f => {
+                const tab = document.getElementById(`changelog-filter-${f}`);
+                if (tab) tab.classList.toggle('active', f === filter);
+            });
+            renderChangelogList();
+        }
+
+        function renderChangelogList() {
+            const list = document.getElementById('changelog-list');
+            const empty = document.getElementById('changelog-empty');
+            if (!list) return;
+
+            const entries = loadChangelogEntries();
+            const filtered = changelogFilter === 'all'
+                ? entries
+                : entries.filter(e => e.type === changelogFilter);
+
+            if (filtered.length === 0) {
+                list.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+
+            list.innerHTML = filtered.map(entry => {
+                const time = new Date(entry.timestamp).toLocaleString([], {
+                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                });
+                const icon = entry.type === 'library' ? 'fa-book'
+                           : entry.type === 'structural' ? 'fa-diagram-project'
+                           : 'fa-pen-to-square';
+                const typeLabel = entry.type === 'library' ? 'Library'
+                                 : entry.type === 'structural' ? 'Structure'
+                                 : 'Scene';
+                const titleLine = entry.sceneTitle
+                    ? `<span class="font-medium">${entry.sceneTitle}</span>`
+                    : `<span class="font-medium">${typeLabel}-wide update</span>`;
+
+                return `
+                    <div class="changelog-entry type-${entry.type}">
+                        <div class="flex items-start justify-between gap-x-2 mb-1">
+                            <div class="flex items-center gap-x-1.5 text-[#D4AF37]/80">
+                                <i class="fa-solid ${icon} text-[10px]"></i>
+                                <span class="text-[10px] uppercase tracking-wide">${typeLabel}</span>
+                            </div>
+                            <span class="text-[10px] text-[#D4AF37]/50 whitespace-nowrap">${time}</span>
+                        </div>
+                        <div class="text-[#F4EDE4] mb-0.5">${titleLine}</div>
+                        <div class="text-[#D4AF37]/70 leading-snug">${entry.reason || ''}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function refreshChangelogIfOpen() {
+            const win = document.getElementById('changelog-window');
+            if (win && win.classList.contains('active')) {
+                renderChangelogList();
+            }
+        }
+
+        function openChangelog() {
+            const win = document.getElementById('changelog-window');
+            win.style.display = 'flex';
+            win.classList.add('active');
+            restoreChangelogState();
+            setChangelogFilter(changelogFilter);
+        }
+
+        function hideChangelog() {
+            const win = document.getElementById('changelog-window');
+            saveChangelogState();
+            win.style.display = 'none';
+            win.classList.remove('active');
+        }
+
+        function makeChangelogDraggable() {
+            const win = document.getElementById('changelog-window');
+            const header = document.getElementById('changelog-header');
+            let offsetX = 0, offsetY = 0, isDragging = false;
+
+            header.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                offsetX = e.clientX - win.offsetLeft;
+                offsetY = e.clientY - win.offsetTop;
+                document.body.style.userSelect = 'none';
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                win.style.left = (e.clientX - offsetX) + 'px';
+                win.style.top = (e.clientY - offsetY) + 'px';
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    document.body.style.userSelect = '';
+                    saveChangelogState();
+                }
+            });
+        }
+
+        function makeChangelogResizable() {
+            const win = document.getElementById('changelog-window');
+            const handle = document.getElementById('changelog-resize-handle');
+            let startX, startY, startWidth, startHeight;
+
+            handle.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                startX = e.clientX;
+                startY = e.clientY;
+                startWidth = parseInt(document.defaultView.getComputedStyle(win).width, 10);
+                startHeight = parseInt(document.defaultView.getComputedStyle(win).height, 10);
+
+                document.addEventListener('mousemove', resizeMove);
+                document.addEventListener('mouseup', resizeEnd, { once: true });
+            });
+
+            function resizeMove(e) {
+                const newWidth = startWidth + (e.clientX - startX);
+                const newHeight = startHeight + (e.clientY - startY);
+                win.style.width = Math.max(320, newWidth) + 'px';
+                win.style.height = Math.max(280, newHeight) + 'px';
+            }
+
+            function resizeEnd() {
+                document.removeEventListener('mousemove', resizeMove);
+                saveChangelogState();
+            }
+        }
+
+        function saveChangelogState() {
+            const win = document.getElementById('changelog-window');
+            if (!win) return;
+            localStorage.setItem(CHANGELOG_STATE_KEY, JSON.stringify({
+                left: win.style.left, top: win.style.top,
+                width: win.style.width, height: win.style.height
+            }));
+        }
+
+        function restoreChangelogState() {
+            const win = document.getElementById('changelog-window');
+            if (!win) return;
+            try {
+                const state = JSON.parse(localStorage.getItem(CHANGELOG_STATE_KEY));
+                if (state) {
+                    if (state.left) win.style.left = state.left;
+                    if (state.top) win.style.top = state.top;
+                    if (state.width) win.style.width = state.width;
+                    if (state.height) win.style.height = state.height;
+                }
+            } catch {
+                win.style.left = '580px';
+                win.style.top = '80px';
+                win.style.width = '460px';
+                win.style.height = '420px';
+            }
+        }
+
         // ==================== MAIN EDITOR FUNCTIONS ====================
         function formatEditorText(command) {
             const editor = document.getElementById('editor');
@@ -2004,6 +2352,10 @@
             makeDraftPadDraggable();
             makeDraftPadResizable();
 
+            // Changelog setup (single initialization)
+            makeChangelogDraggable();
+            makeChangelogResizable();
+
             console.log('%c[Big Tiff StoryForge] Writing sanctuary ready.', 'color:#8B6F47');
         }
 
@@ -2015,6 +2367,8 @@
         // Repo: https://github.com/footeprint-prog/big-tiff-storyforge
         // This is now the single source of truth for the dynamic outline.
         const CANON_JSON_URL = "https://raw.githubusercontent.com/footeprint-prog/big-tiff-storyforge/main/Big_Tiff_Scene_Structure.json";
+        const LIBRARY_JSON_URL = "https://raw.githubusercontent.com/footeprint-prog/big-tiff-storyforge/main/Big_Tiff_Library_Entries.json";
+        const LIBRARY_STATUS_STORAGE_KEY = 'bigtiff-library-statuses'; // { [entryId]: { status, needsReviewReason } }
         const STATUS_STORAGE_KEY = 'bigtiff-scene-statuses'; // { [sceneId]: { status, needsReviewReason } }
 
         let currentCanonData = null;
@@ -2069,6 +2423,10 @@
 
                 const data = await response.json();
 
+                // Detect structural/lore-level changes by comparing against the
+                // previous sync's top-level metadata, before it gets overwritten below.
+                detectStructuralChange(data, previousCanonData);
+
                 // Reconcile Sammy's content with the user's locally-saved statuses.
                 const changeResult = reconcileSceneStatuses(data);
 
@@ -2079,6 +2437,11 @@
                 renderDynamicOutline();
                 showSyncSummaryReport(data, changeResult);
                 updateLastSyncDisplay();
+
+                // Library sync rides along with the same "Update webtool" sync
+                // event, since Sammy's process bundles both files together
+                // (see Project_Governance_and_Protocols.md, "Update webtool" Command, step 4).
+                await fetchLatestLibraryFromCanon();
 
                 return data;
 
@@ -2092,6 +2455,118 @@
                     syncBtn.innerHTML = `<i class="fa-solid fa-sync-alt mr-2"></i> Sync with Canon`;
                 }
             }
+        }
+
+        let previousLibraryData = null;
+
+        /**
+         * Fetches Big_Tiff_Library_Entries.json - Sammy's canon library content,
+         * structured per Big_Tiff_Standardized_Library_Entry_Template.md.
+         * Mirrors fetchLatestFromCanon's pattern: review status is Sammy's call
+         * (entry.status + entry.needsReviewReason), the tool persists user
+         * decisions locally, and changes are logged to the Global Changelog
+         * under the 'library' filter. Runs quietly - failures here don't block
+         * the main scene sync, since Library content is secondary.
+         */
+        async function fetchLatestLibraryFromCanon() {
+            try {
+                const fetchUrl = `${LIBRARY_JSON_URL}?t=${Date.now()}`;
+                const response = await fetch(fetchUrl, { cache: "no-store" });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const data = await response.json();
+                if (!data.categories) return null;
+
+                reconcileLibraryStatuses(data);
+                currentLibraryData = data;
+                previousLibraryData = JSON.parse(JSON.stringify(data));
+
+                // If this sync actually contains real content (not just an
+                // empty schema skeleton), persist it as the new fallback -
+                // this is what keeps the offline/no-sync-yet fallback current
+                // instead of frozen at the original hardcoded bibleData forever.
+                if (isUsableLibraryData(data)) {
+                    localStorage.setItem(LIBRARY_FALLBACK_STORAGE_KEY, JSON.stringify(data));
+                }
+
+                renderLibrary();
+                return data;
+
+            } catch (err) {
+                // Quiet failure - Library JSON may not exist yet in the repo,
+                // or may not be public. Don't alert; the scene sync already
+                // succeeded and that's the primary flow.
+                console.warn("[Library Sync] Could not fetch Library canon (non-blocking):", err.message);
+                return null;
+            }
+        }
+
+        function loadSavedLibraryStatuses() {
+            try {
+                return JSON.parse(localStorage.getItem(LIBRARY_STATUS_STORAGE_KEY)) || {};
+            } catch {
+                return {};
+            }
+        }
+
+        function saveLibraryEntryStatus(entryId, status, needsReviewReason = null) {
+            const saved = loadSavedLibraryStatuses();
+            saved[entryId] = { status, needsReviewReason };
+            localStorage.setItem(LIBRARY_STATUS_STORAGE_KEY, JSON.stringify(saved));
+        }
+
+        /**
+         * Same philosophy as reconcileSceneStatuses: Sammy's status/needsReviewReason
+         * on each entry is the editorial source of truth. The tool restores the
+         * user's last saved status for entries Sammy didn't flag, and logs a
+         * Library changelog entry whenever an entry's lastUpdated timestamp moves
+         * forward with a genuinely new reason (not just a re-sync of old data).
+         */
+        function reconcileLibraryStatuses(newData) {
+            if (!newData || !newData.categories) return;
+
+            const saved = loadSavedLibraryStatuses();
+
+            newData.categories.forEach(category => {
+                (category.entries || []).forEach(entry => {
+                    // Skip blank schema-template placeholders (e.g. an unpopulated
+                    // skeleton entry with id: "", title: ""). These aren't real
+                    // content and shouldn't be tracked, logged, or rendered.
+                    if (!entry.id || !entry.title || !entry.title.trim()) return;
+
+                    const hasLocalRecord = Object.prototype.hasOwnProperty.call(saved, entry.id);
+                    const sammyFlaggedReview = entry.status === 'review' && !!entry.needsReviewReason;
+
+                    if (sammyFlaggedReview) {
+                        const previousReason = saved[entry.id] && saved[entry.id].needsReviewReason;
+                        if (previousReason !== entry.needsReviewReason) {
+                            addChangelogEntry({
+                                type: 'library',
+                                sceneTitle: entry.title,
+                                reason: entry.needsReviewReason
+                            });
+                        }
+                        saveLibraryEntryStatus(entry.id, 'review', entry.needsReviewReason);
+                        return;
+                    }
+
+                    if (hasLocalRecord) {
+                        entry.status = saved[entry.id].status;
+                        entry.needsReviewReason = saved[entry.id].needsReviewReason || null;
+                    } else if (entry.id) {
+                        // First time seeing this entry - log it, but don't force
+                        // a 'review' status the way new scenes do; Library entries
+                        // are reference material, not a guided writing workflow,
+                        // so a quieter "logged" entry is enough.
+                        addChangelogEntry({
+                            type: 'library',
+                            sceneTitle: entry.title,
+                            reason: 'New Library entry added by Sammy.'
+                        });
+                        saveLibraryEntryStatus(entry.id, entry.status || 'unfinished', null);
+                    }
+                });
+            });
         }
 
         /**
@@ -2189,6 +2664,20 @@
                     // Sammy's editorial call wins, always.
                     if (!hasLocalRecord) newScenesCount++;
                     flaggedCount++;
+
+                    // Only log a fresh changelog entry if this is a genuinely new
+                    // reason - re-syncing the same unreviewed scene shouldn't spam
+                    // the log with duplicate entries every time Sync is clicked.
+                    const previousReason = saved[scene.id] && saved[scene.id].needsReviewReason;
+                    if (previousReason !== scene.needsReviewReason) {
+                        addChangelogEntry({
+                            type: 'scene',
+                            sceneId: scene.id,
+                            sceneTitle: scene.title || scene.id,
+                            reason: scene.needsReviewReason
+                        });
+                    }
+
                     saveSceneStatus(scene.id, 'review', scene.needsReviewReason);
                     return;
                 }
@@ -2203,11 +2692,39 @@
                     flaggedCount++;
                     scene.status = 'review';
                     scene.needsReviewReason = scene.needsReviewReason || 'New scene synced from the Master Story Bible. Not yet reviewed.';
+                    addChangelogEntry({
+                        type: 'scene',
+                        sceneId: scene.id,
+                        sceneTitle: scene.title || scene.id,
+                        reason: scene.needsReviewReason
+                    });
                     saveSceneStatus(scene.id, 'review', scene.needsReviewReason);
                 }
             });
 
             return { flaggedCount, newScenesCount };
+        }
+
+        /**
+         * Detects structural/lore-level changes by comparing the canon JSON's
+         * own top-level metadata (notes, lastUpdatedBy, structureVersion) between
+         * syncs. This is distinct from per-scene review flags - it's for changes
+         * that affect the story/canon as a whole rather than one specific scene.
+         */
+        function detectStructuralChange(newData, previousData) {
+            if (!previousData) return; // Nothing to compare against on first sync
+
+            const fieldsToWatch = ['notes', 'structureVersion', 'templateVersion'];
+            const changedFields = fieldsToWatch.filter(f => newData[f] && newData[f] !== previousData[f]);
+
+            if (changedFields.length === 0) return;
+
+            addChangelogEntry({
+                type: 'structural',
+                sceneTitle: null,
+                reason: newData.notes || `Updated: ${changedFields.join(', ')}`,
+                updatedBy: newData.updatedBy || newData.lastUpdatedBy || 'Sammy'
+            });
         }
 
         // =====================================================
