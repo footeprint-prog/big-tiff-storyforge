@@ -2,6 +2,83 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-06-26] – Writing Area Layout Redesign, Floating Guidance Cards, UPDATES Merge (Claude session)
+
+All items below were verified with a real headless-browser test in-session
+(Playwright), not just read/written. See test transcripts in session history
+if a re-check is ever needed.
+
+### Added
+- **Fixed-width writing area layout** — center content now has a permanent
+  max-width matching the clearance the side panel buttons already have to
+  the screen edge (button's own 24px+78px clearance, mirrored), so there's
+  always deliberate resting space on either side regardless of panel state.
+  Replaces the old full-bleed layout.
+- **Scene Status Control Bar** — new full-width bar, sticky-capped directly
+  beneath the (also now sticky) Scene Summary bar. Houses the status pill,
+  autosave text, Save Draft, Draft Log, and a Send-to-Sammy button. Styled
+  with a 5px gold top border (matching the side panel buttons) and a 1px
+  full-opacity gold bottom border, filled in the Library panel's green.
+- **Send to Sammy (real implementation)** — builds a formatted export
+  (editorial instructions + scene title/summary/draft) into a draggable,
+  copy-to-clipboard window. Convenience export only; never calls any API or
+  sends anything automatically. Explicit Draft Protection language included
+  so it can't be misread as "rewrite this for me."
+- **Proofreader** — mechanical spelling/grammar/tense pass via the free
+  LanguageTool API, in its own floating window. Apply / Apply All only ever
+  touch text the user has seen and approved.
+- **Custom status-pill dropdown** — replaces the native `<select>` (which
+  always duplicated the current value inside its own open option list).
+  Button + slide-down menu, color-matched to the outline badges.
+- **Floating guidance cards** — each of the 6 guidance boxes (Purpose, Key
+  Canon, Emotional State, Beats, Setting & Tone, Success) can now float into
+  its own small, lightweight draggable/resizable window via a corner icon.
+  Single source of truth — the real DOM node moves, nothing is ever copied
+  or kept in sync. Floating state is explicitly temporary: auto-resets on
+  canon re-sync, on init/reload, on Focus mode, and now also when Notepad or
+  Draft Log is opened.
+- **Minimize/maximize toggle** on home-base guidance cards — collapses a
+  card in place to a header-only row (independent of floating).
+- **Editor display zoom** (−/100%/+) — CSS-only font-size control on the
+  editor; never touches saved draft content.
+- **Outline title shortening** — long scene titles truncate at the en-dash
+  in the compact outline view only; full titles still shown elsewhere
+  (Draft Pad, scene label, Changelog).
+- **Outline expand/collapse persistence** — re-renders (e.g. from a status
+  change or re-sync) no longer collapse Act/Chapter sections the user had
+  open.
+- **Library review-flag markers** — categories and individual entries
+  currently flagged for review by Sammy show a small "!" marker (with
+  tooltip reason at the entry level), so changes are visible without
+  expanding every category.
+- **Changelog icon buttons** added directly to the Outline and Library
+  panels, each pre-filtering the shared Changelog window to the relevant
+  type ('scene' / 'library') when opened from that panel.
+
+### Changed
+- Editor base font reduced one step; toolbar reorganized (Proofreader now
+  lives with text tools + word count; Save Draft/Draft Log/Sammy moved into
+  the new Scene Status Control Bar).
+- Center writing area now has its own independent scrollbar, decoupled from
+  the side panels.
+- Removed the standalone top-header Changelog button (superseded by the
+  panel-specific, pre-filtered icon buttons above).
+
+### Fixed
+- `.notepad.hidden { display: none !important }` CSS guard was previously
+  dead code — `openNotepad()` / `openDraftPad()` / `openChangelog()` never
+  actually removed the `.hidden` class, so the guard had no effect. Now
+  fixed in all three.
+- A genuine 0.5px hairline gap between the Scene Summary and Status Control
+  Bar, caused by `offsetHeight` rounding a fractional height — fixed by
+  switching the sticky-offset calculation to `getBoundingClientRect()`.
+- Side panel buttons briefly regressed off their correct position during
+  the layout work (root cause: the outer flex container needed explicit
+  `w-full` to hold its `max-w-screen-2xl` cap once its children gained more
+  specific sizing) — caught and fixed same-session via direct measurement.
+
+---
+
 ## [2026-06-22] – Status Selector Fix, Sync Reconciliation, Draft Pad (Claude session)
 
 All items below were verified with a real headless-browser test in-session

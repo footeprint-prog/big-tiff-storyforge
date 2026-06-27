@@ -51,15 +51,21 @@ These were defined in the original, more detailed Implementation Checklist
 code check on 2026-06-22 to still be **unbuilt**. Carried forward here so
 they aren't lost now that the old document is marked historical.
 
-- [ ] **Global Outline/Lore Changelog** — draggable window, same style as
-      Notepad/DraftPad, showing Sammy's canon + structure changes. *(Next
-      planned feature as of 2026-06-22.)*
+- [x] **Global Outline/Lore Changelog** — built 2026-06-26. Draggable window
+      (same style as Notepad/DraftPad), filter tabs for All/Scene/Library/
+      Structural, shows Sammy's canon + structure changes.
 - [ ] **Library change detection + alert badge** — Library panel should show
       a visible indicator when canon-driven changes affect Library-sourced
-      entries.
-- [ ] **Library changelog** — separate from the Outline/lore changelog above;
-      tracks changes specifically to `Big_Tiff_Library_Entries.json` content.
-      (See `Big_Tiff_Standardized_Library_Entry_Template.md` Section 6.)
+      entries. *(Partially addressed 2026-06-26 via per-category and
+      per-entry "!" review-flag markers, which surface flagged items without
+      expanding every category — but this is a different mechanism than a
+      single panel-level alert badge. Worth confirming with Aaron whether
+      the "!" markers satisfy this item or whether a separate badge is still
+      wanted.)*
+- [x] **Library changelog** — built 2026-06-26 as part of the same shared
+      Changelog window above; the 'library' filter tab tracks changes to
+      `Big_Tiff_Library_Entries.json` content specifically. The Library
+      panel's own changelog icon button opens directly to this filter.
 - [ ] **Last sync timestamp in Library panel** — currently only shown near
       the Outline; not duplicated in the Library panel.
 - [ ] **Auto-expand to first relevant scene** (`unfinished` or `review`) on
@@ -103,4 +109,4 @@ rather than assuming the whole list is still live.
 
 ---
 
-*Last Updated: 2026-06-22*
+*Last Updated: 2026-06-26*

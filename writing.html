@@ -51,17 +51,19 @@
 
         .scene-status {
             font-size: 0.65rem;
-            padding: 1px 10px;
+            line-height: 1.4;
+            width: 100px;
             border-radius: 9999px;
             border: 1px solid #D4AF37;
-            min-width: 68px;
             text-align: center;
+            white-space: nowrap;
+            font-weight: 500;
+            box-sizing: border-box;
+            padding: 1px 10px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            white-space: nowrap;
-            font-weight: 500;
         }
 
         .scene-complete {
@@ -80,31 +82,95 @@
             background-color: #D4AF37;
             color: #8B1E1E;
             border-color: #D4AF37;
-            font-weight: 600;
+            font-weight: 500;
         }
 
-        /* Status dropdown - mirrors the .scene-status pill appearance exactly */
-        .scene-status-dropdown {
+        /* Custom status dropdown widget (replaces the old native <select>,
+           which couldn't be styled to avoid showing the current value
+           duplicated inside its own open option list - that's just how
+           native <select> elements work, no CSS workaround exists for it).
+           Built from a button (the visible pill, always showing current
+           status) plus an absolutely-positioned menu of ONLY the other
+           valid statuses, visually connected directly beneath it so it
+           reads as one continuous shape sliding open. */
+        .status-dropdown-wrapper {
+            position: relative;
+            width: 100px;
+            flex-shrink: 0;
+        }
+
+        .status-dropdown-trigger {
+            width: 100%;
             font-size: 0.65rem;
+            line-height: 1.4;
+            font-weight: 600;
             padding: 1px 22px 1px 10px;
             border-radius: 9999px;
             border: 1px solid #D4AF37;
             text-align: center;
             white-space: nowrap;
-            font-weight: 500;
+            box-sizing: border-box;
             cursor: pointer;
-            outline: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            appearance: none;
-            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'><path fill='%23D4AF37' d='M2 4l4 4 4-4z'/></svg>");
+            position: relative;
             background-repeat: no-repeat;
-            background-position: right 6px center;
-            background-size: 9px;
+            background-position: right 8px center;
+            background-size: 10px;
+            background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2012%2012%27%3E%3Cpath%20fill%3D%27%23D4AF37%27%20d%3D%27M2%204l4%204%204-4z%27/%3E%3C/svg%3E");
+            transition: border-radius 0.15s ease;
         }
 
-        .scene-status-dropdown option {
+        /* When open, flatten the trigger's bottom corners so it visually
+           merges into the menu sliding down from beneath it. */
+        .status-dropdown-wrapper.open .status-dropdown-trigger {
+            border-radius: 12px 12px 0 0;
+            border-bottom-color: transparent;
+        }
+
+        .status-dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 30;
+            border: 1px solid #D4AF37;
+            border-top: none;
+            border-radius: 0 0 12px 12px;
+            overflow: hidden;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.35);
+            /* Slide-down open animation */
+            max-height: 0;
+            opacity: 0;
+            transition: max-height 0.18s ease, opacity 0.15s ease;
+        }
+
+        .status-dropdown-wrapper.open .status-dropdown-menu {
+            max-height: 140px;
+            opacity: 1;
+        }
+
+        .status-dropdown-option {
+            font-size: 0.65rem;
             font-weight: 500;
+            text-align: center;
+            padding: 5px 10px;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .status-dropdown-option:hover {
+            filter: brightness(1.12);
+        }
+
+        /* Color treatments matching the outline badges exactly */
+        .status-pill-complete { background-color: #2A5F4E; color: #A3E6C9; }
+        .status-pill-unfinished { background-color: #5C4033; color: #E8C86B; }
+        .status-pill-review { background-color: #D4AF37; color: #8B1E1E; }
+
+        /* The default arrow icon is gold (#D4AF37), invisible against the
+           Review state's own gold background. Override with a dark-red arrow
+           (matching Review's text color) so it's actually visible there. */
+        .status-dropdown-trigger.status-pill-review {
+            background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2012%2012%27%3E%3Cpath%20fill%3D%27%238B1E1E%27%20d%3D%27M2%204l4%204%204-4z%27/%3E%3C/svg%3E");
         }
 
         .changelog-filter-tab {
@@ -159,6 +225,134 @@
         
         .side-icon-btn:hover {
             transform: scale(1.05);
+        }
+
+        .guidance-float-btn {
+            color: #D4AF37;
+            opacity: 0.55;
+            font-size: 11px;
+            line-height: 1;
+            padding: 2px 4px;
+            flex-shrink: 0;
+            transition: opacity 0.15s ease;
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .guidance-float-btn:hover {
+            opacity: 1;
+        }
+
+        .guidance-card {
+            scrollbar-width: thin;
+            scrollbar-color: #D4AF37 #3D2B1F;
+        }
+
+        /* Collapsed "home base" bar left behind in the guidance column when
+           a card is floating elsewhere. Same width as the column (it's just
+           a placeholder div there), but only as tall as a single title row -
+           the actual card content has moved into the floating window. */
+        .guidance-home-slot {
+            height: 30px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
+            background: #3D2B1F;
+            border: 1px solid rgba(212,175,55,0.3);
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 500;
+            color: #D4AF37;
+            opacity: 0.85;
+        }
+
+        /* Lightweight floating window for an undocked guidance card -
+           deliberately thinner chrome than .notepad (no solid header bar,
+           tighter padding) since these are meant to feel like a quick,
+           temporary peek rather than a full tool window. */
+        .guidance-float-window {
+            position: fixed;
+            background: #3D2B1F;
+            border: 2px solid #D4AF37;
+            border-radius: 14px;
+            box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 450;
+            min-width: 220px;
+            min-height: 140px;
+        }
+
+        .guidance-float-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 10px;
+            cursor: move;
+            user-select: none;
+            flex-shrink: 0;
+            border-bottom: 1px solid rgba(212,175,55,0.25);
+        }
+
+        .guidance-float-header span {
+            font-size: 12px;
+            font-weight: 600;
+            color: #D4AF37;
+        }
+
+        .guidance-float-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 10px;
+            font-size: 12px;
+        }
+
+        .guidance-float-resize-handle {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            width: 14px;
+            height: 14px;
+            cursor: nwse-resize;
+        }
+
+        .guidance-float-resize-handle::after {
+            content: '';
+            position: absolute;
+            right: 3px;
+            bottom: 3px;
+            width: 7px;
+            height: 7px;
+            border-right: 2px solid rgba(212,175,55,0.5);
+            border-bottom: 2px solid rgba(212,175,55,0.5);
+        }
+
+        #center-scroll-area {
+            scrollbar-width: thin;
+            scrollbar-color: #D4AF37 #3D2B1F;
+        }
+
+        .control-bar-item {
+            height: 30px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+        }
+
+        /* The status pill wrapper just needs to match the bar's height —
+           its own padding/look comes from .status-dropdown-trigger inside
+           it, so override the generic item padding here to avoid double
+           spacing around the pill. */
+        .status-dropdown-wrapper.control-bar-item {
+            padding: 0;
+            height: 30px;
+            display: flex;
+            align-items: center;
         }
 
         .minimal-search {
@@ -383,13 +577,6 @@
                         <span class="font-medium text-xs tracking-wider">NOTEPAD</span>
                     </button>
 
-                    <!-- Draft Pad (per-scene) -->
-                    <button onclick="openDraftPad()"
-                            class="h-8 px-3 py-1 text-sm rounded-2xl border border-[#D4AF37]/50 hover:bg-[#4A3A2E] transition-colors flex items-center gap-x-2">
-                        <i class="fa-solid fa-layer-group"></i>
-                        <span class="font-medium text-xs tracking-wider">DRAFTS</span>
-                    </button>
-
                     <!-- Global Changelog -->
                     <button onclick="openChangelog()"
                             class="h-8 px-3 py-1 text-sm rounded-2xl border border-[#D4AF37]/50 hover:bg-[#4A3A2E] transition-colors flex items-center gap-x-2">
@@ -435,7 +622,7 @@
     </header>
 
     <!-- Main Writing Area -->
-    <div class="max-w-screen-2xl mx-auto flex flex-1 min-h-0 relative">
+    <div class="max-w-screen-2xl w-full mx-auto flex flex-1 min-h-0 relative">
         
         <!-- Static Outline Button (Left) -->
         <div id="outline-btn" class="absolute left-6 top-1/2 -translate-y-1/2 z-40">
@@ -462,14 +649,20 @@
                     <span class="section-label text-[#D4AF37]">STORY OUTLINE</span>
                 </div>
 
-                <!-- Sync with Canon Button (subtle) -->
+                <!-- Sync with Canon Button (subtle) + Changelog icon -->
                 <div class="px-1 mb-3">
-                    <button id="sync-canon-btn"
-                            onclick="fetchLatestFromCanon()"
-                            class="w-full flex items-center justify-center gap-x-1.5 px-3 py-1 text-xs text-[#D4AF37]/80 hover:text-[#D4AF37] rounded-xl border border-[#D4AF37]/30 hover:border-[#D4AF37]/50 hover:bg-[#D4AF37]/5 transition-all">
-                        <i class="fa-solid fa-sync-alt text-xs"></i>
-                        <span class="tracking-wider">Sync Canon</span>
-                    </button>
+                    <div class="flex items-center gap-x-1.5">
+                        <button id="sync-canon-btn"
+                                onclick="fetchLatestFromCanon()"
+                                class="flex-1 flex items-center justify-center gap-x-1.5 px-3 py-1 text-xs text-[#D4AF37]/80 hover:text-[#D4AF37] rounded-xl border border-[#D4AF37]/30 hover:border-[#D4AF37]/50 hover:bg-[#D4AF37]/5 transition-all">
+                            <i class="fa-solid fa-sync-alt text-xs"></i>
+                            <span class="tracking-wider">Sync Canon</span>
+                        </button>
+                        <button onclick="openChangelog()" title="Changelog"
+                                class="h-[26px] w-[26px] flex-shrink-0 flex items-center justify-center rounded-xl border border-[#D4AF37]/30 hover:border-[#D4AF37]/50 hover:bg-[#D4AF37]/5 text-[#D4AF37]/80 hover:text-[#D4AF37] transition-all">
+                            <i class="fa-solid fa-clock-rotate-left text-xs"></i>
+                        </button>
+                    </div>
                     <div id="last-sync-time" class="text-[10px] text-[#D4AF37]/40 text-center mt-1"></div>
                 </div>
 
@@ -486,7 +679,9 @@
         </div>
 
                         <!-- CENTER -->
-        <div class="flex-1 flex flex-col min-w-0 px-4 overflow-hidden">
+        <div class="flex-1 flex flex-col min-w-0 overflow-hidden" style="margin-left: 126px; margin-right: 126px;">
+            <div id="center-scroll-area" class="flex-1 overflow-y-auto overflow-x-hidden">
+            <div id="center-content-frame" style="width: 100%;">
             
             <!-- HTML-driven Initial State: Placeholder -->
             <div id="no-scene-placeholder" class="flex flex-col items-center justify-center min-h-[420px] text-center px-8">
@@ -502,54 +697,115 @@
             
             <!-- Scene Content - Hidden until a scene is selected -->
             <div id="scene-content" class="hidden">
+
+                <!-- SCENE SUMMARY: full-width cap, pinned to the top while the rest scrolls -->
+                <div id="scene-summary-bar" class="guidance-summary mb-0 bg-[#4A3A2E] border border-[#D4AF37]/50 rounded-t-2xl p-4 sticky top-0 z-30 shadow-lg">
+                    <div class="flex gap-x-3">
+                        <div class="flex-shrink-0 pt-0.5">
+                            <i class="fa-solid fa-book-open text-[#D4AF37] text-lg"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="uppercase text-[10px] tracking-[1.5px] text-[#D4AF37]/70 mb-1">
+                                <span id="scene-summary-title"></span><span id="scene-summary-title-sep" class="hidden"> &mdash; </span>SCENE SUMMARY
+                            </div>
+                            <div id="guidance-summary-text" class="text-sm leading-relaxed text-[#F4EDE4]"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SCENE STATUS CONTROL BAR: sticky cap #2, stacks directly beneath the Scene Summary -->
+                <div id="scene-status-bar"
+                     class="mb-3 px-4 flex items-center justify-between sticky z-20"
+                     style="background-color: #1E6B5F; border-top: 5px solid rgba(212,175,55,0.7); border-bottom: 1px solid rgba(212,175,55,1); border-radius: 0 0 1rem 1rem; height: 48px;">
+                    <div id="scene-status-select" class="status-dropdown-wrapper control-bar-item" style="display:none;"></div>
+                    <div class="flex items-center gap-x-3">
+                        <div id="auto-save-status" class="control-bar-item text-[#F4EDE4]/80">Auto-saved just now</div>
+                        <button onclick="saveDraft()" class="control-bar-item bg-transparent border border-[#D4AF37]/60 hover:bg-[#D4AF37]/10 rounded-xl text-[#F4EDE4] transition-colors flex items-center gap-x-1.5">
+                            <i class="fa-solid fa-save"></i>
+                            <span>Save Draft</span>
+                        </button>
+                        <button onclick="openDraftPad()" class="control-bar-item bg-transparent border border-[#D4AF37]/60 hover:bg-[#D4AF37]/10 rounded-xl text-[#F4EDE4] transition-colors flex items-center gap-x-1.5">
+                            <i class="fa-solid fa-layer-group"></i>
+                            <span>Draft Log</span>
+                        </button>
+                        <button onclick="sendSceneToSammy()" class="control-bar-item bg-transparent border border-[#D4AF37]/60 hover:bg-[#D4AF37]/10 rounded-xl text-[#F4EDE4] transition-colors flex items-center gap-x-1.5">
+                            <i class="fa-solid fa-paper-plane"></i>
+                            <span>Sammy</span>
+                        </button>
+                    </div>
+                </div>
+
                 <div class="flex gap-3 px-1">
                     
                     <!-- LEFT 3 Guidance Boxes -->
                     <div class="w-60 flex-shrink-0 flex flex-col gap-2">
                         <!-- Purpose -->
-                        <div class="guidance-card flex-1 bg-[#3D2B1F] border border-[#D4AF37]/30 rounded-2xl p-3 text-xs overflow-auto">
-                            <div class="flex items-center gap-x-1.5 mb-1">
-                                <i class="fa-solid fa-bullseye text-[#D4AF37]"></i>
-                                <span class="font-medium text-[#D4AF37]">Purpose</span>
+                        <div id="guidance-card-purpose" class="guidance-card h-[160px] bg-[#3D2B1F] border border-[#D4AF37]/30 rounded-2xl p-3 text-xs overflow-y-auto">
+                            <div class="flex items-center justify-between mb-1">
+                                <div class="flex items-center gap-x-1.5">
+                                    <i class="fa-solid fa-bullseye text-[#D4AF37]"></i>
+                                    <span class="font-medium text-[#D4AF37]">Purpose</span>
+                                </div>
+                                <button onclick="floatGuidanceCard('purpose')" class="guidance-float-btn" title="Open in floating window">
+                                    <i class="fa-solid fa-expand"></i>
+                                </button>
                             </div>
                             <div id="guidance-purpose" class="text-[#E8D9C0] leading-snug"></div>
                         </div>
+                        <!-- Collapsed home-slot shown only while the card above is floating elsewhere -->
+                        <div id="guidance-home-purpose" class="guidance-home-slot hidden">
+                            <span>Purpose</span>
+                            <button onclick="snapGuidanceCardHome('purpose')" class="guidance-float-btn" title="Snap back">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            </button>
+                        </div>
 
                         <!-- Key Canon to Honor -->
-                        <div class="guidance-card flex-1 bg-[#3D2B1F] border border-[#D4AF37]/30 rounded-2xl p-3 text-xs overflow-auto">
-                            <div class="flex items-center gap-x-1.5 mb-1">
-                                <i class="fa-solid fa-gem text-[#D4AF37]"></i>
-                                <span class="font-medium text-[#D4AF37]">Key Canon to Honor</span>
+                        <div id="guidance-card-canon" class="guidance-card h-[160px] bg-[#3D2B1F] border border-[#D4AF37]/30 rounded-2xl p-3 text-xs overflow-y-auto">
+                            <div class="flex items-center justify-between mb-1">
+                                <div class="flex items-center gap-x-1.5">
+                                    <i class="fa-solid fa-gem text-[#D4AF37]"></i>
+                                    <span class="font-medium text-[#D4AF37]">Key Canon to Honor</span>
+                                </div>
+                                <button onclick="floatGuidanceCard('canon')" class="guidance-float-btn" title="Open in floating window">
+                                    <i class="fa-solid fa-expand"></i>
+                                </button>
                             </div>
                             <div id="guidance-canon" class="text-[#E8D9C0] leading-snug"></div>
                         </div>
+                        <div id="guidance-home-canon" class="guidance-home-slot hidden">
+                            <span>Key Canon to Honor</span>
+                            <button onclick="snapGuidanceCardHome('canon')" class="guidance-float-btn" title="Snap back">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            </button>
+                        </div>
 
                         <!-- Emotional State -->
-                        <div class="guidance-card flex-1 bg-[#3D2B1F] border border-[#D4AF37]/30 rounded-2xl p-3 text-xs overflow-auto">
-                            <div class="flex items-center gap-x-1.5 mb-1">
-                                <i class="fa-solid fa-heart-pulse text-[#D4AF37]"></i>
-                                <span class="font-medium text-[#D4AF37]">Emotional State</span>
+                        <div id="guidance-card-emotional" class="guidance-card h-[160px] bg-[#3D2B1F] border border-[#D4AF37]/30 rounded-2xl p-3 text-xs overflow-y-auto">
+                            <div class="flex items-center justify-between mb-1">
+                                <div class="flex items-center gap-x-1.5">
+                                    <i class="fa-solid fa-heart-pulse text-[#D4AF37]"></i>
+                                    <span class="font-medium text-[#D4AF37]">Emotional State</span>
+                                </div>
+                                <button onclick="floatGuidanceCard('emotional')" class="guidance-float-btn" title="Open in floating window">
+                                    <i class="fa-solid fa-expand"></i>
+                                </button>
                             </div>
                             <div id="guidance-emotional" class="text-[#E8D9C0] leading-snug"></div>
                         </div>
+                        <div id="guidance-home-emotional" class="guidance-home-slot hidden">
+                            <span>Emotional State</span>
+                            <button onclick="snapGuidanceCardHome('emotional')" class="guidance-float-btn" title="Snap back">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            </button>
+                        </div>
                     </div>
 
-                    <!-- CENTER: Scene Summary + Editor -->
-                    <div class="flex-1">
-                        <div class="guidance-summary mb-3 bg-[#4A3A2E] border border-[#D4AF37]/50 rounded-2xl p-4">
-                            <div class="flex gap-x-3">
-                                <div class="flex-shrink-0 pt-0.5">
-                                    <i class="fa-solid fa-book-open text-[#D4AF37] text-lg"></i>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <div class="uppercase text-[10px] tracking-[1.5px] text-[#D4AF37]/70 mb-1">Scene Summary</div>
-                                    <div id="guidance-summary-text" class="text-sm leading-relaxed text-[#F4EDE4]"></div>
-                                </div>
-                            </div>
-                        </div>
+                    <!-- CENTER: Editor (fixed total height to match the 3-card guidance columns: 496px) -->
+                    <div class="flex-1 flex flex-col h-[496px]">
 
                         <!-- Review Note - only visible when scene.status === 'review' -->
-                        <div id="review-note-box" class="hidden mb-3 bg-[#D4AF37]/15 border border-[#D4AF37] rounded-2xl p-4">
+                        <div id="review-note-box" class="hidden flex-shrink-0 mb-3 bg-[#D4AF37]/15 border border-[#D4AF37] rounded-2xl p-4">
                             <div class="flex gap-x-3">
                                 <div class="flex-shrink-0 pt-0.5">
                                     <i class="fa-solid fa-triangle-exclamation text-[#D4AF37] text-lg"></i>
@@ -561,13 +817,12 @@
                             </div>
                         </div>
 
-                        <div>
-                            <div class="flex items-center justify-between mb-1.5">
+                        <div class="flex flex-col flex-1 min-h-0">
+                            <div class="flex items-center justify-between mb-1.5 flex-shrink-0">
                                 <span id="scene-label" class="section-label text-[#D4AF37]">DRAFT</span>
-                                <select id="scene-status-select" class="scene-status-dropdown" style="display:none;"></select>
                             </div>
 
-                            <div class="flex items-center justify-between mb-2 border-b border-[#D4AF37]/20 pb-2">
+                            <div class="flex items-center justify-between mb-2 border-b border-[#D4AF37]/20 pb-2 flex-shrink-0">
                                 <div class="flex items-center gap-x-1">
                                     <button onclick="formatEditorText('bold')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 font-bold">B</button>
                                     <button onclick="formatEditorText('italic')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 italic">I</button>
@@ -581,50 +836,88 @@
                                     <div class="text-xs text-[#D4AF37]/70">
                                         <span id="word-count">0 words</span>
                                     </div>
-                                    <button onclick="saveDraft()" class="h-8 px-4 text-sm font-medium rounded-2xl border border-[#D4AF37]/50 hover:bg-[#D4AF37]/10 transition-colors flex items-center gap-x-2">
-                                        <i class="fa-solid fa-save"></i>
-                                        <span class="font-medium text-xs tracking-wider">SAVE DRAFT</span>
+                                    <button onclick="openProofreader()" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 flex items-center gap-x-1.5">
+                                        <i class="fa-solid fa-magnifying-glass"></i>
+                                        <span>Proofreader</span>
                                     </button>
+                                    <div class="flex items-center gap-x-1 border border-[#D4AF37]/40 rounded-xl px-1.5 py-0.5" title="Display size only — does not affect saved draft">
+                                        <button onclick="adjustEditorZoom(-1)" class="text-tool-btn px-1.5 leading-none">−</button>
+                                        <span id="editor-zoom-label" class="text-[10px] text-[#D4AF37]/70 w-8 text-center select-none">100%</span>
+                                        <button onclick="adjustEditorZoom(1)" class="text-tool-btn px-1.5 leading-none">+</button>
+                                    </div>
                                 </div>
                             </div>
 
                             <div id="editor" contenteditable="true" spellcheck="true"
-                                 class="min-h-[340px] bg-[#3D2B1F] border border-[#D4AF37]/40 rounded-3xl p-6 text-base leading-relaxed focus:outline-none focus:border-[#D4AF37] prose prose-invert max-w-none overflow-auto"
+                                 class="flex-1 min-h-0 bg-[#3D2B1F] border border-[#D4AF37]/40 rounded-3xl p-6 text-sm leading-relaxed focus:outline-none focus:border-[#D4AF37] prose prose-invert max-w-none overflow-auto"
                                  style="white-space: pre-wrap; resize: none;">
-                            </div>
-                            
-                            <div class="mt-3 text-xs text-[#D4AF37]/60 flex items-center justify-between">
-                                <div id="auto-save-status">Auto-saved just now</div>
                             </div>
                         </div>
                     </div>
 
                     <!-- RIGHT 3 Guidance Boxes -->
                     <div class="w-60 flex-shrink-0 flex flex-col gap-2">
-                        <div class="guidance-card flex-1 bg-[#3D2B1F] border border-[#D4AF37]/30 rounded-2xl p-3 text-xs overflow-auto">
-                            <div class="flex items-center gap-x-1.5 mb-1">
-                                <i class="fa-solid fa-list-check text-[#D4AF37]"></i>
-                                <span class="font-medium text-[#D4AF37]">Must-Happen Beats</span>
+                        <div id="guidance-card-beats" class="guidance-card h-[160px] bg-[#3D2B1F] border border-[#D4AF37]/30 rounded-2xl p-3 text-xs overflow-y-auto">
+                            <div class="flex items-center justify-between mb-1">
+                                <div class="flex items-center gap-x-1.5">
+                                    <i class="fa-solid fa-list-check text-[#D4AF37]"></i>
+                                    <span class="font-medium text-[#D4AF37]">Must-Happen Beats</span>
+                                </div>
+                                <button onclick="floatGuidanceCard('beats')" class="guidance-float-btn" title="Open in floating window">
+                                    <i class="fa-solid fa-expand"></i>
+                                </button>
                             </div>
                             <div id="guidance-beats" class="text-[#E8D9C0] leading-snug"></div>
                         </div>
-                        <div class="guidance-card flex-1 bg-[#3D2B1F] border border-[#D4AF37]/30 rounded-2xl p-3 text-xs overflow-auto">
-                            <div class="flex items-center gap-x-1.5 mb-1">
-                                <i class="fa-solid fa-mountain-sun text-[#D4AF37]"></i>
-                                <span class="font-medium text-[#D4AF37]">Setting &amp; Tone</span>
+                        <div id="guidance-home-beats" class="guidance-home-slot hidden">
+                            <span>Must-Happen Beats</span>
+                            <button onclick="snapGuidanceCardHome('beats')" class="guidance-float-btn" title="Snap back">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            </button>
+                        </div>
+
+                        <div id="guidance-card-setting" class="guidance-card h-[160px] bg-[#3D2B1F] border border-[#D4AF37]/30 rounded-2xl p-3 text-xs overflow-y-auto">
+                            <div class="flex items-center justify-between mb-1">
+                                <div class="flex items-center gap-x-1.5">
+                                    <i class="fa-solid fa-mountain-sun text-[#D4AF37]"></i>
+                                    <span class="font-medium text-[#D4AF37]">Setting &amp; Tone</span>
+                                </div>
+                                <button onclick="floatGuidanceCard('setting')" class="guidance-float-btn" title="Open in floating window">
+                                    <i class="fa-solid fa-expand"></i>
+                                </button>
                             </div>
                             <div id="guidance-setting" class="text-[#E8D9C0] leading-snug"></div>
                         </div>
-                        <div class="guidance-card flex-1 bg-[#3D2B1F] border border-[#D4AF37]/30 rounded-2xl p-3 text-xs overflow-auto">
-                            <div class="flex items-center gap-x-1.5 mb-1">
-                                <i class="fa-solid fa-trophy text-[#D4AF37]"></i>
-                                <span class="font-medium text-[#D4AF37]">Success for This Scene</span>
+                        <div id="guidance-home-setting" class="guidance-home-slot hidden">
+                            <span>Setting &amp; Tone</span>
+                            <button onclick="snapGuidanceCardHome('setting')" class="guidance-float-btn" title="Snap back">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            </button>
+                        </div>
+
+                        <div id="guidance-card-success" class="guidance-card h-[160px] bg-[#3D2B1F] border border-[#D4AF37]/30 rounded-2xl p-3 text-xs overflow-y-auto">
+                            <div class="flex items-center justify-between mb-1">
+                                <div class="flex items-center gap-x-1.5">
+                                    <i class="fa-solid fa-trophy text-[#D4AF37]"></i>
+                                    <span class="font-medium text-[#D4AF37]">Success for This Scene</span>
+                                </div>
+                                <button onclick="floatGuidanceCard('success')" class="guidance-float-btn" title="Open in floating window">
+                                    <i class="fa-solid fa-expand"></i>
+                                </button>
                             </div>
                             <div id="guidance-success" class="text-[#E8D9C0] leading-snug"></div>
+                        </div>
+                        <div id="guidance-home-success" class="guidance-home-slot hidden">
+                            <span>Success for This Scene</span>
+                            <button onclick="snapGuidanceCardHome('success')" class="guidance-float-btn" title="Snap back">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                            </button>
                         </div>
                     </div>
 
                 </div>
+            </div>
+            </div>
             </div>
         </div>
 
@@ -651,7 +944,13 @@
 
                 <div class="flex items-center justify-between px-1 mb-1">
                     <span class="section-label text-[#D4AF37]">STORY LIBRARY</span>
-                    <span class="text-[10px] px-2 py-0.5 bg-[#D4AF37]/10 text-[#D4AF37] rounded-full">42 entries</span>
+                    <div class="flex items-center gap-x-1.5">
+                        <span class="text-[10px] px-2 py-0.5 bg-[#D4AF37]/10 text-[#D4AF37] rounded-full">42 entries</span>
+                        <button onclick="openChangelog()" title="Changelog"
+                                class="h-[22px] w-[22px] flex-shrink-0 flex items-center justify-center rounded-lg border border-[#D4AF37]/30 hover:border-[#D4AF37]/50 hover:bg-[#D4AF37]/5 text-[#D4AF37]/80 hover:text-[#D4AF37] transition-all">
+                            <i class="fa-solid fa-clock-rotate-left text-[10px]"></i>
+                        </button>
+                    </div>
                 </div>
                 <div id="library-last-sync-time" class="text-[10px] text-[#D4AF37]/40 px-1 mb-3">Not yet synced this session</div>
 
@@ -669,6 +968,77 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- Floating Guidance Card Windows -->
+    <!-- Each shell starts empty; floatGuidanceCard() moves the actual card's
+         content into the matching -body div, and snapGuidanceCardHome()
+         moves it back. No content is ever duplicated - there's exactly one
+         copy of each guidance card's data at all times. -->
+    <div id="guidance-float-purpose" class="guidance-float-window hidden" style="left: 600px; top: 100px; width: 280px; height: 200px;">
+        <div class="guidance-float-header" data-drag-handle>
+            <span>Purpose</span>
+            <button onclick="snapGuidanceCardHome('purpose')" class="guidance-float-btn" title="Snap back">
+                <i class="fa-solid fa-down-left-and-up-right-to-center"></i>
+            </button>
+        </div>
+        <div class="guidance-float-body" data-float-body></div>
+        <div class="guidance-float-resize-handle" data-resize-handle></div>
+    </div>
+
+    <div id="guidance-float-canon" class="guidance-float-window hidden" style="left: 630px; top: 130px; width: 280px; height: 200px;">
+        <div class="guidance-float-header" data-drag-handle>
+            <span>Key Canon to Honor</span>
+            <button onclick="snapGuidanceCardHome('canon')" class="guidance-float-btn" title="Snap back">
+                <i class="fa-solid fa-down-left-and-up-right-to-center"></i>
+            </button>
+        </div>
+        <div class="guidance-float-body" data-float-body></div>
+        <div class="guidance-float-resize-handle" data-resize-handle></div>
+    </div>
+
+    <div id="guidance-float-emotional" class="guidance-float-window hidden" style="left: 660px; top: 160px; width: 280px; height: 200px;">
+        <div class="guidance-float-header" data-drag-handle>
+            <span>Emotional State</span>
+            <button onclick="snapGuidanceCardHome('emotional')" class="guidance-float-btn" title="Snap back">
+                <i class="fa-solid fa-down-left-and-up-right-to-center"></i>
+            </button>
+        </div>
+        <div class="guidance-float-body" data-float-body></div>
+        <div class="guidance-float-resize-handle" data-resize-handle></div>
+    </div>
+
+    <div id="guidance-float-beats" class="guidance-float-window hidden" style="left: 690px; top: 190px; width: 280px; height: 200px;">
+        <div class="guidance-float-header" data-drag-handle>
+            <span>Must-Happen Beats</span>
+            <button onclick="snapGuidanceCardHome('beats')" class="guidance-float-btn" title="Snap back">
+                <i class="fa-solid fa-down-left-and-up-right-to-center"></i>
+            </button>
+        </div>
+        <div class="guidance-float-body" data-float-body></div>
+        <div class="guidance-float-resize-handle" data-resize-handle></div>
+    </div>
+
+    <div id="guidance-float-setting" class="guidance-float-window hidden" style="left: 720px; top: 220px; width: 280px; height: 200px;">
+        <div class="guidance-float-header" data-drag-handle>
+            <span>Setting &amp; Tone</span>
+            <button onclick="snapGuidanceCardHome('setting')" class="guidance-float-btn" title="Snap back">
+                <i class="fa-solid fa-down-left-and-up-right-to-center"></i>
+            </button>
+        </div>
+        <div class="guidance-float-body" data-float-body></div>
+        <div class="guidance-float-resize-handle" data-resize-handle></div>
+    </div>
+
+    <div id="guidance-float-success" class="guidance-float-window hidden" style="left: 750px; top: 250px; width: 280px; height: 200px;">
+        <div class="guidance-float-header" data-drag-handle>
+            <span>Success for This Scene</span>
+            <button onclick="snapGuidanceCardHome('success')" class="guidance-float-btn" title="Snap back">
+                <i class="fa-solid fa-down-left-and-up-right-to-center"></i>
+            </button>
+        </div>
+        <div class="guidance-float-body" data-float-body></div>
+        <div class="guidance-float-resize-handle" data-resize-handle></div>
     </div>
 
     <!-- Floating Notepad -->
@@ -886,6 +1256,92 @@
         <div id="changelog-resize-handle" class="notepad-resize-handle"></div>
     </div>
 
+    <!-- Proofreader Window -->
+    <div id="proofreader-window" class="notepad hidden" style="left: 580px; top: 80px; width: 520px; height: 460px;">
+
+        <div class="notepad-header" id="proofreader-header">
+            <div class="flex items-center gap-x-2">
+                <i class="fa-solid fa-magnifying-glass text-[#D4AF37]"></i>
+                <h3>Proofreader</h3>
+            </div>
+            <button onclick="hideProofreader()" class="notepad-close">
+                <i class="fa-solid fa-times"></i>
+            </button>
+        </div>
+
+        <div class="flex items-center justify-between px-3 pt-3 pb-2 border-b border-[#D4AF37]/20">
+            <div class="text-xs text-[#D4AF37]/70">Quick automated pass for spelling, grammar, and tense.</div>
+            <button onclick="runProofreaderCheck()" id="proofreader-check-btn"
+                    class="h-7 px-3 text-xs font-medium rounded-xl border border-[#D4AF37]/50 hover:bg-[#D4AF37]/10 transition-colors whitespace-nowrap">
+                <i class="fa-solid fa-magnifying-glass mr-1"></i> Check Draft
+            </button>
+        </div>
+
+        <div id="proofreader-apply-all-row" class="hidden px-3 pt-2">
+            <button onclick="applyAllProofreaderSuggestions()"
+                    class="w-full h-7 text-xs font-semibold rounded-xl bg-[#D4AF37] text-[#3D2B1F] hover:brightness-110 transition-all">
+                <i class="fa-solid fa-check-double mr-1"></i> Apply All Suggestions
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-3">
+            <div id="proofreader-idle-state" class="text-center text-[#D4AF37]/40 italic mt-10 text-sm">
+                Click "Check Draft" to scan the current scene for spelling, grammar, and tense issues.
+            </div>
+            <div id="proofreader-loading-state" class="hidden text-center text-[#D4AF37]/60 mt-10 text-sm">
+                <i class="fa-solid fa-spinner fa-spin mr-2"></i> Checking your draft...
+            </div>
+            <div id="proofreader-error-state" class="hidden text-center mt-10 text-sm px-6">
+                <i class="fa-solid fa-cloud-slash text-[#D4AF37]/50 text-2xl mb-2 block"></i>
+                <div class="text-[#D4AF37]/80">Proofreader is unavailable right now.</div>
+                <div class="text-[#D4AF37]/50 text-xs mt-1">Check your internet connection and try again - your writing is safe either way.</div>
+            </div>
+            <div id="proofreader-empty-state" class="hidden text-center text-[#D4AF37]/50 mt-10 text-sm">
+                <i class="fa-solid fa-circle-check text-[#A3E6C9] text-2xl mb-2 block"></i>
+                Nothing flagged - this scene reads clean!
+            </div>
+            <div id="proofreader-issues-list" class="space-y-2"></div>
+        </div>
+
+        <div id="proofreader-resize-handle" class="notepad-resize-handle"></div>
+    </div>
+
+    <!-- Send to Sammy Export Window -->
+    <div id="sammy-export-window" class="notepad hidden" style="left: 580px; top: 80px; width: 520px; height: 480px;">
+
+        <div class="notepad-header" id="sammy-export-header">
+            <div class="flex items-center gap-x-2">
+                <i class="fa-solid fa-paper-plane text-[#D4AF37]"></i>
+                <h3>Send to Sammy</h3>
+            </div>
+            <button onclick="hideSammyExport()" class="notepad-close">
+                <i class="fa-solid fa-times"></i>
+            </button>
+        </div>
+
+        <div class="px-3 pt-3 pb-2 border-b border-[#D4AF37]/20">
+            <div class="text-xs text-[#D4AF37]/70">
+                Copy this into a Sammy conversation for a contextual editorial pass.
+                Nothing is sent automatically - this tool only prepares the text.
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-3">
+            <textarea id="sammy-export-text" readonly
+                      class="w-full h-full bg-[#3D2B1F] border border-[#D4AF37]/40 rounded-2xl p-4 text-sm leading-relaxed resize-none focus:outline-none focus:border-[#D4AF37]"
+                      style="white-space: pre-wrap;"></textarea>
+        </div>
+
+        <div class="px-3 pb-3">
+            <button onclick="copySammyExportText()" id="sammy-export-copy-btn"
+                    class="w-full h-9 text-sm font-semibold rounded-xl bg-[#D4AF37] text-[#3D2B1F] hover:brightness-110 transition-all">
+                <i class="fa-solid fa-copy mr-1"></i> Copy All
+            </button>
+        </div>
+
+        <div id="sammy-export-resize-handle" class="notepad-resize-handle"></div>
+    </div>
+
     <script>
         // ==================== PANEL + BUTTON VISIBILITY ====================
         function hideSideButton(id) {
@@ -962,6 +1418,10 @@
             if (notepad && notepad.style.display !== 'none') {
                 hideNotepad();
             }
+
+            // Floating guidance cards are a temporary peek, not a layout
+            // choice - Focus mode snaps them all home.
+            resetAllFloatingGuidanceCards();
         }
 
         // ==================== OUTLINE ====================
@@ -1190,12 +1650,20 @@
             section.className = `library-category border border-[#D4AF37]/30 rounded-2xl overflow-hidden mb-1`;
             section.dataset.category = categoryName;
 
+            // Collect which entries in this category are currently flagged for
+            // review by Sammy, so the category header can show a marker without
+            // requiring the user to expand it first to notice anything changed.
+            const flaggedEntries = (entries || []).filter(e => e.status === 'review' && !!e.needsReviewReason);
+            const categoryMarker = flaggedEntries.length > 0
+                ? `<span class="text-[#D4AF37]" title="Updated: ${flaggedEntries.map(e => e.title).join(', ').replace(/"/g, '&quot;')}">!</span> `
+                : '';
+
             const header = document.createElement('button');
             header.className = `w-full flex justify-between items-center px-4 py-2 bg-[#4A3A2E] hover:bg-[#3D2B1F] text-left`;
             header.innerHTML = `
                 <span class="font-semibold flex items-center gap-x-2">
                     <i class="fa-solid ${isCustom ? 'fa-user-edit' : 'fa-book'}"></i> 
-                    ${categoryName}
+                    ${categoryMarker}${categoryName}
                 </span>
                 <i class="chevron fa-solid fa-chevron-down"></i>
             `;
@@ -1232,10 +1700,19 @@
             div.dataset.title = entry.title.toLowerCase();
             div.dataset.content = (entry.content || '').toLowerCase();
 
+            // Mark entries Sammy has currently flagged for review - same signal
+            // driving the Library changelog, so this matches what's actually
+            // "new/changed and not yet looked at" rather than every entry that
+            // happened to be present in the last sync.
+            const isFlagged = entry.status === 'review' && !!entry.needsReviewReason;
+            const titleDisplay = isFlagged
+                ? `<span class="text-[#D4AF37]" title="${(entry.needsReviewReason || '').replace(/"/g, '&quot;')}">!</span> ${entry.title}`
+                : entry.title;
+
             let html = `
                 <div class="flex justify-between items-start gap-2">
                     <div class="flex-1 min-w-0">
-                        <div class="font-medium">${entry.title}</div>
+                        <div class="font-medium">${titleDisplay}</div>
                         ${entry.content ? `<div class="text-[#E8D9C0] mt-0.5 text-xs break-words">${entry.content}</div>` : ''}
                     </div>
             `;
@@ -1718,6 +2195,7 @@
 
         function openNotepad() {
             const notepad = document.getElementById('notepad-window');
+            notepad.classList.remove('hidden');
             notepad.style.display = 'flex';
             notepad.classList.add('active');
 
@@ -1954,6 +2432,7 @@
                 return;
             }
             const draftpad = document.getElementById('draftpad-window');
+            draftpad.classList.remove('hidden');
             draftpad.style.display = 'flex';
             draftpad.classList.add('active');
 
@@ -2164,6 +2643,7 @@
 
         function openChangelog() {
             const win = document.getElementById('changelog-window');
+            win.classList.remove('hidden');
             win.style.display = 'flex';
             win.classList.add('active');
             restoreChangelogState();
@@ -2301,6 +2781,43 @@
         }
 
         /**
+         * Display-only zoom for the main editor. Adjusts a CSS font-size
+         * multiplier applied via inline style on #editor — never touches
+         * editor.innerHTML, so saveDraft() / exports are completely
+         * unaffected by this. Purely a reading/writing comfort preference.
+         */
+        let editorZoomPercent = 100;
+        function adjustEditorZoom(direction) {
+            const step = 10;
+            const min = 70;
+            const max = 160;
+            editorZoomPercent = Math.min(max, Math.max(min, editorZoomPercent + direction * step));
+
+            const editor = document.getElementById('editor');
+            const label = document.getElementById('editor-zoom-label');
+            if (editor) editor.style.fontSize = (editorZoomPercent / 100 * 0.875) + 'rem'; // base text-sm (0.875rem) * zoom
+            if (label) label.textContent = editorZoomPercent + '%';
+        }
+
+        /**
+         * Keeps the Scene Status Control Bar's sticky offset in sync with
+         * the Scene Summary bar's actual rendered height, so the two bars
+         * stack cleanly underneath each other regardless of how many lines
+         * the summary text wraps to for a given scene.
+         */
+        function syncControlBarStickyOffset() {
+            const summaryBar = document.getElementById('scene-summary-bar');
+            const statusBar = document.getElementById('scene-status-bar');
+            if (!summaryBar || !statusBar) return;
+            // getBoundingClientRect preserves fractional pixels; offsetHeight
+            // rounds to the nearest integer, which was leaving a hairline
+            // (sub-1px) gap whenever the summary's true height landed on a
+            // half-pixel (e.g. 98.5px reported as 99 by offsetHeight).
+            statusBar.style.top = summaryBar.getBoundingClientRect().height + 'px';
+        }
+        window.addEventListener('resize', syncControlBarStickyOffset);
+
+        /**
          * Loads the correct scene's current draft into the main editor.
          * Called whenever a scene is selected, so each scene shows its own
          * text rather than one shared global draft.
@@ -2322,6 +2839,522 @@
             const w = text.trim().split(/\s+/).filter(Boolean).length;
             wc.textContent = `${w} words`;
         }
+
+        // ==================== PROOFREADER ====================
+        // A quick, mechanical pass for spelling/grammar/tense patterns, using
+        // the free public LanguageTool API (https://languagetool.org). This
+        // requires internet access for each check - if it's unavailable for
+        // any reason (no connection, rate limit, CORS, API downtime), it
+        // shows a calm "unavailable" message rather than failing silently or
+        // breaking anything else in the tool. The draft itself is never at
+        // risk either way - this tool only reads the editor's text; "Apply"
+        // and "Apply All" are the only actions that ever write back, and
+        // only for spans the user has seen and approved by clicking.
+        //
+        // Deliberately NOT called a "Coach": real-world testing (2026-06-22)
+        // showed the free LanguageTool tier's detection quality is
+        // materially weaker than its own website demo - it missed clear
+        // subject-verb/tense errors that the website caught. "Proofreader"
+        // is an honest description of what this mechanical pass can
+        // actually deliver; it is not a substitute for Sammy's contextual
+        // review (see sendSceneToSammy) or a full editorial pass.
+        const LANGUAGETOOL_API_URL = 'https://api.languagetool.org/v2/check';
+        const PROOFREADER_STATE_KEY = 'proofreader-window-state';
+        let lastProofreaderIssues = [];
+        let lastProofreaderCheckedText = ''; // exact plain text the current issues' offsets are valid against
+
+        function openProofreader() {
+            const win = document.getElementById('proofreader-window');
+            win.classList.remove('hidden');
+            win.style.display = 'flex';
+            win.classList.add('active');
+            restoreProofreaderState();
+        }
+
+        function hideProofreader() {
+            const win = document.getElementById('proofreader-window');
+            saveProofreaderState();
+            win.style.display = 'none';
+            win.classList.remove('active');
+        }
+
+        function setProofreaderState(state) {
+            // state: 'idle' | 'loading' | 'error' | 'empty' | 'results'
+            ['idle', 'loading', 'error', 'empty'].forEach(s => {
+                const el = document.getElementById(`proofreader-${s}-state`);
+                if (el) el.classList.toggle('hidden', s !== state);
+            });
+            if (state !== 'results') {
+                document.getElementById('proofreader-issues-list').innerHTML = '';
+            }
+            const applyAllRow = document.getElementById('proofreader-apply-all-row');
+            if (applyAllRow) {
+                applyAllRow.classList.toggle('hidden', state !== 'results');
+            }
+        }
+
+        /**
+         * Extracts plain, readable text from the editor's HTML content.
+         * LanguageTool needs plain text, not markup - this strips tags while
+         * preserving paragraph breaks so sentence boundaries stay sensible.
+         */
+        function getEditorPlainText() {
+            const editor = document.getElementById('editor');
+            if (!editor) return '';
+            const clone = editor.cloneNode(true);
+            // Convert block-level breaks to newlines before stripping tags,
+            // so LanguageTool sees paragraph boundaries rather than one
+            // run-on blob of text.
+            clone.querySelectorAll('div, p, br').forEach(el => {
+                el.insertAdjacentText('beforebegin', '\n');
+            });
+            return clone.textContent.trim();
+        }
+
+        async function runProofreaderCheck() {
+            const btn = document.getElementById('proofreader-check-btn');
+            const text = getEditorPlainText();
+            lastProofreaderCheckedText = text; // offsets returned by this check are only valid against this exact text
+
+            if (!text) {
+                setProofreaderState('empty');
+                document.getElementById('proofreader-empty-state').innerHTML =
+                    '<i class="fa-solid fa-pen text-[#D4AF37]/50 text-2xl mb-2 block"></i>Nothing written yet for this scene.';
+                return;
+            }
+
+            setProofreaderState('loading');
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(LANGUAGETOOL_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ text: text, language: 'en-US' })
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const data = await response.json();
+                lastProofreaderIssues = (data.matches || []).map(m => ({
+                    message: m.message,
+                    shortMessage: m.shortMessage || m.message,
+                    original: text.substring(m.offset, m.offset + m.length),
+                    suggestion: (m.replacements && m.replacements[0]) ? m.replacements[0].value : null,
+                    category: (m.rule && m.rule.category && m.rule.category.name) || 'Style',
+                    offset: m.offset,
+                    length: m.length
+                }));
+
+                if (lastProofreaderIssues.length === 0) {
+                    setProofreaderState('empty');
+                    document.getElementById('proofreader-empty-state').innerHTML =
+                        '<i class="fa-solid fa-circle-check text-[#A3E6C9] text-2xl mb-2 block"></i>Nothing flagged - this scene reads clean!';
+                } else {
+                    renderProofreaderIssues();
+                }
+
+            } catch (err) {
+                console.warn('[Proofreader] Check failed (non-blocking):', err.message);
+                setProofreaderState('error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        function renderProofreaderIssues() {
+            setProofreaderState('results');
+            const list = document.getElementById('proofreader-issues-list');
+            list.innerHTML = '';
+
+            lastProofreaderIssues.forEach((issue, idx) => {
+                const card = document.createElement('div');
+                card.className = 'bg-[#4A3A2E] border border-[#D4AF37]/30 rounded-xl p-3 text-sm';
+
+                const suggestionHtml = issue.suggestion
+                    ? `<div class="mt-2 flex items-center gap-x-2">
+                           <span class="text-[#A3E6C9] text-xs">Suggested: "${issue.suggestion}"</span>
+                           <button onclick="applyProofreaderSuggestion(${idx})"
+                                   class="text-[10px] px-2 py-0.5 bg-[#D4AF37] text-[#3D2B1F] rounded-full font-semibold hover:brightness-110">
+                               Apply
+                           </button>
+                       </div>`
+                    : '';
+
+                card.innerHTML = `
+                    <div class="text-[10px] uppercase tracking-wide text-[#D4AF37]/60 mb-1">${issue.category}</div>
+                    <div class="text-[#F4EDE4]">"${issue.original}"</div>
+                    <div class="text-[#D4AF37]/70 text-xs mt-1">${issue.shortMessage}</div>
+                    ${suggestionHtml}
+                `;
+                list.appendChild(card);
+            });
+
+            // Apply All only makes sense if at least one issue actually has a suggestion to apply.
+            const applyAllRow = document.getElementById('proofreader-apply-all-row');
+            const hasAnySuggestion = lastProofreaderIssues.some(i => !!i.suggestion);
+            if (applyAllRow) applyAllRow.classList.toggle('hidden', !hasAnySuggestion);
+        }
+
+        /**
+         * Shared safety check: confirms the editor's current plain text still
+         * exactly matches the snapshot the active issues' offsets were
+         * computed against. If the user typed anything since the check ran,
+         * every offset is potentially unreliable - refuse rather than risk
+         * applying a fix to the wrong place.
+         */
+        function proofreaderTextIsStillFresh() {
+            return getEditorPlainText() === lastProofreaderCheckedText;
+        }
+
+        function writeProofreaderResultToEditor(updatedPlainText) {
+            const editor = document.getElementById('editor');
+            // Plain text only supports simple line breaks, not rich formatting -
+            // converting newlines back to <br> is sufficient since grammar
+            // fixes don't need to preserve bold/italic spans through this path.
+            editor.innerHTML = updatedPlainText
+                .split('\n')
+                .map(line => line || '<br>')
+                .join('<br>');
+
+            if (currentScene) {
+                localStorage.setItem(currentDraftStorageKey(currentScene.id), editor.innerHTML);
+            }
+            updateWordCount();
+            refreshDraftPadIfOpen();
+        }
+
+        /**
+         * Applies a single suggested fix directly to the live editor, using
+         * the exact offset/length from LanguageTool so it targets the
+         * precise flagged instance - not just any text that happens to match
+         * the same phrase elsewhere in the scene.
+         */
+        function applyProofreaderSuggestion(idx) {
+            const issue = lastProofreaderIssues[idx];
+            if (!issue || !issue.suggestion) return;
+
+            const currentPlainText = getEditorPlainText();
+            const candidateAtOffset = lastProofreaderCheckedText.substring(issue.offset, issue.offset + issue.length);
+
+            if (!proofreaderTextIsStillFresh() || candidateAtOffset !== issue.original) {
+                alert('The draft has changed since this check ran, so this fix can\'t be safely applied automatically. Please re-run "Check Draft" to get fresh suggestions.');
+                return;
+            }
+
+            const before = currentPlainText.substring(0, issue.offset);
+            const after = currentPlainText.substring(issue.offset + issue.length);
+            writeProofreaderResultToEditor(before + issue.suggestion + after);
+
+            // The text has now changed, so every OTHER pending issue's offset
+            // is potentially stale too. Clear the list and prompt a fresh check
+            // rather than risk applying any of them against the wrong position.
+            lastProofreaderIssues = [];
+            lastProofreaderCheckedText = '';
+            const list = document.getElementById('proofreader-issues-list');
+            list.innerHTML = `
+                <div class="text-center text-[#D4AF37]/60 text-sm py-4">
+                    <i class="fa-solid fa-circle-check text-[#A3E6C9] mr-1"></i>
+                    Fix applied. Re-run "Check Draft" to see remaining issues with fresh positions.
+                </div>
+            `;
+            document.getElementById('proofreader-apply-all-row').classList.add('hidden');
+        }
+
+        /**
+         * Applies every suggested fix from the current check in one pass.
+         * Safe-by-construction: issues are applied in descending offset order
+         * (rightmost in the text first). Replacing text only ever shifts
+         * character positions AFTER the replaced span, never before it - so
+         * working right-to-left means every other pending issue's offset
+         * stays valid until it's its own turn, even though offsets were all
+         * computed against the original, unmodified text.
+         */
+        function applyAllProofreaderSuggestions() {
+            if (!proofreaderTextIsStillFresh()) {
+                alert('The draft has changed since this check ran, so these fixes can\'t be safely applied automatically. Please re-run "Check Draft" to get fresh suggestions.');
+                return;
+            }
+
+            const applicable = lastProofreaderIssues
+                .filter(issue => !!issue.suggestion)
+                .slice()
+                .sort((a, b) => b.offset - a.offset); // descending offset - rightmost first
+
+            if (applicable.length === 0) return;
+
+            let text = getEditorPlainText();
+            let appliedCount = 0;
+
+            applicable.forEach(issue => {
+                const candidateAtOffset = text.substring(issue.offset, issue.offset + issue.length);
+                // Each check re-verifies against the text as it stands AFTER
+                // prior (rightward) replacements - since we go right-to-left,
+                // this offset should still be exactly where it was originally.
+                if (candidateAtOffset !== issue.original) return; // skip silently if something doesn't line up
+
+                const before = text.substring(0, issue.offset);
+                const after = text.substring(issue.offset + issue.length);
+                text = before + issue.suggestion + after;
+                appliedCount++;
+            });
+
+            writeProofreaderResultToEditor(text);
+
+            lastProofreaderIssues = [];
+            lastProofreaderCheckedText = '';
+            const list = document.getElementById('proofreader-issues-list');
+            list.innerHTML = `
+                <div class="text-center text-[#D4AF37]/60 text-sm py-4">
+                    <i class="fa-solid fa-check-double text-[#A3E6C9] mr-1"></i>
+                    Applied ${appliedCount} fix${appliedCount === 1 ? '' : 'es'}. Re-run "Check Draft" to see anything remaining.
+                </div>
+            `;
+            document.getElementById('proofreader-apply-all-row').classList.add('hidden');
+        }
+
+        function makeProofreaderDraggable() {
+            const win = document.getElementById('proofreader-window');
+            const header = document.getElementById('proofreader-header');
+            let offsetX = 0, offsetY = 0, isDragging = false;
+
+            header.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                offsetX = e.clientX - win.offsetLeft;
+                offsetY = e.clientY - win.offsetTop;
+                document.body.style.userSelect = 'none';
+            });
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                win.style.left = (e.clientX - offsetX) + 'px';
+                win.style.top = (e.clientY - offsetY) + 'px';
+            });
+            document.addEventListener('mouseup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    document.body.style.userSelect = '';
+                    saveProofreaderState();
+                }
+            });
+        }
+
+        function makeProofreaderResizable() {
+            const win = document.getElementById('proofreader-window');
+            const handle = document.getElementById('proofreader-resize-handle');
+            let startX, startY, startWidth, startHeight;
+
+            handle.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                startX = e.clientX;
+                startY = e.clientY;
+                startWidth = parseInt(document.defaultView.getComputedStyle(win).width, 10);
+                startHeight = parseInt(document.defaultView.getComputedStyle(win).height, 10);
+                document.addEventListener('mousemove', resizeMove);
+                document.addEventListener('mouseup', resizeEnd, { once: true });
+            });
+
+            function resizeMove(e) {
+                win.style.width = Math.max(360, startWidth + (e.clientX - startX)) + 'px';
+                win.style.height = Math.max(300, startHeight + (e.clientY - startY)) + 'px';
+            }
+            function resizeEnd() {
+                document.removeEventListener('mousemove', resizeMove);
+                saveProofreaderState();
+            }
+        }
+
+        function saveProofreaderState() {
+            const win = document.getElementById('proofreader-window');
+            if (!win) return;
+            localStorage.setItem(PROOFREADER_STATE_KEY, JSON.stringify({
+                left: win.style.left, top: win.style.top,
+                width: win.style.width, height: win.style.height
+            }));
+        }
+
+        function restoreProofreaderState() {
+            const win = document.getElementById('proofreader-window');
+            if (!win) return;
+            try {
+                const state = JSON.parse(localStorage.getItem(PROOFREADER_STATE_KEY));
+                if (state) {
+                    if (state.left) win.style.left = state.left;
+                    if (state.top) win.style.top = state.top;
+                    if (state.width) win.style.width = state.width;
+                    if (state.height) win.style.height = state.height;
+                }
+            } catch {
+                win.style.left = '580px';
+                win.style.top = '80px';
+                win.style.width = '520px';
+                win.style.height = '460px';
+            }
+        }
+        // ==================== SEND TO SAMMY ====================
+        /**
+         * Opens a window showing instructions for Sammy plus the current
+         * scene's draft text, ready to copy as one block into a Sammy
+         * conversation. This is a convenience export only - it does NOT call
+         * any API or send anything automatically. The instructions are
+         * deliberately explicit about Draft Protection (Erica's writing is
+         * never overwritten or significantly changed without her explicit
+         * request - see Project_Governance_and_Protocols.md) so this can't
+         * accidentally be misread as "rewrite this for me."
+         */
+        function buildSammyExportText() {
+            const draftText = getEditorPlainText();
+            const summaryEl = document.getElementById('guidance-summary-text');
+            const sceneSummary = summaryEl ? summaryEl.textContent.trim() : '';
+
+            const instructions = [
+                'Hi Sammy - please give this scene a contextual editorial pass.',
+                '',
+                'What to look for:',
+                '- Does this scene stay consistent with current canon (characters, world rules, established facts)?',
+                '- Does anything here contradict something established elsewhere in the story?',
+                '- Flag (don\'t silently fix) anything that feels off in voice, pacing, or clarity for this character/moment.',
+                '',
+                'Important - Draft Protection:',
+                'This is Erica\'s own writing. Please do NOT rewrite, paraphrase, or restructure her',
+                'prose. Offer suggestions and explain your reasoning so she can decide what to change',
+                'herself - don\'t replace her voice with your own.',
+                '',
+                'If anything here implies a needed change to canon or the scene\'s guidance/prompt in',
+                'the webtool, say so explicitly rather than just noting it in passing - that kind of',
+                'change should go through the normal "Update webtool" process, not be assumed.'
+            ].join('\n');
+
+            const parts = [
+                instructions,
+                '',
+                '---',
+                '',
+                `Scene: ${currentScene.title || currentScene.id}`,
+                sceneSummary ? `Scene Summary (from the prompt): ${sceneSummary}` : null,
+                '',
+                'Draft:',
+                draftText || '(nothing written yet for this scene)'
+            ].filter(line => line !== null);
+
+            return parts.join('\n');
+        }
+
+        function sendSceneToSammy() {
+            if (!currentScene) {
+                alert('Select a scene first.');
+                return;
+            }
+
+            const textarea = document.getElementById('sammy-export-text');
+            textarea.value = buildSammyExportText();
+
+            const win = document.getElementById('sammy-export-window');
+            win.classList.remove('hidden');
+            win.style.display = 'flex';
+            win.classList.add('active');
+            restoreSammyExportState();
+        }
+
+        function hideSammyExport() {
+            const win = document.getElementById('sammy-export-window');
+            saveSammyExportState();
+            win.style.display = 'none';
+            win.classList.remove('active');
+        }
+
+        function copySammyExportText() {
+            const textarea = document.getElementById('sammy-export-text');
+            navigator.clipboard.writeText(textarea.value).then(() => {
+                const btn = document.getElementById('sammy-export-copy-btn');
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-check mr-1"></i> Copied!';
+                setTimeout(() => { btn.innerHTML = originalHtml; }, 1800);
+            }).catch(err => {
+                console.warn('[Send to Sammy] Clipboard write failed:', err.message);
+                alert('Could not copy to clipboard. You can still select all the text in the box above and copy it manually.');
+            });
+        }
+
+        const SAMMY_EXPORT_STATE_KEY = 'sammy-export-window-state';
+
+        function makeSammyExportDraggable() {
+            const win = document.getElementById('sammy-export-window');
+            const header = document.getElementById('sammy-export-header');
+            let offsetX = 0, offsetY = 0, isDragging = false;
+
+            header.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                offsetX = e.clientX - win.offsetLeft;
+                offsetY = e.clientY - win.offsetTop;
+                document.body.style.userSelect = 'none';
+            });
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                win.style.left = (e.clientX - offsetX) + 'px';
+                win.style.top = (e.clientY - offsetY) + 'px';
+            });
+            document.addEventListener('mouseup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    document.body.style.userSelect = '';
+                    saveSammyExportState();
+                }
+            });
+        }
+
+        function makeSammyExportResizable() {
+            const win = document.getElementById('sammy-export-window');
+            const handle = document.getElementById('sammy-export-resize-handle');
+            let startX, startY, startWidth, startHeight;
+
+            handle.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                startX = e.clientX;
+                startY = e.clientY;
+                startWidth = parseInt(document.defaultView.getComputedStyle(win).width, 10);
+                startHeight = parseInt(document.defaultView.getComputedStyle(win).height, 10);
+                document.addEventListener('mousemove', resizeMove);
+                document.addEventListener('mouseup', resizeEnd, { once: true });
+            });
+
+            function resizeMove(e) {
+                win.style.width = Math.max(360, startWidth + (e.clientX - startX)) + 'px';
+                win.style.height = Math.max(320, startHeight + (e.clientY - startY)) + 'px';
+            }
+            function resizeEnd() {
+                document.removeEventListener('mousemove', resizeMove);
+                saveSammyExportState();
+            }
+        }
+
+        function saveSammyExportState() {
+            const win = document.getElementById('sammy-export-window');
+            if (!win) return;
+            localStorage.setItem(SAMMY_EXPORT_STATE_KEY, JSON.stringify({
+                left: win.style.left, top: win.style.top,
+                width: win.style.width, height: win.style.height
+            }));
+        }
+
+        function restoreSammyExportState() {
+            const win = document.getElementById('sammy-export-window');
+            if (!win) return;
+            try {
+                const state = JSON.parse(localStorage.getItem(SAMMY_EXPORT_STATE_KEY));
+                if (state) {
+                    if (state.left) win.style.left = state.left;
+                    if (state.top) win.style.top = state.top;
+                    if (state.width) win.style.width = state.width;
+                    if (state.height) win.style.height = state.height;
+                }
+            } catch {
+                win.style.left = '580px';
+                win.style.top = '80px';
+                win.style.width = '520px';
+                win.style.height = '480px';
+            }
+        }
+
 
         // ==================== INITIALIZATION ====================
         function init() {
@@ -2355,6 +3388,18 @@
             // Changelog setup (single initialization)
             makeChangelogDraggable();
             makeChangelogResizable();
+
+            // Proofreader setup (single initialization)
+            makeProofreaderDraggable();
+            makeProofreaderResizable();
+
+            // Send to Sammy window setup (single initialization)
+            makeSammyExportDraggable();
+            makeSammyExportResizable();
+
+            // Floating guidance cards never persist across a reload/session -
+            // ensure a clean slate every time the tool initializes.
+            resetAllFloatingGuidanceCards();
 
             console.log('%c[Big Tiff StoryForge] Writing sanctuary ready.', 'color:#8B6F47');
         }
@@ -2437,6 +3482,12 @@
                 renderDynamicOutline();
                 showSyncSummaryReport(data, changeResult);
                 updateLastSyncDisplay();
+
+                // Floating guidance cards are a temporary peek at one scene's
+                // guidance - a fresh sync can change which scene is even
+                // selected/valid, so snap everything home rather than risk
+                // a floating card showing stale content.
+                resetAllFloatingGuidanceCards();
 
                 // Library sync rides along with the same "Update webtool" sync
                 // event, since Sammy's process bundles both files together
@@ -2732,56 +3783,78 @@
         // =====================================================
 
         /**
-         * Updates the status dropdown based on the current scene.
-         * - Review is a tool-only status: it only appears as an option when it is
-         *   the scene's current synced state. The user can never select "Review"
-         *   themselves; they can only move away from it to Unfinished or Complete.
-         * - Mirrors the outline's pill styling via the scene-status-dropdown +
-         *   scene-complete / scene-unfinished / scene-review classes.
+         * Builds the custom status dropdown widget: a button showing the
+         * current status (always on top), and a connected menu of ONLY the
+         * other valid statuses, sliding open directly beneath it. Replaces
+         * the old native <select>, which always showed the current value a
+         * second time inside its own open option list - that's standard
+         * native <select> behavior with no CSS workaround, not something
+         * fixable while keeping a real <select> element.
          */
         function updateStatusSelector(scene) {
-            const select = document.getElementById('scene-status-select');
-            if (!select || !scene) {
-                if (select) select.style.display = 'none';
+            const wrapper = document.getElementById('scene-status-select');
+            if (!wrapper || !scene) {
+                if (wrapper) wrapper.style.display = 'none';
                 return;
             }
 
-            select.style.display = 'block';
-            select.innerHTML = '';
+            // 'flex' (not UPDATES's original 'block') so this lines up with
+            // the rest of the Scene Status Control Bar's vertically-centered,
+            // flex-aligned items rather than overriding that layout.
+            wrapper.style.display = 'flex';
+            wrapper.classList.remove('open');
+            wrapper.innerHTML = '';
 
             const currentStatus = scene.status || 'unfinished';
+            const pillClass = currentStatus === 'complete' ? 'status-pill-complete' :
+                               currentStatus === 'review' ? 'status-pill-review' : 'status-pill-unfinished';
 
-            // Reset classes, then apply the one matching current status (mirrors outline pills)
-            select.classList.remove('scene-complete', 'scene-unfinished', 'scene-review');
-            select.classList.add(
-                currentStatus === 'complete' ? 'scene-complete' :
-                currentStatus === 'review' ? 'scene-review' : 'scene-unfinished'
+            // Same status-ordering rule as before: current status always first,
+            // and "Review" never appears as a pickable alternative unless it's
+            // already the current status (tool sets it, user only clears it).
+            const allStatuses = [
+                { value: 'unfinished', label: 'Unfinished', pillClass: 'status-pill-unfinished' },
+                { value: 'complete', label: 'Complete', pillClass: 'status-pill-complete' },
+                { value: 'review', label: 'Review', pillClass: 'status-pill-review' }
+            ];
+            const otherEntries = allStatuses.filter(s =>
+                s.value !== currentStatus && s.value !== 'review'
             );
 
-            if (currentStatus === 'review') {
-                // Review is shown as the current state, but is not a state the user can pick back into.
-                const optionReview = document.createElement('option');
-                optionReview.value = 'review';
-                optionReview.textContent = 'Review';
-                optionReview.selected = true;
-                select.appendChild(optionReview);
-            }
+            const currentLabel = allStatuses.find(s => s.value === currentStatus)?.label || 'Unfinished';
 
-            const optionUnfinished = document.createElement('option');
-            optionUnfinished.value = 'unfinished';
-            optionUnfinished.textContent = 'Unfinished';
-            if (currentStatus === 'unfinished') optionUnfinished.selected = true;
-            select.appendChild(optionUnfinished);
+            const trigger = document.createElement('button');
+            trigger.type = 'button';
+            trigger.className = `status-dropdown-trigger ${pillClass}`;
+            trigger.textContent = currentLabel;
+            trigger.onclick = (e) => {
+                e.stopPropagation();
+                wrapper.classList.toggle('open');
+            };
 
-            const optionComplete = document.createElement('option');
-            optionComplete.value = 'complete';
-            optionComplete.textContent = 'Complete';
-            if (currentStatus === 'complete') optionComplete.selected = true;
-            select.appendChild(optionComplete);
+            const menu = document.createElement('div');
+            menu.className = 'status-dropdown-menu';
 
-            // Remove old listener and add fresh one
-            select.onchange = () => handleStatusChange(select.value, scene);
+            otherEntries.forEach(entry => {
+                const optionEl = document.createElement('div');
+                optionEl.className = `status-dropdown-option ${entry.pillClass}`;
+                optionEl.textContent = entry.label;
+                optionEl.onclick = (e) => {
+                    e.stopPropagation();
+                    wrapper.classList.remove('open');
+                    handleStatusChange(entry.value, scene);
+                };
+                menu.appendChild(optionEl);
+            });
+
+            wrapper.appendChild(trigger);
+            wrapper.appendChild(menu);
         }
+
+        // Close any open status dropdown when clicking elsewhere on the page.
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.status-dropdown-wrapper.open').forEach(w => w.classList.remove('open'));
+        });
 
         /**
          * Handles when the user changes the status via the dropdown.
@@ -2842,6 +3915,20 @@
         }
 
         /**
+         * Scene titles from Sammy often include a descriptive suffix after an
+         * en-dash, e.g. "Morning Chores & The Wobbling Plate – First Odd
+         * Occurrence". The outline panel is meant to stay compact and scannable,
+         * so this strips everything from the en-dash onward, keeping just the
+         * short name. Other places that show the full title (Draft Pad header,
+         * scene label in the writing area, Changelog entries) intentionally
+         * keep the full descriptive title since more context helps there.
+         */
+        function shortenSceneTitleForOutline(title) {
+            if (!title) return title;
+            return title.split('–')[0].trim();
+        }
+
+        /**
          * Renders the full story outline dynamically from currentCanonData.
          * Groups scenes by Act → Chapter and applies status styling.
          * This replaces the old static HTML outline.
@@ -2852,6 +3939,24 @@
                 if (container) container.innerHTML = `<div class="px-3 py-2 text-xs text-[#D4AF37]/50">No canon data loaded yet. Click "Sync with Canon".</div>`;
                 return;
             }
+
+            // Capture which Acts/Chapters are currently expanded BEFORE wiping the
+            // container, so re-renders triggered by things like a status change
+            // don't silently collapse sections the user had open and was looking at.
+            const expandedActs = new Set();
+            const expandedChapters = new Set();
+            container.querySelectorAll('[data-act-key]').forEach(actDiv => {
+                const chaptersContainer = actDiv.querySelector('[data-chapters-container]');
+                if (chaptersContainer && !chaptersContainer.classList.contains('hidden')) {
+                    expandedActs.add(actDiv.dataset.actKey);
+                }
+                actDiv.querySelectorAll('[data-chapter-key]').forEach(chDiv => {
+                    const scenesList = chDiv.querySelector('[data-scenes-list]');
+                    if (scenesList && !scenesList.classList.contains('hidden')) {
+                        expandedChapters.add(chDiv.dataset.chapterKey);
+                    }
+                });
+            });
 
             const scenes = currentCanonData.scenes;
             container.innerHTML = '';
@@ -2877,6 +3982,7 @@
 
             sortedActs.forEach(actNum => {
                 const actDiv = document.createElement('div');
+                actDiv.dataset.actKey = actNum;
 
                 // Act header (collapsible)
                 const actHeader = document.createElement('div');
@@ -2889,8 +3995,15 @@
                     <i class="fa-solid fa-chevron-down text-xs act-chevron"></i>
                 `;
 
+                const actWasExpanded = expandedActs.has(actNum);
                 const chaptersContainer = document.createElement('div');
-                chaptersContainer.className = `pl-6 space-y-0.5 mt-0.5 hidden`;
+                chaptersContainer.dataset.chaptersContainer = 'true';
+                chaptersContainer.className = `pl-6 space-y-0.5 mt-0.5${actWasExpanded ? '' : ' hidden'}`;
+                if (actWasExpanded) {
+                    const chevron = actHeader.querySelector('.act-chevron');
+                    chevron.classList.remove('fa-chevron-down');
+                    chevron.classList.add('fa-chevron-up');
+                }
 
                 // Toggle chapters visibility
                 actHeader.onclick = () => {
@@ -2906,8 +4019,10 @@
 
                 sortedChapters.forEach(chNum => {
                     const chapterScenes = chapters[chNum];
+                    const chapterKey = `${actNum}:${chNum}`;
 
                     const chapterDiv = document.createElement('div');
+                    chapterDiv.dataset.chapterKey = chapterKey;
 
                     // Chapter header (collapsible)
                     const chHeader = document.createElement('div');
@@ -2917,8 +4032,15 @@
                         <i class="fa-solid fa-chevron-down text-xs ch-chevron"></i>
                     `;
 
+                    const chapterWasExpanded = expandedChapters.has(chapterKey);
                     const scenesList = document.createElement('div');
-                    scenesList.className = `pl-5 space-y-1 mt-1 text-xs hidden`;
+                    scenesList.dataset.scenesList = 'true';
+                    scenesList.className = `pl-5 space-y-1 mt-1 text-xs${chapterWasExpanded ? '' : ' hidden'}`;
+                    if (chapterWasExpanded) {
+                        const chevron = chHeader.querySelector('.ch-chevron');
+                        chevron.classList.remove('fa-chevron-down');
+                        chevron.classList.add('fa-chevron-up');
+                    }
 
                     chHeader.onclick = (e) => {
                         e.stopImmediatePropagation();
@@ -2933,7 +4055,7 @@
                         .sort((a, b) => (a.order || 0) - (b.order || 0))
                         .forEach(scene => {
                             const sceneEl = document.createElement('div');
-                            sceneEl.className = `flex justify-between px-2 py-1 hover:bg-[#4A3A2E] rounded-lg cursor-pointer`;
+                            sceneEl.className = `flex items-start justify-between gap-x-2 px-2 py-1 hover:bg-[#4A3A2E] rounded-lg cursor-pointer`;
 
                             const statusClass = scene.status === 'complete' ? 'scene-complete' :
                                                 scene.status === 'review'   ? 'scene-review' : 'scene-unfinished';
@@ -2941,8 +4063,8 @@
                                                 scene.status === 'review'   ? 'Review'   : 'Unfinished';
 
                             sceneEl.innerHTML = `
-                                <span>${scene.title}</span>
-                                <span class="scene-status ${statusClass}">${statusLabel}</span>
+                                <span class="flex-1 min-w-0 leading-tight">${shortenSceneTitleForOutline(scene.title)}</span>
+                                <span class="scene-status ${statusClass}" style="flex-shrink:0; align-self:flex-start;">${statusLabel}</span>
                             `;
 
                             // Future: clicking a scene will load it into the editor + prompt
@@ -2962,6 +4084,144 @@
                 actDiv.appendChild(chaptersContainer);
                 container.appendChild(actDiv);
             });
+        }
+
+        /**
+         * Guidance Card Floating Windows
+         * ---------------------------------------------------------------
+         * Each of the 6 guidance cards (#guidance-card-{key}) can "float"
+         * into its own small draggable/resizable window. There is exactly
+         * ONE copy of each card's content at all times - floating it MOVES
+         * the actual DOM node into the floating shell's body, and snapping
+         * it back MOVES it back to its home slot in the guidance column.
+         * Nothing is ever duplicated or kept in sync, by design.
+         *
+         * These floating states are explicitly temporary: per Aaron
+         * (2026-06-26), they auto-reset (snap everything home) on canon
+         * re-sync, on session/tool reload, and when Focus mode is used.
+         * No position/open-state is ever persisted to localStorage for
+         * this reason - unlike Notepad/DraftPad/Changelog, which do.
+         */
+        const GUIDANCE_CARD_KEYS = ['purpose', 'canon', 'emotional', 'beats', 'setting', 'success'];
+
+        // Tracks which drag/resize listeners have already been wired, so
+        // repeated floats of the same card don't stack duplicate listeners.
+        const guidanceFloatInitialized = new Set();
+
+        function floatGuidanceCard(key) {
+            const card = document.getElementById(`guidance-card-${key}`);
+            const homeSlot = document.getElementById(`guidance-home-${key}`);
+            const floatWindow = document.getElementById(`guidance-float-${key}`);
+            if (!card || !homeSlot || !floatWindow) return;
+
+            const body = floatWindow.querySelector('[data-float-body]');
+            body.appendChild(card); // moves the real node - nothing duplicated
+
+            // The card's own float button is redundant once it's already
+            // floating - the floating window's header provides the only
+            // (snap-back) icon at that point, per Aaron's clarification
+            // that the floating window should show exactly one icon.
+            const ownFloatBtn = card.querySelector('.guidance-float-btn');
+            if (ownFloatBtn) ownFloatBtn.classList.add('hidden');
+
+            homeSlot.classList.remove('hidden');
+            floatWindow.classList.remove('hidden');
+            floatWindow.style.display = 'flex';
+
+            if (!guidanceFloatInitialized.has(key)) {
+                makeGuidanceFloatDraggable(floatWindow);
+                makeGuidanceFloatResizable(floatWindow);
+                guidanceFloatInitialized.add(key);
+            }
+        }
+
+        function snapGuidanceCardHome(key) {
+            const card = document.getElementById(`guidance-card-${key}`);
+            const homeSlot = document.getElementById(`guidance-home-${key}`);
+            const floatWindow = document.getElementById(`guidance-float-${key}`);
+            if (!card || !homeSlot || !floatWindow) return;
+
+            // Restore the card's own float button now that it's back home
+            // and that icon is meaningful again.
+            const ownFloatBtn = card.querySelector('.guidance-float-btn');
+            if (ownFloatBtn) ownFloatBtn.classList.remove('hidden');
+
+            // Put the card back exactly where it came from: immediately
+            // before its home-slot placeholder sibling.
+            homeSlot.parentNode.insertBefore(card, homeSlot);
+
+            homeSlot.classList.add('hidden');
+            floatWindow.classList.add('hidden');
+            floatWindow.style.display = 'none';
+        }
+
+        /**
+         * Snaps every currently-floating guidance card back home at once.
+         * Called on canon re-sync, on init (tool/session reload), and from
+         * focusMode() - see call sites - since floating is meant to be a
+         * quick, temporary peek, never a persistent layout choice.
+         */
+        function resetAllFloatingGuidanceCards() {
+            GUIDANCE_CARD_KEYS.forEach(key => {
+                const floatWindow = document.getElementById(`guidance-float-${key}`);
+                if (floatWindow && !floatWindow.classList.contains('hidden')) {
+                    snapGuidanceCardHome(key);
+                }
+            });
+        }
+
+        function makeGuidanceFloatDraggable(floatWindow) {
+            const header = floatWindow.querySelector('[data-drag-handle]');
+            let offsetX = 0, offsetY = 0, isDragging = false;
+
+            header.addEventListener('mousedown', (e) => {
+                // Ignore drags started on the snap-back button itself.
+                if (e.target.closest('button')) return;
+                isDragging = true;
+                offsetX = e.clientX - floatWindow.offsetLeft;
+                offsetY = e.clientY - floatWindow.offsetTop;
+                document.body.style.userSelect = 'none';
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                floatWindow.style.left = (e.clientX - offsetX) + 'px';
+                floatWindow.style.top = (e.clientY - offsetY) + 'px';
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    document.body.style.userSelect = '';
+                }
+            });
+        }
+
+        function makeGuidanceFloatResizable(floatWindow) {
+            const handle = floatWindow.querySelector('[data-resize-handle]');
+            let startX, startY, startWidth, startHeight;
+
+            handle.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                startX = e.clientX;
+                startY = e.clientY;
+                startWidth = parseInt(document.defaultView.getComputedStyle(floatWindow).width, 10);
+                startHeight = parseInt(document.defaultView.getComputedStyle(floatWindow).height, 10);
+
+                document.addEventListener('mousemove', resizeMove);
+                document.addEventListener('mouseup', resizeEnd, { once: true });
+            });
+
+            function resizeMove(e) {
+                const newWidth = startWidth + (e.clientX - startX);
+                const newHeight = startHeight + (e.clientY - startY);
+                floatWindow.style.width = Math.max(220, newWidth) + 'px';
+                floatWindow.style.height = Math.max(140, newHeight) + 'px';
+            }
+
+            function resizeEnd() {
+                document.removeEventListener('mousemove', resizeMove);
+            }
         }
 
         function populateGuidance(scene) {
@@ -3023,11 +4283,24 @@
                 label.textContent = `DRAFT • ${scene.title || scene.id}`;
             }
 
+            const summaryTitle = document.getElementById('scene-summary-title');
+            const summaryTitleSep = document.getElementById('scene-summary-title-sep');
+            if (summaryTitle) {
+                summaryTitle.textContent = scene.title || scene.id || '';
+            }
+            if (summaryTitleSep) {
+                summaryTitleSep.classList.remove('hidden');
+            }
+
             populateGuidance(scene);
             updateStatusSelector(scene);
             updateReviewNoteBox(scene);
             loadCurrentDraftForScene(scene.id);
             if (typeof refreshDraftPadIfOpen === 'function') refreshDraftPadIfOpen();
+
+            // Recalculate after the DOM updates with this scene's (possibly
+            // multi-line) summary text, so the status bar sits flush beneath it.
+            requestAnimationFrame(syncControlBarStickyOffset);
 
             console.log("%c[Scene] Loaded into writing area with guidance:", "color:#8B6F47", scene.id, scene.title);
         }
