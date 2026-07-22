@@ -116,26 +116,36 @@
             background-position: right 8px center;
             background-size: 10px;
             background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2012%2012%27%3E%3Cpath%20fill%3D%27%23D4AF37%27%20d%3D%27M2%204l4%204%204-4z%27/%3E%3C/svg%3E");
+            transition: border-radius 0.15s ease;
         }
 
-        /* Pill shape stays unchanged when open — no morphing, no flattened
-           corners. The menu appears as a separate element below. */
+        /* When open, flatten the trigger's bottom corners so it visually
+           merges into the menu sliding down from beneath it. */
+        .status-dropdown-wrapper.open .status-dropdown-trigger {
+            border-radius: 12px 12px 0 0;
+            border-bottom-color: transparent;
+        }
 
         .status-dropdown-menu {
             position: absolute;
-            top: calc(100% + 3px);
+            top: 100%;
             left: 0;
             right: 0;
             z-index: 30;
             border: 1px solid #D4AF37;
-            border-radius: 12px;
+            border-top: none;
+            border-radius: 0 0 12px 12px;
             overflow: hidden;
             box-shadow: 0 6px 14px rgba(0,0,0,0.35);
-            display: none;
+            /* Slide-down open animation */
+            max-height: 0;
+            opacity: 0;
+            transition: max-height 0.18s ease, opacity 0.15s ease;
         }
 
         .status-dropdown-wrapper.open .status-dropdown-menu {
-            display: block;
+            max-height: 140px;
+            opacity: 1;
         }
 
         .status-dropdown-option {
@@ -259,14 +269,15 @@
             opacity: 0.85;
         }
 
-        /* Floating guidance window — just a pinstripe-bordered positioning
-           shell. The card inside it retains its own look exactly as it
-           appears at home, so there's no separate header or chrome. */
+        /* Lightweight floating window for an undocked guidance card -
+           deliberately thinner chrome than .notepad (no solid header bar,
+           tighter padding) since these are meant to feel like a quick,
+           temporary peek rather than a full tool window. */
         .guidance-float-window {
             position: fixed;
-            background: transparent;
+            background: #3D2B1F;
             border: 1px solid rgba(212,175,55,0.3);
-            border-radius: 16px;
+            border-radius: 14px;
             box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.5);
             display: flex;
             flex-direction: column;
@@ -276,17 +287,28 @@
             min-height: 140px;
         }
 
-        .guidance-float-body {
-            flex: 1;
-            overflow: visible;
+        .guidance-float-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 10px;
+            cursor: move;
+            user-select: none;
+            flex-shrink: 0;
+            border-bottom: 1px solid rgba(212,175,55,0.25);
         }
 
-        /* The card inside the float window fills the shell entirely —
-           its own border-radius, background, and padding create the
-           visual appearance, not the shell's. */
-        .guidance-float-window .guidance-card {
-            border-radius: 14px;
-            height: 100% !important;
+        .guidance-float-header span {
+            font-size: 12px;
+            font-weight: 600;
+            color: #D4AF37;
+        }
+
+        .guidance-float-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 10px;
+            font-size: 12px;
         }
 
         .guidance-float-resize-handle {
@@ -382,6 +404,15 @@
             min-width: 320px;
             min-height: 280px;
             transition: border-color 0.2s ease;
+        }
+
+        /* Explicit override so .notepad's own display:flex can never win a
+           cascade-order tie against Tailwind's .hidden utility — without this,
+           a closed floating panel can silently intercept clicks on whatever
+           sits behind it, causing what looks like an endless hang when clicking
+           buttons that happen to be underneath an invisible panel. */
+        .notepad.hidden {
+            display: none !important;
         }
 
         .notepad.active {
@@ -712,7 +743,7 @@
                     <div class="w-60 flex-shrink-0 flex flex-col gap-2">
                         <!-- Purpose -->
                         <div id="guidance-card-purpose" class="guidance-card h-[160px] bg-[#3D2B1F] border border-[#D4AF37]/30 rounded-2xl p-3 text-xs overflow-y-auto">
-                            <div class="flex items-center justify-between mb-1" data-drag-handle>
+                            <div class="flex items-center justify-between mb-1">
                                 <div class="flex items-center gap-x-1.5">
                                     <i class="fa-solid fa-bullseye text-[#D4AF37]"></i>
                                     <span class="font-medium text-[#D4AF37]">Purpose</span>
@@ -721,11 +752,8 @@
                                     <button onclick="toggleGuidanceCardMinimize('purpose')" class="guidance-float-btn" title="Minimize">
                                         <i id="guidance-minimize-icon-purpose" class="fa-solid fa-chevron-down"></i>
                                     </button>
-                                    <button onclick="floatGuidanceCard('purpose')" class="guidance-float-btn" title="Pop out">
-                                        <i class="fa-solid fa-up-right-from-square"></i>
-                                    </button>
-                                    <button onclick="snapGuidanceCardHome('purpose')" class="guidance-float-btn hidden" title="Snap back" data-snapback-btn>
-                                        <i class="fa-solid fa-down-left-and-up-right-to-center"></i>
+                                    <button onclick="floatGuidanceCard('purpose')" class="guidance-float-btn" title="Open in floating window">
+                                        <i class="fa-solid fa-expand"></i>
                                     </button>
                                 </div>
                             </div>
@@ -741,7 +769,7 @@
 
                         <!-- Key Canon to Honor -->
                         <div id="guidance-card-canon" class="guidance-card h-[160px] bg-[#3D2B1F] border border-[#D4AF37]/30 rounded-2xl p-3 text-xs overflow-y-auto">
-                            <div class="flex items-center justify-between mb-1" data-drag-handle>
+                            <div class="flex items-center justify-between mb-1">
                                 <div class="flex items-center gap-x-1.5">
                                     <i class="fa-solid fa-gem text-[#D4AF37]"></i>
                                     <span class="font-medium text-[#D4AF37]">Key Canon to Honor</span>
@@ -750,11 +778,8 @@
                                     <button onclick="toggleGuidanceCardMinimize('canon')" class="guidance-float-btn" title="Minimize">
                                         <i id="guidance-minimize-icon-canon" class="fa-solid fa-chevron-down"></i>
                                     </button>
-                                    <button onclick="floatGuidanceCard('canon')" class="guidance-float-btn" title="Pop out">
-                                        <i class="fa-solid fa-up-right-from-square"></i>
-                                    </button>
-                                    <button onclick="snapGuidanceCardHome('canon')" class="guidance-float-btn hidden" title="Snap back" data-snapback-btn>
-                                        <i class="fa-solid fa-down-left-and-up-right-to-center"></i>
+                                    <button onclick="floatGuidanceCard('canon')" class="guidance-float-btn" title="Open in floating window">
+                                        <i class="fa-solid fa-expand"></i>
                                     </button>
                                 </div>
                             </div>
@@ -769,7 +794,7 @@
 
                         <!-- Emotional State -->
                         <div id="guidance-card-emotional" class="guidance-card h-[160px] bg-[#3D2B1F] border border-[#D4AF37]/30 rounded-2xl p-3 text-xs overflow-y-auto">
-                            <div class="flex items-center justify-between mb-1" data-drag-handle>
+                            <div class="flex items-center justify-between mb-1">
                                 <div class="flex items-center gap-x-1.5">
                                     <i class="fa-solid fa-heart-pulse text-[#D4AF37]"></i>
                                     <span class="font-medium text-[#D4AF37]">Emotional State</span>
@@ -778,11 +803,8 @@
                                     <button onclick="toggleGuidanceCardMinimize('emotional')" class="guidance-float-btn" title="Minimize">
                                         <i id="guidance-minimize-icon-emotional" class="fa-solid fa-chevron-down"></i>
                                     </button>
-                                    <button onclick="floatGuidanceCard('emotional')" class="guidance-float-btn" title="Pop out">
-                                        <i class="fa-solid fa-up-right-from-square"></i>
-                                    </button>
-                                    <button onclick="snapGuidanceCardHome('emotional')" class="guidance-float-btn hidden" title="Snap back" data-snapback-btn>
-                                        <i class="fa-solid fa-down-left-and-up-right-to-center"></i>
+                                    <button onclick="floatGuidanceCard('emotional')" class="guidance-float-btn" title="Open in floating window">
+                                        <i class="fa-solid fa-expand"></i>
                                     </button>
                                 </div>
                             </div>
@@ -853,7 +875,7 @@
                     <!-- RIGHT 3 Guidance Boxes -->
                     <div class="w-60 flex-shrink-0 flex flex-col gap-2">
                         <div id="guidance-card-beats" class="guidance-card h-[160px] bg-[#3D2B1F] border border-[#D4AF37]/30 rounded-2xl p-3 text-xs overflow-y-auto">
-                            <div class="flex items-center justify-between mb-1" data-drag-handle>
+                            <div class="flex items-center justify-between mb-1">
                                 <div class="flex items-center gap-x-1.5">
                                     <i class="fa-solid fa-list-check text-[#D4AF37]"></i>
                                     <span class="font-medium text-[#D4AF37]">Must-Happen Beats</span>
@@ -862,11 +884,8 @@
                                     <button onclick="toggleGuidanceCardMinimize('beats')" class="guidance-float-btn" title="Minimize">
                                         <i id="guidance-minimize-icon-beats" class="fa-solid fa-chevron-down"></i>
                                     </button>
-                                    <button onclick="floatGuidanceCard('beats')" class="guidance-float-btn" title="Pop out">
-                                        <i class="fa-solid fa-up-right-from-square"></i>
-                                    </button>
-                                    <button onclick="snapGuidanceCardHome('beats')" class="guidance-float-btn hidden" title="Snap back" data-snapback-btn>
-                                        <i class="fa-solid fa-down-left-and-up-right-to-center"></i>
+                                    <button onclick="floatGuidanceCard('beats')" class="guidance-float-btn" title="Open in floating window">
+                                        <i class="fa-solid fa-expand"></i>
                                     </button>
                                 </div>
                             </div>
@@ -880,7 +899,7 @@
                         </div>
 
                         <div id="guidance-card-setting" class="guidance-card h-[160px] bg-[#3D2B1F] border border-[#D4AF37]/30 rounded-2xl p-3 text-xs overflow-y-auto">
-                            <div class="flex items-center justify-between mb-1" data-drag-handle>
+                            <div class="flex items-center justify-between mb-1">
                                 <div class="flex items-center gap-x-1.5">
                                     <i class="fa-solid fa-mountain-sun text-[#D4AF37]"></i>
                                     <span class="font-medium text-[#D4AF37]">Setting &amp; Tone</span>
@@ -889,11 +908,8 @@
                                     <button onclick="toggleGuidanceCardMinimize('setting')" class="guidance-float-btn" title="Minimize">
                                         <i id="guidance-minimize-icon-setting" class="fa-solid fa-chevron-down"></i>
                                     </button>
-                                    <button onclick="floatGuidanceCard('setting')" class="guidance-float-btn" title="Pop out">
-                                        <i class="fa-solid fa-up-right-from-square"></i>
-                                    </button>
-                                    <button onclick="snapGuidanceCardHome('setting')" class="guidance-float-btn hidden" title="Snap back" data-snapback-btn>
-                                        <i class="fa-solid fa-down-left-and-up-right-to-center"></i>
+                                    <button onclick="floatGuidanceCard('setting')" class="guidance-float-btn" title="Open in floating window">
+                                        <i class="fa-solid fa-expand"></i>
                                     </button>
                                 </div>
                             </div>
@@ -907,7 +923,7 @@
                         </div>
 
                         <div id="guidance-card-success" class="guidance-card h-[160px] bg-[#3D2B1F] border border-[#D4AF37]/30 rounded-2xl p-3 text-xs overflow-y-auto">
-                            <div class="flex items-center justify-between mb-1" data-drag-handle>
+                            <div class="flex items-center justify-between mb-1">
                                 <div class="flex items-center gap-x-1.5">
                                     <i class="fa-solid fa-trophy text-[#D4AF37]"></i>
                                     <span class="font-medium text-[#D4AF37]">Success for This Scene</span>
@@ -916,11 +932,8 @@
                                     <button onclick="toggleGuidanceCardMinimize('success')" class="guidance-float-btn" title="Minimize">
                                         <i id="guidance-minimize-icon-success" class="fa-solid fa-chevron-down"></i>
                                     </button>
-                                    <button onclick="floatGuidanceCard('success')" class="guidance-float-btn" title="Pop out">
-                                        <i class="fa-solid fa-up-right-from-square"></i>
-                                    </button>
-                                    <button onclick="snapGuidanceCardHome('success')" class="guidance-float-btn hidden" title="Snap back" data-snapback-btn>
-                                        <i class="fa-solid fa-down-left-and-up-right-to-center"></i>
+                                    <button onclick="floatGuidanceCard('success')" class="guidance-float-btn" title="Open in floating window">
+                                        <i class="fa-solid fa-expand"></i>
                                     </button>
                                 </div>
                             </div>
@@ -995,31 +1008,67 @@
          moves it back. No content is ever duplicated - there's exactly one
          copy of each guidance card's data at all times. -->
     <div id="guidance-float-purpose" class="guidance-float-window hidden" style="left: 600px; top: 100px; width: 280px; height: 200px;">
+        <div class="guidance-float-header" data-drag-handle>
+            <span>Purpose</span>
+            <button onclick="snapGuidanceCardHome('purpose')" class="guidance-float-btn" title="Snap back">
+                <i class="fa-solid fa-down-left-and-up-right-to-center"></i>
+            </button>
+        </div>
         <div class="guidance-float-body" data-float-body></div>
         <div class="guidance-float-resize-handle" data-resize-handle></div>
     </div>
 
     <div id="guidance-float-canon" class="guidance-float-window hidden" style="left: 630px; top: 130px; width: 280px; height: 200px;">
+        <div class="guidance-float-header" data-drag-handle>
+            <span>Key Canon to Honor</span>
+            <button onclick="snapGuidanceCardHome('canon')" class="guidance-float-btn" title="Snap back">
+                <i class="fa-solid fa-down-left-and-up-right-to-center"></i>
+            </button>
+        </div>
         <div class="guidance-float-body" data-float-body></div>
         <div class="guidance-float-resize-handle" data-resize-handle></div>
     </div>
 
     <div id="guidance-float-emotional" class="guidance-float-window hidden" style="left: 660px; top: 160px; width: 280px; height: 200px;">
+        <div class="guidance-float-header" data-drag-handle>
+            <span>Emotional State</span>
+            <button onclick="snapGuidanceCardHome('emotional')" class="guidance-float-btn" title="Snap back">
+                <i class="fa-solid fa-down-left-and-up-right-to-center"></i>
+            </button>
+        </div>
         <div class="guidance-float-body" data-float-body></div>
         <div class="guidance-float-resize-handle" data-resize-handle></div>
     </div>
 
     <div id="guidance-float-beats" class="guidance-float-window hidden" style="left: 690px; top: 190px; width: 280px; height: 200px;">
+        <div class="guidance-float-header" data-drag-handle>
+            <span>Must-Happen Beats</span>
+            <button onclick="snapGuidanceCardHome('beats')" class="guidance-float-btn" title="Snap back">
+                <i class="fa-solid fa-down-left-and-up-right-to-center"></i>
+            </button>
+        </div>
         <div class="guidance-float-body" data-float-body></div>
         <div class="guidance-float-resize-handle" data-resize-handle></div>
     </div>
 
     <div id="guidance-float-setting" class="guidance-float-window hidden" style="left: 720px; top: 220px; width: 280px; height: 200px;">
+        <div class="guidance-float-header" data-drag-handle>
+            <span>Setting &amp; Tone</span>
+            <button onclick="snapGuidanceCardHome('setting')" class="guidance-float-btn" title="Snap back">
+                <i class="fa-solid fa-down-left-and-up-right-to-center"></i>
+            </button>
+        </div>
         <div class="guidance-float-body" data-float-body></div>
         <div class="guidance-float-resize-handle" data-resize-handle></div>
     </div>
 
     <div id="guidance-float-success" class="guidance-float-window hidden" style="left: 750px; top: 250px; width: 280px; height: 200px;">
+        <div class="guidance-float-header" data-drag-handle>
+            <span>Success for This Scene</span>
+            <button onclick="snapGuidanceCardHome('success')" class="guidance-float-btn" title="Snap back">
+                <i class="fa-solid fa-down-left-and-up-right-to-center"></i>
+            </button>
+        </div>
         <div class="guidance-float-body" data-float-body></div>
         <div class="guidance-float-resize-handle" data-resize-handle></div>
     </div>
@@ -1384,6 +1433,9 @@
         function focusMode() {
             const leftPanel = document.getElementById('left-panel');
             const rightPanel = document.getElementById('right-panel');
+            const outlineBtn = document.getElementById('outline-btn');
+            const libraryBtn = document.getElementById('library-btn');
+            const notepad = document.getElementById('notepad-window');
 
             // Force both panels hidden
             leftPanel.classList.add('-translate-x-full');
@@ -1394,21 +1446,10 @@
             showSideButton('outline-btn');
             showSideButton('library-btn');
 
-            // Close every floating/tool window
-            const notepad = document.getElementById('notepad-window');
-            if (notepad && notepad.style.display !== 'none') hideNotepad();
-
-            const draftpad = document.getElementById('draftpad-window');
-            if (draftpad && draftpad.style.display !== 'none') hideDraftPad();
-
-            const changelog = document.getElementById('changelog-window');
-            if (changelog && changelog.style.display !== 'none') hideChangelog();
-
-            const proofreader = document.getElementById('proofreader-window');
-            if (proofreader && proofreader.style.display !== 'none') hideProofreader();
-
-            const sammy = document.getElementById('sammy-export-window');
-            if (sammy && sammy.style.display !== 'none') hideSammyExport();
+            // Hide Notepad if currently visible
+            if (notepad && notepad.style.display !== 'none') {
+                hideNotepad();
+            }
 
             // Floating guidance cards are a temporary peek, not a layout
             // choice - Focus mode snaps them all home.
@@ -4152,25 +4193,23 @@
             if (!card || !homeSlot || !floatWindow) return;
 
             // A floating window always shows full content - if the card was
-            // minimized in place, restore it first.
+            // minimized in place, restore it first so it doesn't float away
+            // in a collapsed state.
             if (guidanceMinimized.has(key)) {
                 toggleGuidanceCardMinimize(key);
             }
 
             const body = floatWindow.querySelector('[data-float-body]');
-            body.appendChild(card);
+            body.appendChild(card); // moves the real node - nothing duplicated
 
-            // When floating: hide minimize + pop-out, show snap-back
+            // Both the minimize and float buttons share .guidance-float-btn
+            // for consistent sizing, so target each by its specific onclick
+            // rather than the shared class (querySelector would only catch
+            // whichever one happens to be first in DOM order).
             const ownFloatBtn = card.querySelector(`[onclick="floatGuidanceCard('${key}')"]`);
             const ownMinimizeBtn = card.querySelector(`[onclick="toggleGuidanceCardMinimize('${key}')"]`);
-            const snapBackBtn = card.querySelector('[data-snapback-btn]');
             if (ownFloatBtn) ownFloatBtn.classList.add('hidden');
             if (ownMinimizeBtn) ownMinimizeBtn.classList.add('hidden');
-            if (snapBackBtn) snapBackBtn.classList.remove('hidden');
-
-            // Card header becomes the drag handle — show move cursor
-            const header = card.querySelector('[data-drag-handle]');
-            if (header) header.style.cursor = 'move';
 
             homeSlot.classList.remove('hidden');
             floatWindow.classList.remove('hidden');
@@ -4189,18 +4228,15 @@
             const floatWindow = document.getElementById(`guidance-float-${key}`);
             if (!card || !homeSlot || !floatWindow) return;
 
-            // When home: show minimize + pop-out, hide snap-back
+            // Restore both of the card's own buttons now that it's back
+            // home and they're meaningful again.
             const ownFloatBtn = card.querySelector(`[onclick="floatGuidanceCard('${key}')"]`);
             const ownMinimizeBtn = card.querySelector(`[onclick="toggleGuidanceCardMinimize('${key}')"]`);
-            const snapBackBtn = card.querySelector('[data-snapback-btn]');
             if (ownFloatBtn) ownFloatBtn.classList.remove('hidden');
             if (ownMinimizeBtn) ownMinimizeBtn.classList.remove('hidden');
-            if (snapBackBtn) snapBackBtn.classList.add('hidden');
 
-            // Restore default cursor
-            const header = card.querySelector('[data-drag-handle]');
-            if (header) header.style.cursor = '';
-
+            // Put the card back exactly where it came from: immediately
+            // before its home-slot placeholder sibling.
             homeSlot.parentNode.insertBefore(card, homeSlot);
 
             homeSlot.classList.add('hidden');

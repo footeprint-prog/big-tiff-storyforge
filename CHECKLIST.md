@@ -51,29 +51,69 @@ These were defined in the original, more detailed Implementation Checklist
 code check on 2026-06-22 to still be **unbuilt**. Carried forward here so
 they aren't lost now that the old document is marked historical.
 
-- [x] **Global Outline/Lore Changelog** — built 2026-06-26. Draggable window
-      (same style as Notepad/DraftPad), filter tabs for All/Scene/Library/
-      Structural, shows Sammy's canon + structure changes.
-- [ ] **Library change detection + alert badge** — Library panel should show
+- [x] **Global Outline/Lore Changelog** — draggable window, same style as
+      Notepad/DraftPad, showing Sammy's canon + structure changes. DONE
+      2026-06-22 — built with All/Scenes/Library/Structure filter tabs.
+      Checklist was stale here; verified directly against the live file
+      (`#changelog-window` exists) before correcting this entry.
+- [x] **Library changelog** — separate from the Outline/lore changelog above;
+      tracks changes specifically to `Big_Tiff_Library_Entries.json` content.
+      (See `Big_Tiff_Standardized_Library_Entry_Template.md` Section 6.)
+      DONE 2026-06-22 — verified against real Sammy-populated data, not just
+      simulated test data. Library panel rendered correctly, Changelog
+      "Library" filter showed entries, last-sync timestamp updated, no
+      console errors. Also added: a small "!" marker before the title of
+      any Library entry currently flagged for review by Sammy (hover shows
+      the reason) — same signal driving the changelog.
+- [x] **Library change detection + alert badge** — Library panel should show
       a visible indicator when canon-driven changes affect Library-sourced
-      entries. *(Partially addressed 2026-06-26 via per-category and
-      per-entry "!" review-flag markers, which surface flagged items without
-      expanding every category — but this is a different mechanism than a
-      single panel-level alert badge. Worth confirming with Aaron whether
-      the "!" markers satisfy this item or whether a separate badge is still
-      wanted.)*
-- [x] **Library changelog** — built 2026-06-26 as part of the same shared
-      Changelog window above; the 'library' filter tab tracks changes to
-      `Big_Tiff_Library_Entries.json` content specifically. The Library
-      panel's own changelog icon button opens directly to this filter.
-- [ ] **Last sync timestamp in Library panel** — currently only shown near
-      the Outline; not duplicated in the Library panel.
+      entries. DONE 2026-06-22 — implemented as a two-level "!" marker
+      system rather than a single panel badge: each flagged entry's title
+      shows a "!" with its review reason on hover, and each category header
+      also shows a "!" (hover lists which entries inside are flagged) so the
+      user can spot changes without expanding every category. Verified with
+      a real browser test against entries with mixed flagged/unflagged
+      status across multiple categories.
+- [x] **Last sync timestamp in Library panel** — DONE 2026-06-22, built
+      alongside Library canon sync itself (`#library-last-sync-time`
+      verified present in the live file). Checklist was stale here too.
 - [ ] **Auto-expand to first relevant scene** (`unfinished` or `review`) on
       initial load, rather than requiring the user to pick a scene manually
       every session.
 - [ ] **Scene reordering must stay disabled** — confirmed NOT present in the
       live file as of 2026-06-22 (hard requirement, verified, no action
       needed unless this changes).
+- [ ] **Mobile version of the tool.** Current layout/interactions
+      (draggable floating windows, multi-panel desktop layout) were built
+      desktop-first. Needs a real pass for phone/tablet use - touch
+      targets, panel behavior on small screens, whether floating windows
+      (Notepad/DraftPad/Changelog/Coach) even make sense on mobile or need
+      a different pattern there. (Added 2026-06-22.)
+- [ ] **Visual skinning of the tool.** Aaron is producing a fantasy-themed
+      visual mockup separately; once complete, it will be broken down into
+      individual elements to "skin" the existing functional tool. Directly
+      related to the already-parked "main writing area layout/visual
+      polish" item below - this is the broader version of that same
+      deferred work. Functional correctness takes priority until the
+      mockup is ready. (Added 2026-06-22.)
+- [ ] **Full draft assembly function.** A function to assemble all
+      completed (or all, depending on design) per-scene drafts into one
+      complete manuscript document. Context: Aaron's original plan was for
+      the tool to assemble the complete draft, then bring that assembled
+      document to Claude directly (outside this tool) for full-manuscript
+      developmental/line editing - Grok has had difficulty with long text
+      files, which is a strength of Claude's. This item is just the
+      assembly function itself; the actual editing pass happens in a
+      separate Claude conversation, not inside the tool. (Added 2026-06-22.)
+- [ ] **Inter-scene outline editing function.** Some way to edit
+      relationships/structure *between* scenes from within the tool
+      (exact scope not yet defined - needs follow-up discussion to clarify
+      what this covers: reordering, merging, splitting scenes, editing
+      transitions, etc.). Note: scene reordering is currently a confirmed
+      hard requirement to keep *disabled* for the user (see above) - if
+      this new item implies user-facing reordering, that conflicts with
+      the existing rule and needs to be resolved explicitly before building
+      anything, not assumed either way. (Added 2026-06-22.)
 
 ## Parked Ideas / Not Now
 
@@ -90,6 +130,54 @@ if no longer wanted.
       matters directly to the tool too, since the review-status workflow
       already treats Sammy's `needsReviewReason` calls as authoritative.
       Strengthening his foundation makes that trust better-placed. (2026-06-22)
+      UPDATE 2026-06-22: Aaron plans an external knowledge document including
+      complete ebook files on storytelling/craft. This requires Claude
+      Projects or an equivalent persistent-knowledge-base feature (free-tier
+      Claude can't retain uploaded files across sessions) — relevant if
+      Sammy ever moves platforms. See resolved item below for the related
+      platform/subscription discussion.
+
+- [x] **RESOLVED 2026-06-22: Writing Coach (grammar) + Sammy-platform question.**
+      Explored adding an in-tool grammar/tense checker (LanguageTool API).
+      Built and shipped, but real-world testing showed the free tier's
+      detection quality is materially weaker than its own website demo
+      (confirmed via direct API response inspection: free tier returned
+      zero matches on a paragraph with clear errors, while LanguageTool's
+      own site caught 9). Premium pricing (~$5-7/mo) and the free tier's
+      apparent instability (conflicting reports of shrinking limits) made
+      paying for it a bad trade.
+      This led to a broader conversation: Aaron's original plan was always
+      for the *tool* to assemble a complete draft, then bring it to Claude
+      directly (outside the tool) for full-manuscript editorial review -
+      Claude's strength is long-document coherence; Grok has struggled with
+      large files on this project. Separately, Sammy (Grok-based) was
+      confirmed to require a PAID SuperGrok subscription specifically for
+      the Custom Agent feature - free Grok only offers Custom Instructions,
+      not persistent agents. Aaron wants to end the SuperGrok subscription
+      once the tool is complete.
+      **Final decision: split by job, not by subscription.**
+      - **Sammy keeps doing generative/day-to-day story & canon work**
+        (scene prompts, lore, "Update webtool" pushes) - whichever
+        platform/tier that ends up living on is a separate decision from
+        this one, not yet finalized.
+      - **Claude does the heavy editorial pass on the FULL assembled
+        manuscript**, once "Full draft assembly function" (see above) is
+        built. This was Aaron's original plan and remains the plan -
+        confirmed explicitly, not a fallback.
+      - **DONE 2026-06-22 (follow-up):** the in-tool LanguageTool tool was
+        NOT removed after all — Aaron asked to keep it, renamed away from
+        "Coach" to **"Proofreader"** (an honest description of a mechanical
+        pass, not implying contextual/editorial quality), with an added
+        **"Apply All Suggestions"** button. Apply All uses a verified-safe
+        right-to-left offset algorithm (sort issues by position descending,
+        apply rightmost first) so applying multiple fixes in one click never
+        corrupts other pending offsets — tested with 3 scattered issues in
+        one paragraph, all applied correctly in a single click.
+      - **DONE 2026-06-22:** "Send to Sammy" built and verified - copies the
+        current scene's title, guidance summary, and live draft text to the
+        clipboard in clean, ready-to-paste format, with "COPIED" button
+        feedback. Confirmed via real clipboard read-back in testing.
+
 - [ ] Main writing area layout/visual polish — intentionally deferred until
       after the fantasy-themed visual mockup is complete and broken down into
       skinnable elements (per Aaron, 2026-06-21).
@@ -109,4 +197,4 @@ rather than assuming the whole list is still live.
 
 ---
 
-*Last Updated: 2026-06-26*
+*Last Updated: 2026-06-22*

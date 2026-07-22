@@ -2,80 +2,219 @@
 
 All notable changes to the webtool during active development.
 
-## [2026-06-26] – Writing Area Layout Redesign, Floating Guidance Cards, UPDATES Merge (Claude session)
+## [2026-06-22] – Send to Sammy: Real-World End-to-End Confirmation
 
-All items below were verified with a real headless-browser test in-session
-(Playwright), not just read/written. See test transcripts in session history
-if a re-check is ever needed.
+### Validated
+- **First real-world test of "Send to Sammy" against an actual Sammy
+  conversation**, not just simulated UI checks. Aaron pasted the exported
+  block (instructions + scene context + draft text) into a real Sammy
+  session and shared the result. Confirmed working correctly end-to-end:
+  - Sammy respected the Draft Protection instruction exactly as written -
+    flagged issues and explained reasoning rather than rewriting Erica's
+    prose.
+  - Sammy asked a clarifying question ("Would you like me to note this as
+    a prompt-alignment issue for the tool?") rather than silently assuming
+    how to handle an ambiguous case - a good sign the instructions are
+    being interpreted as intended.
+  - Feedback included exactly the kind of contextual catch a grammar tool
+    can't produce (scene summary vs. draft mismatch, a missing character
+    beat) - validating the original reasoning for building this as a
+    Sammy-routed feature rather than folding it into the Proofreader.
+  - The scene/title mismatch Sammy flagged was an artifact of Aaron's own
+    test placeholder text (not matched to real scene guidance) - expected,
+    not a tool bug.
 
-### Added
-- **Fixed-width writing area layout** — center content now has a permanent
-  max-width matching the clearance the side panel buttons already have to
-  the screen edge (button's own 24px+78px clearance, mirrored), so there's
-  always deliberate resting space on either side regardless of panel state.
-  Replaces the old full-bleed layout.
-- **Scene Status Control Bar** — new full-width bar, sticky-capped directly
-  beneath the (also now sticky) Scene Summary bar. Houses the status pill,
-  autosave text, Save Draft, Draft Log, and a Send-to-Sammy button. Styled
-  with a 5px gold top border (matching the side panel buttons) and a 1px
-  full-opacity gold bottom border, filled in the Library panel's green.
-- **Send to Sammy (real implementation)** — builds a formatted export
-  (editorial instructions + scene title/summary/draft) into a draggable,
-  copy-to-clipboard window. Convenience export only; never calls any API or
-  sends anything automatically. Explicit Draft Protection language included
-  so it can't be misread as "rewrite this for me."
-- **Proofreader** — mechanical spelling/grammar/tense pass via the free
-  LanguageTool API, in its own floating window. Apply / Apply All only ever
-  touch text the user has seen and approved.
-- **Custom status-pill dropdown** — replaces the native `<select>` (which
-  always duplicated the current value inside its own open option list).
-  Button + slide-down menu, color-matched to the outline badges.
-- **Floating guidance cards** — each of the 6 guidance boxes (Purpose, Key
-  Canon, Emotional State, Beats, Setting & Tone, Success) can now float into
-  its own small, lightweight draggable/resizable window via a corner icon.
-  Single source of truth — the real DOM node moves, nothing is ever copied
-  or kept in sync. Floating state is explicitly temporary: auto-resets on
-  canon re-sync, on init/reload, on Focus mode, and now also when Notepad or
-  Draft Log is opened.
-- **Minimize/maximize toggle** on home-base guidance cards — collapses a
-  card in place to a header-only row (independent of floating).
-- **Editor display zoom** (−/100%/+) — CSS-only font-size control on the
-  editor; never touches saved draft content.
-- **Outline title shortening** — long scene titles truncate at the en-dash
-  in the compact outline view only; full titles still shown elsewhere
-  (Draft Pad, scene label, Changelog).
-- **Outline expand/collapse persistence** — re-renders (e.g. from a status
-  change or re-sync) no longer collapse Act/Chapter sections the user had
-  open.
-- **Library review-flag markers** — categories and individual entries
-  currently flagged for review by Sammy show a small "!" marker (with
-  tooltip reason at the entry level), so changes are visible without
-  expanding every category.
-- **Changelog icon buttons** added directly to the Outline and Library
-  panels, each pre-filtering the shared Changelog window to the relevant
-  type ('scene' / 'library') when opened from that panel.
+### Also Fixed (same session)
+- **Critical bug: closed floating panels could intercept clicks on whatever
+  was visually behind them**, causing what looked like an "endless wait"
+  on a second Proofreader check after using Apply All. Root cause: `.notepad`'s
+  own `display: flex` rule and Tailwind's `.hidden` utility have equal CSS
+  specificity, so whichever stylesheet happened to parse last in the
+  cascade could win - meaning a "hidden" panel (e.g. the unopened Send to
+  Sammy window) could still be rendered and clickable-through depending on
+  load timing. Fixed with an explicit `!important` override on
+  `.notepad.hidden`, plus corrected all five panel-open functions (Notepad,
+  Draft Pad, Changelog, Proofreader, Send to Sammy) to properly remove the
+  `hidden` class on open instead of only masking it with an inline style.
+  Verified by reproducing the exact reported sequence (Apply All → Check
+  Draft again) - previously timed out after 30s, now completes instantly
+  with fresh results.
+
+---
+
+## [2026-06-22] – Status Selector Rebuilt as Custom Widget
 
 ### Changed
-- Editor base font reduced one step; toolbar reorganized (Proofreader now
-  lives with text tools + word count; Save Draft/Draft Log/Sammy moved into
-  the new Scene Status Control Bar).
-- Center writing area now has its own independent scrollbar, decoupled from
-  the side panels.
-- Removed the standalone top-header Changelog button (superseded by the
-  panel-specific, pre-filtered icon buttons above).
+- **Replaced the native `<select>` status selector with a fully custom
+  widget** (button trigger + absolutely-positioned sliding menu). Root
+  cause for the rebuild: native `<select>` elements always show the
+  closed-state value a second time as the first row of their own open
+  option list - this is standard browser behavior with no CSS workaround,
+  so a real fix required dropping the native element entirely. Confirmed
+  the swap was low-risk first by checking that `#scene-status-select` was
+  only ever referenced by `updateStatusSelector()` itself - nothing else in
+  the codebase (including `renderDynamicOutline`) touches it directly, so
+  preserving the same function name and call contract meant no other code
+  needed to change.
+- New widget: clicking the current-status pill flattens its bottom corners
+  and a connected menu slides open directly beneath it, showing ONLY the
+  valid alternative statuses (never a duplicate of the current one, never
+  "Review" as a pickable option unless it's already current - same
+  review-lock safety rule as before, fully preserved). Each menu option is
+  colored to match its corresponding outline badge. Click-outside-to-close
+  added.
 
 ### Fixed
-- `.notepad.hidden { display: none !important }` CSS guard was previously
-  dead code — `openNotepad()` / `openDraftPad()` / `openChangelog()` never
-  actually removed the `.hidden` class, so the guard had no effect. Now
-  fixed in all three.
-- A genuine 0.5px hairline gap between the Scene Summary and Status Control
-  Bar, caused by `offsetHeight` rounding a fractional height — fixed by
-  switching the sticky-offset calculation to `getBoundingClientRect()`.
-- Side panel buttons briefly regressed off their correct position during
-  the layout work (root cause: the outer flex container needed explicit
-  `w-full` to hold its `max-w-screen-2xl` cap once its children gained more
-  specific sizing) — caught and fixed same-session via direct measurement.
+- **"Unfinished" text was clipped by the arrow icon** in the previous
+  native-select version - caught via an actual screenshot, not just
+  computed-style checks (which had falsely looked fine). Resolved as part
+  of the full widget rebuild (no separate native-select patch was viable).
+- **Dropdown arrow was invisible specifically on the Review status** - the
+  default gold arrow icon was the same color as Review's own gold
+  background. Caught by screenshotting all three states side by side.
+  Fixed with a dark-red arrow variant used only for the Review state.
+
+### Process Note
+- This round relied heavily on actual Playwright screenshots, not just
+  computed-style assertions - several real bugs (text clipping, the
+  invisible arrow) were only visible that way and would have shipped
+  unnoticed otherwise. Worth continuing as standard practice for any
+  future visual/layout work in this sandbox.
+
+---
+
+## [2026-06-22] – Header Cleanup: Changelog Access Moved to Panels
+
+### Changed
+- **Removed DRAFTS and CHANGELOG text buttons from the top app header.**
+  Draft Pad access now lives only in the editor toolbar ("DRAFT LOG"
+  button, added earlier today). Changelog access moved to two new icon
+  buttons (see below) rather than a standalone header button.
+- **Sync Canon button (outline panel) reduced from full-width to `flex-1`**,
+  sharing its row with the new changelog icon button instead of spanning
+  the whole panel width alone.
+
+### Added
+- **Changelog icon button (clock-rotate-left) in the outline panel**,
+  next to the Sync Canon button.
+- **Same changelog icon button added to the Library panel header**, next
+  to the entry count badge.
+- Both verified to actually open the Changelog window via real click
+  tests; confirmed exactly two such buttons exist (no duplicates), and
+  Sync Canon / Draft Log functionality both still work correctly after
+  the layout change.
+
+---
+
+## [2026-06-22] – Outline Title Shortening, Badge/Layout Fixes
+
+### Added
+- **Shortened scene titles in the outline panel.** Sammy's scene titles
+  often include a descriptive suffix after an en-dash (e.g. "Morning
+  Chores & The Wobbling Plate – First Odd Occurrence"). New
+  `shortenSceneTitleForOutline()` helper strips everything from the en-dash
+  onward for outline display only, reducing wrapping/bloat. Other places
+  that show the full title (Draft Pad header, writing-area scene label,
+  Changelog entries) intentionally keep the full descriptive title.
+  Verified against the real example plus edge cases (no dash, multiple
+  dashes, empty string) and confirmed the full title is still preserved
+  everywhere outside the outline.
+
+### Fixed
+- **Status badges still mismatched in size after the first fix.** The
+  font-weight fix earlier today was real but incomplete - the actual
+  reported symptom (badge height tied to how many lines the scene title
+  wrapped to) was a layout issue, not a font-weight issue. Root cause: the
+  scene row was `flex justify-between` with no `align-items` set, so a
+  multi-line title would stretch its sibling (the badge) to match height
+  by flex's default `stretch` behavior. Fixed by setting `items-start` on
+  the row and `align-self: flex-start` + explicit `flex-shrink: 0` directly
+  on the badge.
+- **`.scene-status` (outline) and `.scene-status-dropdown` (editor) could
+  drift in size independently**, since they were two separately-maintained
+  CSS rules. Unified under one shared block for font-size, min-width,
+  line-height, and font-weight, so they can't diverge again; only
+  background/text colors differ by status now. Verified via direct
+  computed-style comparison (trustworthy here since these are custom CSS
+  classes, not Tailwind utilities).
+
+### Process Note
+- **This sandbox cannot load Tailwind** (CDN script requires network access,
+  unavailable here), which silently invalidated an earlier round of
+  "verified" layout tests - they were measuring unstyled markup without
+  realizing it. Custom CSS classes (like `.scene-status`) are unaffected
+  and remain reliably testable; Tailwind-utility-dependent layout (panel
+  widths, positioning, text wrapping) is NOT reliably testable in this
+  environment and requires Aaron's confirmation in a real browser. Flagged
+  explicitly rather than implied as verified.
+
+---
+
+## [2026-06-22] – Outline Status Badges Now Uniform Size
+
+### Fixed
+- **Review status badge was visibly larger than Unfinished/Complete in the
+  outline.** Root cause: `.scene-review` carried `font-weight: 600` while
+  the other two statuses used `500`, all under the same `.scene-status`
+  base class with otherwise identical font-size/padding/min-width. Bold
+  text at the same size renders larger. Dropped `.scene-review` to
+  `font-weight: 500` to match. Verified by measuring actual rendered
+  bounding boxes in a real browser test (not just inspecting CSS): all
+  three badges now measure identically at 90×15px with matching font-weight.
+
+---
+
+## [2026-06-22] – Outline Expansion State Persists Across Status Changes
+
+### Fixed
+- **Outline panel collapsed itself on every status change.** `renderDynamicOutline()`
+  rebuilt the entire Act/Chapter tree from scratch on every call (including
+  the one `handleStatusChange` triggers after a confirmed status change),
+  and every section defaulted back to collapsed with no memory of what the
+  user had open. Reported directly by Aaron after the status-selector work
+  shipped. Fixed by capturing which Acts/Chapters are currently expanded
+  (via `data-act-key` / `data-chapter-key` attributes) immediately before
+  the rebuild, then re-applying that exact expansion state afterward.
+  Verified with a real browser test: expand Act 1 → Chapter 1, change a
+  scene's status, confirm the outline stays open at the same depth and the
+  status badge updates live. Also verified the inverse - sections left
+  collapsed stay collapsed and aren't accidentally force-expanded as a
+  side effect. (One early test gave a false negative due to an unreliable
+  Playwright text-selector click, not an actual bug - caught by checking
+  real DOM state directly rather than trusting the first result.)
+- Confirmed directly by Aaron in the live tool.
+
+---
+
+## [2026-06-22] – Library Canon Sync: Real-World Validation + Review Marker
+
+### Validated
+- **First real-world test of Library canon sync**, against actual data
+  Sammy pushed via "Update webtool" (not simulated test data). Aaron
+  confirmed directly: Library panel showed correct real entries, Changelog
+  "Library" filter showed the logged changes, last-sync timestamp updated
+  correctly, and no console errors. This is the first end-to-end
+  confirmation of the full Library sync pipeline built earlier today.
+
+### Added
+- **Review marker on Library category headers** — a "!" now also appears
+  before any category name that contains at least one flagged entry,
+  hovering lists which entries inside changed (e.g. "Updated: Tiff,
+  Timmy"). Combined with the per-entry marker, this closes the "Library
+  change detection + alert badge" checklist item — verified with a real
+  browser test covering multiple categories, mixed flagged/unflagged
+  entries, and multiple flags in one category.
+
+- **Review marker on Library entry titles** — a small "!" now appears
+  before the title of any Library entry currently flagged for review by
+  Sammy (`status: "review"` + `needsReviewReason` set). Hovering shows the
+  reason as a tooltip. Uses the same signal already driving the Library
+  Changelog filter, so the two stay consistent. Verified with a real
+  browser test against mixed flagged/unflagged entries.
+
+### Closed
+- ~~Library panel still has no panel-level badge/count~~ — resolved via
+  the two-level marker system above rather than a single count badge.
 
 ---
 
