@@ -4262,6 +4262,12 @@
             // Update the outline to reflect new status
             renderDynamicOutline();
 
+            // Reflect the new completion count in the pill + shared stats.
+            if (typeof refreshProgressPill === 'function') refreshProgressPill();
+            if (typeof syncStatsToRepo === 'function') {
+                syncStatsToRepo(newStatus === 'complete' ? 'scene_completed' : 'status_changed', { sceneId: scene.id, status: newStatus });
+            }
+
             console.log(`%c[Status] Scene ${scene.id} status changed to: ${newStatus}`, 'color:#8B6F47');
         }
 
@@ -5285,12 +5291,12 @@
                     const now = new Date().toISOString();
                     // Re-read remote first so we merge (never clobber other scenes) and get a fresh sha.
                     let obj = { schemaVersion: 1, drafts: {} };
-                    let sha = null;
+                    let sha;   // leave undefined if the re-read fails, so pushToDataRepo refetches it
                     try {
                         const r = await fetch(`${DATA_API_BASE}/drafts.json?t=${Date.now()}`, {
                             cache: 'no-store', headers: { Authorization: `Bearer ${getWriteToken()}`, Accept: 'application/vnd.github+json' }
                         });
-                        if (r.ok) { const j = await r.json(); sha = j.sha; obj = JSON.parse(decodeURIComponent(escape(atob(j.content.replace(/\n/g, ''))))); }
+                        if (r.ok) { const j = await r.json(); sha = j.sha; obj = JSON.parse(new TextDecoder().decode(b64ToBytes(j.content.replace(/\s/g, '')))); }
                     } catch (e) { /* fall back to fresh object */ }
                     obj.drafts = obj.drafts || {};
                     obj.drafts[sceneId] = { contentEnc: enc, updatedAt: now };
