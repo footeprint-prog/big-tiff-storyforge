@@ -2,6 +2,67 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-07-23] – Focus Mode Split into Writing Focus / Reading Focus
+
+### Added
+- **Focus button replaced with a two-step segmented toggle** (Priority 1
+  item from the handoff doc). Two icons - a pen (`fa-pen-to-square`,
+  closest available Font Awesome Free glyph; there's no literal
+  "hand holding a pen" icon in the free set) for Writing Focus, and an open
+  book (`fa-book-open`) for Reading Focus - flank a small pill track/knob.
+  Clicking an icon only **arms** that mode (moves the knob, highlights the
+  icon); clicking the track itself **activates** whichever mode is armed.
+  Selection persists after activation. Matches the confirmed spec: select,
+  then a separate deliberate click to fire, rather than one click doing both.
+- **`writingFocusMode()`** - clears every floating window/panel (Notepad,
+  Draft Pad, Changelog, Proofreader, Send to Sammy, left/right side panels)
+  and returns all guidance ("story point") cards to their home positions,
+  fully open - extends the old `focusMode()`, which only closed Notepad +
+  side panels + floating guidance cards and left Draft Pad/Changelog/
+  Proofreader/Send to Sammy untouched if they were open.
+- **`readingFocusMode()`** (new) - same clear-everything base as Writing
+  Focus, plus collapses all 6 home guidance cards to their header-only row
+  (reusing the existing `toggleGuidanceCardMinimize()`), to reduce on-screen
+  text while reading a full draft.
+- New shared `closeAllFloatingWindows()` helper factors out the "hide
+  everything" logic so both modes share one code path.
+
+### Fixed
+- **Guidance card floating windows (`.guidance-float-window`) were visibly
+  rendered and click-through-able on every page load**, despite having
+  `class="hidden"` - found while verifying Focus mode in a real browser
+  (fresh, untouched page load; confirmed via computed `display: flex` on
+  all 6 float windows despite the `hidden` class being present). Same root
+  cause as the `.notepad.hidden` bug fixed 2026-06-22: the class sets its
+  own `display: flex`, which can out-cascade Tailwind's `.hidden` utility
+  depending on stylesheet parse order. Fixed with the same
+  `.guidance-float-window.hidden { display: none !important; }` pattern.
+  This was a real, pre-existing bug independent of the Focus mode work,
+  just never caught because nobody had screenshotted a truly fresh load.
+
+### Verification notes
+- Verified in a real headless-Chromium browser (Playwright): opened every
+  closable window + floated a guidance card, confirmed Writing Focus closes
+  all of them and Reading Focus additionally collapses all 6 home cards;
+  confirmed re-activating Writing Focus afterward un-collapses them (so
+  "home positions, open" holds even after a prior Reading Focus click);
+  confirmed selecting an icon alone never fires anything, only clicking the
+  track does. Verified via direct DOM state (classes + computed `display`),
+  which doesn't depend on Tailwind.
+- **Caveat, stated explicitly per project convention:** this session's
+  sandbox blocks outbound access to `cdn.tailwindcss.com` and
+  `cdnjs.cloudflare.com` at the network policy level (confirmed via proxy
+  status logs, not just a timeout), so Tailwind's CDN script never loaded
+  in any test run here - screenshots taken in this sandbox show an unstyled/
+  mis-flowed page and were **not** usable for visual/layout confirmation of
+  the new toggle's appearance. The DOM-state checks above are unaffected by
+  this (plain CSS classes/computed styles, no Tailwind dependency), but a
+  real visual check of the toggle's look in a normal browser with internet
+  access is still outstanding and should happen before calling this fully
+  done in the strict "tested in a real browser" sense this project uses.
+
+---
+
 ## [2026-06-22] – Send to Sammy: Real-World End-to-End Confirmation
 
 ### Validated
