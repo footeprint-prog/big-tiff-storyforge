@@ -249,6 +249,21 @@
             scrollbar-color: #D4AF37 #3D2B1F;
         }
 
+        /* Focus mode toggle: dim icon = not the armed selection, gold icon =
+           armed (about to fire if the track is clicked). The knob position
+           (via .focus-toggle-reading on the group) mirrors the same state. */
+        .focus-icon-btn {
+            color: #D4AF37;
+            opacity: 0.4;
+        }
+        .focus-icon-btn.focus-icon-selected {
+            opacity: 1;
+            background-color: rgba(212, 175, 55, 0.15);
+        }
+        #focus-toggle-group.focus-toggle-reading #focus-toggle-knob {
+            transform: translateX(16px);
+        }
+
         /* Collapsed "home base" bar left behind in the guidance column when
            a card is floating elsewhere. Same width as the column (it's just
            a placeholder div there), but only as tall as a single title row -
@@ -412,6 +427,18 @@
            sits behind it, causing what looks like an endless hang when clicking
            buttons that happen to be underneath an invisible panel. */
         .notepad.hidden {
+            display: none !important;
+        }
+
+        /* Same specificity-tie bug as .notepad.hidden above, found while
+           building Focus mode (2026-07-23): .guidance-float-window sets its
+           own `display: flex`, which can out-cascade Tailwind's `.hidden`
+           utility depending on stylesheet parse order. Verified via a fresh
+           unmodified page load in a real browser - all 6 guidance float
+           windows had class="hidden" but computed display: flex, meaning
+           they render (and intercept clicks) on every load, before any
+           interaction ever floats a card. */
+        .guidance-float-window.hidden {
             display: none !important;
         }
 
@@ -611,12 +638,36 @@
                     <!-- Divider -->
                     <div class="w-px h-6 bg-[#D4AF37]/40"></div>
 
-                    <!-- Focus (delineated, same height) -->
-                    <button onclick="focusMode()"
-                            class="h-8 px-3.5 py-1 text-sm rounded-2xl border border-[#D4AF37]/50 hover:bg-[#D4AF37]/10 transition-colors flex items-center gap-x-2">
-                        <i class="fa-solid fa-compress"></i>
-                        <span class="font-medium text-xs tracking-wider">FOCUS</span>
-                    </button>
+                    <!-- Focus toggle: pick a mode (writing/reading), then click the
+                         track to activate it. Selecting an icon only arms the mode -
+                         it does not by itself hide/reset anything. -->
+                    <div class="flex items-center h-8 gap-x-1.5 bg-[#3D2B1F]/70 px-1.5 rounded-2xl border border-[#D4AF37]/60"
+                         id="focus-toggle-group">
+                        <button onclick="setFocusSelection('writing')"
+                                id="focus-icon-writing"
+                                title="Writing Focus"
+                                aria-label="Select Writing Focus"
+                                class="focus-icon-btn focus-icon-selected w-6 h-6 rounded-full flex items-center justify-center transition-colors">
+                            <i class="fa-solid fa-pen-to-square text-xs"></i>
+                        </button>
+
+                        <button onclick="activateFocusMode()"
+                                id="focus-toggle-track"
+                                title="Activate focus mode"
+                                aria-label="Activate selected focus mode"
+                                class="relative w-9 h-5 rounded-full bg-[#3D2B1F] border border-[#D4AF37]/40 transition-colors">
+                            <span id="focus-toggle-knob"
+                                  class="absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-[#D4AF37] transition-transform"></span>
+                        </button>
+
+                        <button onclick="setFocusSelection('reading')"
+                                id="focus-icon-reading"
+                                title="Reading Focus"
+                                aria-label="Select Reading Focus"
+                                class="focus-icon-btn w-6 h-6 rounded-full flex items-center justify-center transition-colors">
+                            <i class="fa-solid fa-book-open text-xs"></i>
+                        </button>
+                    </div>
 
                 </div>
             </div>
@@ -1425,17 +1476,20 @@
         }
 
         /**
-         * Focus Mode - Simple and reliable
-         * One click always hides both panels + Notepad.
-         * Use the side buttons (Outline / Library) to bring panels back.
-         * This avoids the previous state-tracking bugs.
+         * Focus Mode - two variants, one shared "clear everything" base.
+         * - Writing Focus: clears every floating window/panel and returns
+         *   guidance cards home, fully open - a clean slate for drafting.
+         * - Reading Focus: same clear-everything base, plus collapses the
+         *   home guidance cards to their header rows so a full draft reads
+         *   with minimal surrounding text.
+         * Both panels + Notepad + Draft Pad + Changelog + Proofreader +
+         * Send to Sammy are all force-closed (safe to call their hide
+         * functions even if already closed). Use the side buttons
+         * (Outline / Library) to bring panels back afterward.
          */
-        function focusMode() {
+        function closeAllFloatingWindows() {
             const leftPanel = document.getElementById('left-panel');
             const rightPanel = document.getElementById('right-panel');
-            const outlineBtn = document.getElementById('outline-btn');
-            const libraryBtn = document.getElementById('library-btn');
-            const notepad = document.getElementById('notepad-window');
 
             // Force both panels hidden
             leftPanel.classList.add('-translate-x-full');
@@ -1446,14 +1500,56 @@
             showSideButton('outline-btn');
             showSideButton('library-btn');
 
-            // Hide Notepad if currently visible
-            if (notepad && notepad.style.display !== 'none') {
-                hideNotepad();
-            }
+            hideNotepad();
+            hideDraftPad();
+            hideChangelog();
+            hideProofreader();
+            hideSammyExport();
 
             // Floating guidance cards are a temporary peek, not a layout
             // choice - Focus mode snaps them all home.
             resetAllFloatingGuidanceCards();
+        }
+
+        function writingFocusMode() {
+            closeAllFloatingWindows();
+
+            // "Home positions, open" - undo any Reading Focus collapse.
+            GUIDANCE_CARD_KEYS.forEach(key => {
+                if (guidanceMinimized.has(key)) toggleGuidanceCardMinimize(key);
+            });
+        }
+
+        function readingFocusMode() {
+            closeAllFloatingWindows();
+
+            // Collapse every home card to its header row to minimize
+            // on-screen text while reading a draft.
+            GUIDANCE_CARD_KEYS.forEach(key => {
+                if (!guidanceMinimized.has(key)) toggleGuidanceCardMinimize(key);
+            });
+        }
+
+        // Which mode the toggle is currently armed to fire - selecting an
+        // icon only changes this; it takes clicking the track to act on it.
+        let focusSelection = 'writing';
+
+        function setFocusSelection(mode) {
+            focusSelection = mode;
+            document.getElementById('focus-icon-writing')
+                .classList.toggle('focus-icon-selected', mode === 'writing');
+            document.getElementById('focus-icon-reading')
+                .classList.toggle('focus-icon-selected', mode === 'reading');
+            document.getElementById('focus-toggle-group')
+                .classList.toggle('focus-toggle-reading', mode === 'reading');
+        }
+
+        function activateFocusMode() {
+            if (focusSelection === 'reading') {
+                readingFocusMode();
+            } else {
+                writingFocusMode();
+            }
         }
 
         // ==================== OUTLINE ====================
@@ -4247,8 +4343,9 @@
         /**
          * Snaps every currently-floating guidance card back home at once.
          * Called on canon re-sync, on init (tool/session reload), and from
-         * focusMode() - see call sites - since floating is meant to be a
-         * quick, temporary peek, never a persistent layout choice.
+         * closeAllFloatingWindows() (both Focus modes) - since floating is
+         * meant to be a quick, temporary peek, never a persistent layout
+         * choice.
          */
         function resetAllFloatingGuidanceCards() {
             GUIDANCE_CARD_KEYS.forEach(key => {
