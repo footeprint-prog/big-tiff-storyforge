@@ -2,6 +2,83 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-07-23] – Landing/Home Screen, Accounts UI, Stats & Role Gating (Phase 1 of 2)
+
+Phase 1 of the larger "accounts + live persistence" effort (full plan lives
+outside the repo in the session plan file). This phase is **all client-side
+and browser-testable now** — it adds the UI/UX and local logic, with mocked
+session/stats standing in for the real GitHub-backed backend that Phase 2 will
+wire up. Nothing here talks to a server yet.
+
+**Important architecture note recorded this session:** the live site
+(`big_tiff_launchpage`, bigtiffsworld.com) is hosted on **GitHub Pages
+(static)** — its `worker.js` is unused Cloudflare leftover scaffolding. There
+is no backend. Phase 2's persistence will therefore be GitHub-native: a public
+`big-tiff-data` repo holding JSON (drafts encrypted with an embedded AES key =
+"lightly private"; reads are free public fetches; only Erica's browser writes,
+via a GitHub token she pastes once). Login is a soft client-side gate, not real
+security. This replaces the earlier (wrong) Cloudflare/D1 assumption.
+
+### Added
+- **Landing / home screen** (replaces the old `#no-scene-placeholder` text).
+  Shown when no scene is selected. Two states: an "empty" one-tap **Sync
+  Canon** call when no canon is loaded yet, and — once canon is loaded — a
+  radial nav: **Where I Left Off** (center/main), **Last Completed** (left),
+  **Next Unfinished** (right), **Random Unfinished** (top), **Stats &
+  Progress** (bottom). A random Tiff GIF (`assets/TiffGif_Doodling|Laying|
+  Sitting.gif`, new `assets/` folder) is picked per render. New `goHome()`
+  clears the scene, closes all windows, and returns here. `selectSceneFromCanon`
+  now records `last-selected-scene-id` so "Where I Left Off" works.
+- **Rotating stat teaser** at the top of the landing screen (random snippet
+  per render; mocked stats in Phase 1).
+- **Header account button (dual-state)**, replacing the dead `showLoginModal()`
+  stub: logged-out opens an in-tool login modal; logged-in shows the user's
+  **nickname** (defaults to username, editable display-only via a pencil — the
+  username never changes) plus a logout menu. A **rotating salutation**
+  ("Greetings, {nickname}!", "Shine on, {nickname}!", …) shows near the logo.
+- **Stats & Progress window** (`showStoryStats()`, replacing the dead stub) —
+  a draggable/resizable floating window mirroring the Draft Pad pattern, with
+  counters (scenes done / words / streak) and an achievement grid. Achievement
+  *content* is intentionally a future curated task; the grid renders whatever
+  the stats object provides. The header **progress pill** (previously the
+  hardcoded "Act 1 • 42%") is now wired to real local data via
+  `refreshProgressPill()` (overall % of scenes marked complete).
+- **Viewer-role UI gating** (`applyRoleGating()`): a `role-viewer` body class
+  hides `.primary-only` controls (Add-to-Library, delete-note, library-entry
+  delete), makes the scene editor read-only, and hides Sync Canon — with an
+  **AaronF exception** that re-enables Sync for that one viewer account.
+  Notepad create/edit stays available to viewers. A TEMP `?mockRole=` /
+  `?mockConflict=` URL flag drives Phase-1 testing (removed in Phase 2, when a
+  real session replaces it). Code comments note this gating is UX-only; the
+  real enforcement in Phase 2 is that viewers hold no write token.
+- **Draft-conflict banner** (UI only this phase): a non-blocking compare/choose
+  banner ("keep this device's" vs "use the other device's" version) modeled on
+  the Draft Pad's confirm-before-overwrite pattern, to be wired to real
+  server-conflict detection in Phase 2. It never silently overwrites; the
+  losing version is to be auto-saved as a checkpoint.
+
+### Verification notes
+- Verified in a real browser (this session's sandbox **did** load the Tailwind/
+  Font Awesome CDNs, unlike the prior session) via direct DOM + computed-style
+  assertions and a real canon fetch (4 scenes pulled from GitHub): logged-out/
+  no-canon defaults; canon sync flips the landing from empty→radial with a
+  randomized GIF (confirmed the GIF loads, 1800×1098); all five nav buttons
+  (including the "no completed scenes yet" and review-fallback paths);
+  `last-selected-scene-id` persistence + Where-I-Left-Off; login as primary vs
+  viewer vs AaronF; nickname edit + greeting; Stats window open/render/close;
+  conflict banner show/resolve; logout; and a regression pass (autosave still
+  writes `current-draft:<id>`, Notepad/Draft Pad/closeAll still work, no console
+  errors). A real visual screenshot confirmed the radial layout + animated GIF.
+- **Caveats (per project convention):** (1) the preview pane locks the viewport
+  to ~280px wide and strips URL query strings, so the desktop-width visual
+  required temporarily neutralizing the tool's pre-existing fixed 252px center
+  margin (a runtime-only override, not a code change), and the `?mockRole=` URL
+  entry was verified by injecting the query via `history.replaceState` rather
+  than a real navigation — the underlying param logic and gating were confirmed
+  either way. (2) Everything server-related (real login, cross-device draft
+  sync, real stats/achievements) is **mocked** and unverified end-to-end until
+  Phase 2 provisions the `big-tiff-data` repo and wires real GitHub I/O.
+
 ## [2026-07-23] – Focus Mode Split into Writing Focus / Reading Focus
 
 ### Added

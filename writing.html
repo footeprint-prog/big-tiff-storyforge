@@ -442,6 +442,13 @@
             display: none !important;
         }
 
+        /* Viewer-role UX gating: hide primary-only controls. NOTE: this is
+           convenience only - Phase 2's real enforcement is that viewers hold
+           no GitHub write token, so they physically cannot persist changes. */
+        body.role-viewer .primary-only {
+            display: none !important;
+        }
+
         .notepad.active {
             border: 4px solid #D4AF37;
         }
@@ -595,12 +602,27 @@
                         </div>
                     </div>
                     
-                    <!-- Login -->
-                    <button onclick="showLoginModal()"
-                            class="h-8 px-3.5 py-1 text-sm rounded-2xl border border-[#D4AF37]/50 hover:bg-[#D4AF37]/10 transition-colors flex items-center gap-x-2">
-                        <i class="fa-solid fa-user fa-sm"></i>
-                        <span class="font-medium text-xs tracking-wider">LOGIN</span>
-                    </button>
+                    <!-- Account / Login (dual-state; populated by refreshAccountButton()) -->
+                    <div class="relative flex items-center gap-x-1.5">
+                        <button id="account-btn" onclick="onAccountButtonClick()"
+                                class="h-8 px-3.5 py-1 text-sm rounded-2xl border border-[#D4AF37]/50 hover:bg-[#D4AF37]/10 transition-colors flex items-center gap-x-2">
+                            <i class="fa-solid fa-user fa-sm"></i>
+                            <span id="account-btn-label" class="font-medium text-xs tracking-wider">LOGIN</span>
+                        </button>
+                        <button id="nickname-edit-btn" onclick="startNicknameEdit()" title="Edit display name"
+                                class="hidden h-7 w-7 items-center justify-center rounded-full text-[#D4AF37]/70 hover:text-[#D4AF37] hover:bg-[#4A3A2E] transition-colors">
+                            <i class="fa-solid fa-pencil text-xs"></i>
+                        </button>
+                        <!-- Logout menu (shown when logged in) -->
+                        <div id="account-menu" class="hidden absolute top-9 left-0 z-[60] bg-[#3D2B1F] border border-[#D4AF37]/50 rounded-xl shadow-xl py-1 min-w-[130px]">
+                            <button onclick="logout()" class="w-full text-left px-3 py-1.5 text-xs text-[#F4EDE4] hover:bg-[#4A3A2E] flex items-center gap-x-2">
+                                <i class="fa-solid fa-arrow-right-from-bracket text-[#D4AF37]"></i> Log out
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Rotating salutation (populated by renderGreeting()) -->
+                    <span id="user-greeting" class="hidden md:inline text-xs text-[#D4AF37]/80 italic"></span>
                 </div>
 
                 <!-- Right side -->
@@ -620,10 +642,10 @@
                         <div class="flex items-center gap-x-2">
                             <div class="flex items-center gap-x-1.5">
                                 <div class="w-1.5 h-1.5 bg-[#D4AF37] rounded-full animate-pulse"></div>
-                                <span class="text-xs font-medium whitespace-nowrap">Act 1 • 42%</span>
+                                <span id="progress-pill-label" class="text-xs font-medium whitespace-nowrap">— %</span>
                             </div>
                             <div class="w-16 h-1.5 bg-[#3D2B1F] rounded-full overflow-hidden border border-[#D4AF37]/30">
-                                <div class="h-full w-[42%] bg-gradient-to-r from-[#D4AF37] to-[#E8C86B] rounded-full"></div>
+                                <div id="progress-pill-bar" class="h-full w-0 bg-gradient-to-r from-[#D4AF37] to-[#E8C86B] rounded-full transition-all"></div>
                             </div>
                         </div>
 
@@ -736,15 +758,67 @@
             <div id="center-scroll-area" class="flex-1 overflow-y-auto overflow-x-hidden">
             <div id="center-content-frame" style="width: 100%;">
             
-            <!-- HTML-driven Initial State: Placeholder -->
-            <div id="no-scene-placeholder" class="flex flex-col items-center justify-center min-h-[420px] text-center px-8">
-                <div class="mb-6">
-                    <i class="fa-solid fa-sitemap text-[#D4AF37] text-7xl"></i>
+            <!-- HTML-driven Initial State: Landing / Home screen (rendered by renderLandingScreen()) -->
+            <div id="no-scene-placeholder" class="flex flex-col items-center justify-center min-h-[520px] text-center px-8 py-6">
+
+                <!-- Rotating stat teaser -->
+                <div id="landing-stat-teaser" class="text-sm text-[#D4AF37]/80 italic mb-4 min-h-[1.25rem]"></div>
+
+                <!-- When no canon is loaded yet: a calm one-tap sync -->
+                <div id="landing-empty" class="hidden max-w-md">
+                    <div class="mb-6"><i class="fa-solid fa-sitemap text-[#D4AF37] text-6xl"></i></div>
+                    <p class="text-xl text-[#D4AF37] font-medium mb-3">Let's load your story.</p>
+                    <p class="text-sm text-[#D4AF37]/70 mb-5">Tap below to sync the latest scenes and pick up where you left off.</p>
+                    <button id="landing-sync-btn" onclick="fetchLatestFromCanon()"
+                            class="px-5 py-2 text-sm bg-[#D4AF37] text-[#3D2B1F] font-bold rounded-2xl hover:bg-[#E8C86B] transition-colors">
+                        <i class="fa-solid fa-sync-alt mr-1.5"></i> Sync Canon
+                    </button>
                 </div>
-                <div class="max-w-md">
-                    <p class="text-xl text-[#D4AF37] font-medium mb-3">Please Sync data and select a scene to get started.</p>
-                    <p class="text-sm text-[#D4AF37]/70">The <strong>OUTLINE</strong> panel is open on the left.<br>
-                    Click <strong>"Sync with Canon"</strong> then choose a scene.</p>
+
+                <!-- Radial navigation (shown once canon is loaded) -->
+                <div id="landing-radial" class="hidden">
+                    <!-- Top: Random Unfinished -->
+                    <div class="flex justify-center mb-3">
+                        <button onclick="goToRandomUnfinishedScene()"
+                                class="landing-nav-btn px-4 py-2 rounded-2xl border border-[#D4AF37]/50 bg-[#3D2B1F]/70 hover:bg-[#4A3A2E] text-xs font-medium text-[#F4EDE4] flex items-center gap-x-2 transition-colors">
+                            <i class="fa-solid fa-shuffle text-[#D4AF37]"></i> Random Unfinished
+                        </button>
+                    </div>
+
+                    <!-- Middle row: Left · Tiff GIF · Right -->
+                    <div class="flex items-center justify-center gap-x-5">
+                        <button onclick="goToLastCompletedScene()"
+                                class="landing-nav-btn px-4 py-2 rounded-2xl border border-[#D4AF37]/50 bg-[#3D2B1F]/70 hover:bg-[#4A3A2E] text-xs font-medium text-[#F4EDE4] flex items-center gap-x-2 transition-colors">
+                            <i class="fa-solid fa-circle-check text-[#A3E6C9]"></i> Last Completed
+                        </button>
+
+                        <img id="landing-tiff-gif" src="" alt="Big Tiff"
+                             class="w-40 h-40 md:w-52 md:h-52 object-contain flex-shrink-0 select-none" draggable="false">
+
+                        <button onclick="goToNextUnfinishedScene()"
+                                class="landing-nav-btn px-4 py-2 rounded-2xl border border-[#D4AF37]/50 bg-[#3D2B1F]/70 hover:bg-[#4A3A2E] text-xs font-medium text-[#F4EDE4] flex items-center gap-x-2 transition-colors">
+                            <i class="fa-solid fa-pen-nib text-[#E8C86B]"></i> Next Unfinished
+                        </button>
+                    </div>
+
+                    <!-- Center/main: Where I Left Off -->
+                    <div class="flex justify-center mt-4">
+                        <button onclick="goToWhereILeftOff()"
+                                class="landing-nav-btn px-7 py-3 rounded-2xl bg-[#D4AF37] text-[#3D2B1F] font-bold text-sm hover:bg-[#E8C86B] flex items-center gap-x-2 shadow-lg transition-colors">
+                            <i class="fa-solid fa-feather-pointed"></i> Where I Left Off
+                        </button>
+                    </div>
+
+                    <!-- Bottom: Stats snapshot -->
+                    <div class="flex justify-center mt-3">
+                        <button onclick="showStoryStats()"
+                                class="landing-nav-btn px-4 py-1.5 rounded-2xl text-xs font-medium text-[#D4AF37]/90 hover:text-[#D4AF37] hover:bg-[#4A3A2E]/60 flex items-center gap-x-2 transition-colors">
+                            <i class="fa-solid fa-chart-line"></i> Stats & Progress
+                        </button>
+                    </div>
+
+                    <!-- Inline message area (no-op feedback, never an alert) -->
+                    <div id="landing-nav-message" class="text-xs text-[#D4AF37]/70 mt-4 min-h-[1rem]"></div>
                 </div>
             </div>
             
@@ -1150,11 +1224,11 @@
                 <div id="notes-list" class="space-y-0.5 flex-1 overflow-y-auto text-xs pr-1"></div>
 
                 <div class="flex justify-between items-center pt-2 mt-auto">
-                    <button onclick="requestDeleteNote()" class="text-red-400 hover:text-red-300 px-2 py-1">
+                    <button onclick="requestDeleteNote()" class="primary-only text-red-400 hover:text-red-300 px-2 py-1">
                         <i class="fa-solid fa-trash fa-lg"></i>
                     </button>
 
-                    <div class="relative group">
+                    <div class="primary-only relative group">
                         <button onclick="addCurrentNoteToLibrary()" class="text-[#D4AF37] hover:text-[#E8C86B] px-2 py-1">
                             <i class="fa-solid fa-book-open fa-lg"></i>
                         </button>
@@ -1299,6 +1373,88 @@
             </div>
         </div>
 
+    </div>
+
+    <!-- ==================== STATS & PROGRESS ==================== -->
+    <div id="stats-window" class="notepad hidden" style="left: 620px; top: 120px; width: 460px; height: 440px;">
+        <div class="notepad-header" id="stats-header">
+            <div class="flex items-center gap-x-2">
+                <i class="fa-solid fa-chart-line text-[#D4AF37]"></i>
+                <h3>Stats &amp; Progress</h3>
+            </div>
+            <button onclick="hideStatsWindow()" class="notepad-close">
+                <i class="fa-solid fa-times"></i>
+            </button>
+        </div>
+
+        <div class="notepad-body" style="flex-direction: column;">
+            <div class="p-4 overflow-y-auto flex-1 text-sm w-full">
+                <!-- Counters -->
+                <div id="stats-counters" class="grid grid-cols-3 gap-2 mb-4"></div>
+                <!-- Achievements -->
+                <div class="flex items-center justify-between mb-2">
+                    <span class="section-label text-[#D4AF37]">Achievements</span>
+                    <span id="stats-ach-count" class="text-[10px] text-[#D4AF37]/60"></span>
+                </div>
+                <div id="stats-achievements" class="grid grid-cols-2 gap-2"></div>
+            </div>
+        </div>
+
+        <div id="stats-resize-handle" class="notepad-resize-handle"></div>
+    </div>
+
+    <!-- ==================== IN-TOOL LOGIN MODAL (mock in Phase 1) ==================== -->
+    <div id="login-modal" class="hidden fixed inset-0 bg-black/60 z-[600] flex items-center justify-center">
+        <div class="bg-[#3D2B1F] border border-[#D4AF37] rounded-2xl p-6 w-[320px]">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-[#D4AF37] font-semibold">Log in</h3>
+                <button onclick="hideLoginModal()" class="text-[#D4AF37]/70 hover:text-[#D4AF37]"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <p class="text-xs text-[#D4AF37]/70 italic mb-3">Let the Light guide you from here...</p>
+            <input id="login-username" type="text" placeholder="Traveler name" autocomplete="username"
+                   class="w-full bg-[#4A3A2E] border border-[#D4AF37]/40 rounded-xl px-3 py-1.5 text-sm mb-2 focus:outline-none focus:border-[#D4AF37]">
+            <input id="login-password" type="password" placeholder="Secret phrase" autocomplete="current-password"
+                   class="w-full bg-[#4A3A2E] border border-[#D4AF37]/40 rounded-xl px-3 py-1.5 text-sm mb-2 focus:outline-none focus:border-[#D4AF37]"
+                   onkeydown="if(event.key==='Enter') submitLogin()">
+            <p id="login-error" class="hidden text-xs text-red-400 mb-2"></p>
+            <button onclick="submitLogin()"
+                    class="w-full px-5 py-2 text-sm bg-[#D4AF37] text-[#3D2B1F] font-bold rounded-2xl hover:bg-[#E8C86B] transition-colors">
+                Enter the world
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== DRAFT CONFLICT BANNER (Phase 1 UI; wired to server in Phase 2) ==================== -->
+    <div id="draft-conflict-banner" class="hidden fixed top-16 left-1/2 -translate-x-1/2 z-[550] w-[min(680px,92vw)]
+                bg-[#3D2B1F] border-2 border-[#D4AF37] rounded-2xl shadow-2xl p-4">
+        <div class="flex items-start gap-x-3">
+            <i class="fa-solid fa-triangle-exclamation text-[#E8C86B] text-lg mt-0.5"></i>
+            <div class="flex-1">
+                <p class="text-sm text-[#F4EDE4] font-medium mb-1">A newer draft was saved from another device</p>
+                <p id="draft-conflict-detail" class="text-xs text-[#D4AF37]/80 mb-3"></p>
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                    <div class="bg-[#4A3A2E] border border-[#D4AF37]/40 rounded-xl p-2">
+                        <div class="text-[10px] text-[#D4AF37]/70 mb-1">This device</div>
+                        <div id="draft-conflict-local" class="text-xs text-[#E8D9C0] max-h-24 overflow-y-auto"></div>
+                    </div>
+                    <div class="bg-[#4A3A2E] border border-[#D4AF37]/40 rounded-xl p-2">
+                        <div class="text-[10px] text-[#D4AF37]/70 mb-1">Other device (newer)</div>
+                        <div id="draft-conflict-remote" class="text-xs text-[#E8D9C0] max-h-24 overflow-y-auto"></div>
+                    </div>
+                </div>
+                <p class="text-[10px] text-[#D4AF37]/60 mb-2">Whichever you don't keep is saved as a Draft Pad checkpoint first — nothing is lost.</p>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="resolveDraftConflict('local')"
+                            class="px-4 py-1.5 text-xs border border-[#D4AF37] rounded-2xl hover:bg-[#4A3A2E] text-[#F4EDE4]">
+                        Keep this device's version
+                    </button>
+                    <button onclick="resolveDraftConflict('remote')"
+                            class="px-4 py-1.5 text-xs bg-[#D4AF37] text-[#3D2B1F] font-bold rounded-2xl hover:bg-[#E8C86B]">
+                        Use the other device's version
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- ==================== GLOBAL CHANGELOG ==================== -->
@@ -1505,6 +1661,7 @@
             hideChangelog();
             hideProofreader();
             hideSammyExport();
+            hideStatsWindow();
 
             // Floating guidance cards are a temporary peek, not a layout
             // choice - Focus mode snaps them all home.
@@ -1847,8 +2004,8 @@
 
             if (isCustom) {
                 html += `
-                    <button onclick="moveLibraryEntryBackToNotepad('${entry.id}', event)" 
-                            class="text-red-400 hover:text-red-300 flex-shrink-0 ml-2">
+                    <button onclick="moveLibraryEntryBackToNotepad('${entry.id}', event)"
+                            class="primary-only text-red-400 hover:text-red-300 flex-shrink-0 ml-2">
                         <i class="fa-solid fa-trash fa-sm"></i>
                     </button>
                 `;
@@ -3532,9 +3689,27 @@
             makeSammyExportDraggable();
             makeSammyExportResizable();
 
+            // Stats window setup (single initialization)
+            makeStatsWindowDraggable();
+            makeStatsWindowResizable();
+
             // Floating guidance cards never persist across a reload/session -
             // ensure a clean slate every time the tool initializes.
             resetAllFloatingGuidanceCards();
+
+            // Accounts / landing / progress (Phase 1: local + mocked session)
+            checkSession();
+            renderLandingScreen();
+            refreshProgressPill();
+
+            // TEMP: ?mockConflict=1 previews the draft-conflict banner UI.
+            if (new URLSearchParams(location.search).get('mockConflict') === '1') {
+                showDraftConflictBanner(
+                    'The little ones gathered as the storm rolled in...',
+                    'The little ones gathered close as the first thunder rolled in, and Tiff felt the static rise...',
+                    'A newer draft for this scene was saved from another device a moment ago.'
+                );
+            }
 
             console.log('%c[Big Tiff StoryForge] Writing sanctuary ready.', 'color:#8B6F47');
         }
@@ -3617,6 +3792,11 @@
                 renderDynamicOutline();
                 showSyncSummaryReport(data, changeResult);
                 updateLastSyncDisplay();
+
+                // Now that canon is loaded, switch the landing screen from its
+                // empty state to the radial nav and refresh the progress pill.
+                if (!currentScene) renderLandingScreen();
+                refreshProgressPill();
 
                 // Floating guidance cards are a temporary peek at one scene's
                 // guidance - a fresh sync can change which scene is even
@@ -4458,6 +4638,7 @@
             }
 
             currentScene = scene;
+            localStorage.setItem('last-selected-scene-id', scene.id);
 
             const placeholder = document.getElementById('no-scene-placeholder');
             const sceneContent = document.getElementById('scene-content');
@@ -4490,6 +4671,423 @@
 
             console.log("%c[Scene] Loaded into writing area with guidance:", "color:#8B6F47", scene.id, scene.title);
         }
+
+        // =====================================================
+        // ACCOUNTS / LANDING / STATS  (Phase 1: local + mocked)
+        // Phase 2 swaps the mocked session + stats for real GitHub
+        // reads/writes. See plan: peaceful-strolling-crystal.md.
+        // =====================================================
+
+        // ---- Session state (mocked in Phase 1) ----
+        let currentUser = null;          // username string
+        let currentUserRole = null;      // 'primary' | 'viewer' | null
+        let currentCanSyncCanon = false; // AaronF viewer exception / primary
+
+        const SESSION_KEY = 'bigtiff-session';
+        const nicknameKey = (u) => `bigtiff-nickname:${u}`;
+
+        // TEMP mock account directory - replaced in Phase 2 by a real
+        // client-side hash check against accounts.json.
+        const MOCK_ACCOUNTS = {
+            ericap: { role: 'primary', canSyncCanon: true },
+            aaronf: { role: 'viewer',  canSyncCanon: true  }, // sync-canon exception
+            guest:  { role: 'viewer',  canSyncCanon: false }
+        };
+
+        function setSession(username, role, canSyncCanon, persist) {
+            currentUser = username;
+            currentUserRole = role;
+            currentCanSyncCanon = !!canSyncCanon;
+            if (persist) {
+                localStorage.setItem(SESSION_KEY, JSON.stringify({ username, role, canSyncCanon: !!canSyncCanon }));
+            }
+        }
+
+        function checkSession() {
+            // TEMP ?mockRole= override for gating tests (removed in Phase 2).
+            const params = new URLSearchParams(location.search);
+            const mock = params.get('mockRole');
+            if (mock) {
+                const map = {
+                    primary:        { u: 'ericap', role: 'primary', sync: true  },
+                    viewer:         { u: 'guest',  role: 'viewer',  sync: false },
+                    'viewer-aaron': { u: 'aaronf', role: 'viewer',  sync: true  }
+                };
+                const m = map[mock];
+                if (m) setSession(m.u, m.role, m.sync, false);
+            } else {
+                try {
+                    const s = JSON.parse(localStorage.getItem(SESSION_KEY));
+                    if (s && s.username) setSession(s.username, s.role, s.canSyncCanon, false);
+                } catch { /* no session */ }
+            }
+            refreshAccountButton();
+            applyRoleGating();
+            renderGreeting();
+        }
+
+        // ---- Account button (dual-state) ----
+        function getNickname() {
+            if (!currentUser) return '';
+            return localStorage.getItem(nicknameKey(currentUser)) || currentUser;
+        }
+
+        function refreshAccountButton() {
+            const label = document.getElementById('account-btn-label');
+            const pencil = document.getElementById('nickname-edit-btn');
+            const menu = document.getElementById('account-menu');
+            if (!label) return;
+            if (currentUser) {
+                label.textContent = getNickname();
+                pencil.classList.remove('hidden');
+                pencil.classList.add('flex');
+            } else {
+                label.textContent = 'LOGIN';
+                pencil.classList.add('hidden');
+                pencil.classList.remove('flex');
+                if (menu) menu.classList.add('hidden');
+            }
+        }
+
+        function onAccountButtonClick() {
+            if (currentUser) {
+                document.getElementById('account-menu').classList.toggle('hidden');
+            } else {
+                showLoginModal();
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem(SESSION_KEY);
+            currentUser = null; currentUserRole = null; currentCanSyncCanon = false;
+            document.getElementById('account-menu').classList.add('hidden');
+            refreshAccountButton();
+            applyRoleGating();
+            renderGreeting();
+        }
+
+        function startNicknameEdit() {
+            if (!currentUser) return;
+            const next = prompt('Display name (nickname only - your username stays the same):', getNickname());
+            if (next === null) return;
+            const trimmed = next.trim();
+            localStorage.setItem(nicknameKey(currentUser), trimmed || currentUser);
+            refreshAccountButton();
+            renderGreeting();
+        }
+
+        // ---- Login modal (mocked in Phase 1) ----
+        function showLoginModal() {
+            document.getElementById('login-error').classList.add('hidden');
+            document.getElementById('login-username').value = '';
+            document.getElementById('login-password').value = '';
+            document.getElementById('login-modal').classList.remove('hidden');
+            document.getElementById('login-username').focus();
+        }
+        function hideLoginModal() {
+            document.getElementById('login-modal').classList.add('hidden');
+        }
+        function submitLogin() {
+            const u = document.getElementById('login-username').value.trim().toLowerCase();
+            const err = document.getElementById('login-error');
+            const acct = MOCK_ACCOUNTS[u];
+            // Phase 1: password not checked (mock). Phase 2: hash-check vs accounts.json.
+            if (!acct) {
+                err.textContent = "That traveler name or secret phrase wasn't recognized.";
+                err.classList.remove('hidden');
+                return;
+            }
+            setSession(u, acct.role, acct.canSyncCanon, true);
+            hideLoginModal();
+            refreshAccountButton();
+            applyRoleGating();
+            renderGreeting();
+            renderLandingScreen();
+        }
+
+        // ---- Rotating greeting ----
+        const GREETINGS = [
+            'Greetings, {n}!', 'Shine on, {n}!', 'Write off into the sunset, {n}...',
+            'Keep it up, {n}!', 'Great to see you, {n}!', 'The page awaits, {n}.'
+        ];
+        function renderGreeting() {
+            const el = document.getElementById('user-greeting');
+            if (!el) return;
+            if (!currentUser) { el.textContent = ''; el.classList.add('hidden'); return; }
+            const tpl = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
+            el.textContent = tpl.replace('{n}', getNickname());
+            el.classList.remove('hidden');
+        }
+
+        // ---- Stats (Phase 1: derived-from-local + mocked) ----
+        function plainWordCount(html) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html || '';
+            const text = (tmp.textContent || '').trim();
+            return text ? text.split(/\s+/).length : 0;
+        }
+        function getStatsData() {
+            const scenes = (currentCanonData && currentCanonData.scenes) || [];
+            const total = scenes.length;
+            const done = scenes.filter(s => s.status === 'complete').length;
+            let words = 0;
+            for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                if (k && k.startsWith('current-draft:')) words += plainWordCount(localStorage.getItem(k));
+            }
+            const streak = 3; // MOCK - real streak from stats.json events in Phase 2
+            return {
+                scenesCompleted: done,
+                totalScenes: total,
+                totalWords: words,
+                streak,
+                achievements: [
+                    { id: 'first_scene', icon: 'fa-seedling',        label: 'First Scene',   unlocked: done >= 1 },
+                    { id: 'five_scenes', icon: 'fa-layer-group',     label: '5 Scenes',      unlocked: done >= 5 },
+                    { id: 'act1_done',   icon: 'fa-flag-checkered',  label: 'Act 1 Done',    unlocked: false },
+                    { id: 'streak7',     icon: 'fa-fire',            label: '7-Day Streak',  unlocked: false },
+                    { id: 'words10k',    icon: 'fa-feather',         label: '10k Words',     unlocked: words >= 10000 },
+                    { id: 'wordsmith',   icon: 'fa-trophy',          label: 'Wordsmith',     unlocked: false }
+                ]
+            };
+        }
+
+        function refreshProgressPill() {
+            const label = document.getElementById('progress-pill-label');
+            const bar = document.getElementById('progress-pill-bar');
+            if (!label || !bar) return;
+            const s = getStatsData();
+            const pct = s.totalScenes ? Math.round((s.scenesCompleted / s.totalScenes) * 100) : 0;
+            label.textContent = `${pct}% complete`;
+            bar.style.width = pct + '%';
+        }
+
+        // ---- Stats window (mirrors Draft Pad's window pattern) ----
+        function showStoryStats() {
+            const win = document.getElementById('stats-window');
+            win.classList.remove('hidden');
+            win.style.display = 'flex';
+            win.classList.add('active');
+            restoreStatsWindowState();
+            renderStatsWindow();
+        }
+        function hideStatsWindow() {
+            const win = document.getElementById('stats-window');
+            if (!win) return;
+            saveStatsWindowState();
+            win.style.display = 'none';
+            win.classList.remove('active');
+        }
+        function renderStatsWindow() {
+            const s = getStatsData();
+            const tile = (val, lbl) =>
+                `<div class="bg-[#4A3A2E] border border-[#D4AF37]/40 rounded-xl p-3 text-center">
+                    <div class="text-2xl font-bold text-[#D4AF37]">${val}</div>
+                    <div class="text-[10px] text-[#D4AF37]/70 tracking-wider uppercase mt-0.5">${lbl}</div>
+                 </div>`;
+            document.getElementById('stats-counters').innerHTML =
+                tile(s.scenesCompleted, 'Scenes Done') +
+                tile(s.totalWords.toLocaleString(), 'Words') +
+                tile(s.streak, 'Day Streak');
+            const unlocked = s.achievements.filter(a => a.unlocked).length;
+            document.getElementById('stats-ach-count').textContent = `${unlocked}/${s.achievements.length}`;
+            document.getElementById('stats-achievements').innerHTML = s.achievements.map(a =>
+                `<div class="flex items-center gap-x-2 rounded-xl p-2 border ${a.unlocked
+                    ? 'border-[#D4AF37]/50 bg-[#4A3A2E]'
+                    : 'border-[#D4AF37]/15 bg-[#3D2B1F] opacity-50'}">
+                    <i class="fa-solid ${a.icon} ${a.unlocked ? 'text-[#D4AF37]' : 'text-[#D4AF37]/40'}"></i>
+                    <span class="text-xs ${a.unlocked ? 'text-[#F4EDE4]' : 'text-[#D4AF37]/50'}">${a.label}</span>
+                 </div>`).join('');
+        }
+        function makeStatsWindowDraggable() {
+            const win = document.getElementById('stats-window');
+            const header = document.getElementById('stats-header');
+            let offsetX = 0, offsetY = 0, isDragging = false;
+            header.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                offsetX = e.clientX - win.offsetLeft;
+                offsetY = e.clientY - win.offsetTop;
+                document.body.style.userSelect = 'none';
+            });
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                win.style.left = (e.clientX - offsetX) + 'px';
+                win.style.top = (e.clientY - offsetY) + 'px';
+            });
+            document.addEventListener('mouseup', () => {
+                if (isDragging) { isDragging = false; document.body.style.userSelect = ''; saveStatsWindowState(); }
+            });
+        }
+        function makeStatsWindowResizable() {
+            const win = document.getElementById('stats-window');
+            const handle = document.getElementById('stats-resize-handle');
+            let startX, startY, startW, startH;
+            handle.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                startX = e.clientX; startY = e.clientY;
+                startW = parseInt(getComputedStyle(win).width, 10);
+                startH = parseInt(getComputedStyle(win).height, 10);
+                document.addEventListener('mousemove', rm);
+                document.addEventListener('mouseup', re, { once: true });
+            });
+            function rm(e) {
+                win.style.width = Math.max(360, startW + (e.clientX - startX)) + 'px';
+                win.style.height = Math.max(300, startH + (e.clientY - startY)) + 'px';
+            }
+            function re() { document.removeEventListener('mousemove', rm); saveStatsWindowState(); }
+        }
+        const STATS_STATE_KEY = 'stats-window-state';
+        function saveStatsWindowState() {
+            const win = document.getElementById('stats-window');
+            if (!win) return;
+            localStorage.setItem(STATS_STATE_KEY, JSON.stringify({
+                left: win.style.left, top: win.style.top, width: win.style.width, height: win.style.height
+            }));
+        }
+        function restoreStatsWindowState() {
+            const win = document.getElementById('stats-window');
+            if (!win) return;
+            try {
+                const st = JSON.parse(localStorage.getItem(STATS_STATE_KEY));
+                if (st) {
+                    if (st.left) win.style.left = st.left;
+                    if (st.top) win.style.top = st.top;
+                    if (st.width) win.style.width = st.width;
+                    if (st.height) win.style.height = st.height;
+                }
+            } catch { /* defaults from inline style */ }
+        }
+
+        // ---- Landing / home screen ----
+        const TIFF_GIFS = [
+            'assets/TiffGif_Doodling.gif',
+            'assets/TiffGif_Laying.gif',
+            'assets/TiffGif_Sitting.gif'
+        ];
+        const STAT_TEASERS = [
+            (s) => `You've written ${s.totalWords.toLocaleString()} words so far ✍️`,
+            (s) => s.totalScenes ? `${s.scenesCompleted} of ${s.totalScenes} scenes complete` : 'Your story is ready when you are',
+            (s) => `🔥 ${s.streak}-day writing streak`,
+            () => 'Every word counts — keep going!'
+        ];
+
+        function renderStatTeaser() {
+            const el = document.getElementById('landing-stat-teaser');
+            if (!el) return;
+            const s = getStatsData();
+            const pick = STAT_TEASERS[Math.floor(Math.random() * STAT_TEASERS.length)];
+            el.textContent = pick(s);
+        }
+
+        function renderLandingScreen() {
+            const empty = document.getElementById('landing-empty');
+            const radial = document.getElementById('landing-radial');
+            const gif = document.getElementById('landing-tiff-gif');
+            const msg = document.getElementById('landing-nav-message');
+            if (msg) msg.textContent = '';
+            renderStatTeaser();
+            const hasCanon = !!(currentCanonData && currentCanonData.scenes && currentCanonData.scenes.length);
+            if (hasCanon) {
+                empty.classList.add('hidden');
+                radial.classList.remove('hidden');
+                if (gif) gif.src = TIFF_GIFS[Math.floor(Math.random() * TIFF_GIFS.length)];
+            } else {
+                radial.classList.add('hidden');
+                empty.classList.remove('hidden');
+            }
+        }
+
+        function goHome() {
+            currentScene = null;
+            closeAllFloatingWindows();
+            const placeholder = document.getElementById('no-scene-placeholder');
+            const sceneContent = document.getElementById('scene-content');
+            if (sceneContent) sceneContent.classList.add('hidden');
+            if (placeholder) placeholder.style.display = 'flex';
+            renderLandingScreen();
+        }
+
+        function landingNavMessage(text) {
+            const msg = document.getElementById('landing-nav-message');
+            if (msg) msg.textContent = text;
+        }
+
+        function scenesSorted() {
+            const scenes = (currentCanonData && currentCanonData.scenes) ? currentCanonData.scenes.slice() : [];
+            return scenes.sort((a, b) => (a.act - b.act) || (a.sceneNumber - b.sceneNumber));
+        }
+        function scenesByStatus(status) {
+            return scenesSorted().filter(s => s.status === status);
+        }
+        function requireCanonOrMsg() {
+            if (!(currentCanonData && currentCanonData.scenes && currentCanonData.scenes.length)) {
+                landingNavMessage('Sync Canon first to load your scenes.');
+                return false;
+            }
+            return true;
+        }
+
+        function goToWhereILeftOff() {
+            if (!requireCanonOrMsg()) return;
+            const lastId = localStorage.getItem('last-selected-scene-id');
+            const scenes = scenesSorted();
+            let target = lastId ? scenes.find(s => s.id === lastId) : null;
+            if (!target) target = scenesByStatus('unfinished')[0] || scenesByStatus('review')[0] || scenes[0];
+            if (target) selectSceneFromCanon(target);
+            else landingNavMessage('No scenes available yet.');
+        }
+        function goToLastCompletedScene() {
+            if (!requireCanonOrMsg()) return;
+            const done = scenesByStatus('complete');
+            if (done.length) selectSceneFromCanon(done[done.length - 1]);
+            else landingNavMessage('No completed scenes yet.');
+        }
+        function goToNextUnfinishedScene() {
+            if (!requireCanonOrMsg()) return;
+            const next = scenesByStatus('unfinished')[0] || scenesByStatus('review')[0];
+            if (next) selectSceneFromCanon(next);
+            else landingNavMessage('Everything is complete — nicely done!');
+        }
+        function goToRandomUnfinishedScene() {
+            if (!requireCanonOrMsg()) return;
+            const pool = scenesByStatus('unfinished').concat(scenesByStatus('review'));
+            if (pool.length) selectSceneFromCanon(pool[Math.floor(Math.random() * pool.length)]);
+            else landingNavMessage('Everything is complete — nicely done!');
+        }
+
+        // ---- Viewer-role UI gating (UX only; real enforcement is Phase 2's
+        //      write-token possession - viewers hold none) ----
+        function applyRoleGating() {
+            const isViewer = currentUserRole === 'viewer';
+            document.body.classList.toggle('role-viewer', isViewer);
+            const editor = document.getElementById('editor');
+            if (editor) editor.contentEditable = isViewer ? 'false' : 'true';
+            const syncBtn = document.getElementById('sync-canon-btn');
+            if (syncBtn) syncBtn.style.display = (isViewer && !currentCanSyncCanon) ? 'none' : '';
+            const landingSync = document.getElementById('landing-sync-btn');
+            if (landingSync) landingSync.style.display = (isViewer && !currentCanSyncCanon) ? 'none' : '';
+        }
+
+        // ---- Draft conflict banner (Phase 1 UI; server-wired in Phase 2) ----
+        function showDraftConflictBanner(localText, remoteText, detail) {
+            document.getElementById('draft-conflict-local').textContent = localText;
+            document.getElementById('draft-conflict-remote').textContent = remoteText;
+            document.getElementById('draft-conflict-detail').textContent =
+                detail || 'Choose which version to keep. The other is saved as a checkpoint first.';
+            document.getElementById('draft-conflict-banner').classList.remove('hidden');
+        }
+        function hideDraftConflictBanner() {
+            document.getElementById('draft-conflict-banner').classList.add('hidden');
+        }
+        function resolveDraftConflict(choice) {
+            // Phase 1: log only. Phase 2: auto-checkpoint the loser, then set the
+            // editor + push the chosen version to the data repo.
+            console.log('[DraftConflict] user chose:', choice);
+            hideDraftConflictBanner();
+        }
+
+        window.renderLandingScreen = renderLandingScreen;
+        window.refreshProgressPill = refreshProgressPill;
 
         // Make renderer available
         window.renderDynamicOutline = renderDynamicOutline;
