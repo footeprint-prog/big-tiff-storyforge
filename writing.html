@@ -614,7 +614,10 @@
                             <i class="fa-solid fa-pencil text-xs"></i>
                         </button>
                         <!-- Logout menu (shown when logged in) -->
-                        <div id="account-menu" class="hidden absolute top-9 left-0 z-[60] bg-[#3D2B1F] border border-[#D4AF37]/50 rounded-xl shadow-xl py-1 min-w-[130px]">
+                        <div id="account-menu" class="hidden absolute top-9 left-0 z-[60] bg-[#3D2B1F] border border-[#D4AF37]/50 rounded-xl shadow-xl py-1 min-w-[160px]">
+                            <button id="account-menu-cloud" onclick="showTokenSetup()" class="hidden w-full text-left px-3 py-1.5 text-xs text-[#F4EDE4] hover:bg-[#4A3A2E] items-center gap-x-2">
+                                <i class="fa-solid fa-cloud-arrow-up text-[#D4AF37]"></i> Cloud saving…
+                            </button>
                             <button onclick="logout()" class="w-full text-left px-3 py-1.5 text-xs text-[#F4EDE4] hover:bg-[#4A3A2E] flex items-center gap-x-2">
                                 <i class="fa-solid fa-arrow-right-from-bracket text-[#D4AF37]"></i> Log out
                             </button>
@@ -1421,6 +1424,45 @@
                     class="w-full px-5 py-2 text-sm bg-[#D4AF37] text-[#3D2B1F] font-bold rounded-2xl hover:bg-[#E8C86B] transition-colors">
                 Enter the world
             </button>
+        </div>
+    </div>
+
+    <!-- ==================== WRITE-TOKEN SETUP (primary only) ==================== -->
+    <div id="token-setup-modal" class="hidden fixed inset-0 bg-black/60 z-[600] flex items-center justify-center p-4">
+        <div class="bg-[#3D2B1F] border border-[#D4AF37] rounded-2xl p-6 w-[440px] max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-[#D4AF37] font-semibold">Turn on cloud saving</h3>
+                <button onclick="hideTokenSetup()" class="text-[#D4AF37]/70 hover:text-[#D4AF37]"><i class="fa-solid fa-times"></i></button>
+            </div>
+            <p class="text-xs text-[#F4EDE4]/90 mb-3">
+                This lets your writing save to the cloud so it follows you across devices.
+                You only do this once per device. It takes about a minute.
+            </p>
+            <ol class="text-xs text-[#F4EDE4]/90 space-y-2 mb-3 list-decimal pl-4">
+                <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" class="text-[#E8C86B] underline">github.com/settings/personal-access-tokens/new</a> (sign in as the Big Tiff account).</li>
+                <li><strong>Token name:</strong> anything, e.g. "Big Tiff writing".</li>
+                <li><strong>Expiration:</strong> pick the longest option (or "No expiration").</li>
+                <li><strong>Repository access:</strong> choose <em>Only select repositories</em> → pick <strong>big-tiff-data</strong>.</li>
+                <li><strong>Permissions:</strong> expand <em>Repository permissions</em> → set <strong>Contents</strong> to <strong>Read and write</strong>.</li>
+                <li>Click <strong>Generate token</strong>, copy it, and paste it below.</li>
+            </ol>
+            <input id="token-input" type="password" placeholder="Paste your token (starts with github_pat_...)"
+                   class="w-full bg-[#4A3A2E] border border-[#D4AF37]/40 rounded-xl px-3 py-1.5 text-sm mb-2 focus:outline-none focus:border-[#D4AF37]">
+            <p id="token-msg" class="hidden text-xs mb-2"></p>
+            <div class="flex gap-x-2">
+                <button onclick="saveWriteToken()" id="token-save-btn"
+                        class="flex-1 px-4 py-2 text-sm bg-[#D4AF37] text-[#3D2B1F] font-bold rounded-2xl hover:bg-[#E8C86B]">
+                    Save &amp; verify
+                </button>
+                <button onclick="dismissTokenSetup()"
+                        class="px-4 py-2 text-sm border border-[#D4AF37]/50 text-[#D4AF37] rounded-2xl hover:bg-[#4A3A2E]">
+                    Skip for now
+                </button>
+            </div>
+            <p class="text-[10px] text-[#D4AF37]/60 mt-3">
+                Your token is stored only in this browser and is never shared or committed. Without it, your writing
+                still saves locally on this device — it just won't sync to the cloud.
+            </p>
         </div>
     </div>
 
@@ -3057,6 +3099,9 @@
             if (!currentScene) return;
 
             localStorage.setItem(currentDraftStorageKey(currentScene.id), editor.innerHTML);
+            // Explicit save -> push to the data repo immediately (primary only).
+            pushDraftToServer(currentScene.id, editor.innerHTML, true);
+            syncStatsToRepo('draft_saved', { sceneId: currentScene.id });
 
             const status = document.getElementById('auto-save-status');
             const originalText = status.textContent;
@@ -3120,6 +3165,9 @@
             const saved = localStorage.getItem(currentDraftStorageKey(sceneId));
             editor.innerHTML = saved || '';
             updateWordCount();
+            // Reconcile with the server copy (may adopt remote if local is empty,
+            // or raise a conflict banner - never a silent overwrite of real text).
+            if (typeof pullDraftFromServer === 'function') pullDraftFromServer(sceneId);
         }
 
         function updateWordCount() {
@@ -3657,6 +3705,8 @@
             editor.addEventListener('input', () => {
                 if (currentScene) {
                     localStorage.setItem(currentDraftStorageKey(currentScene.id), editor.innerHTML);
+                    // Debounced push to the data repo (primary only, no-op without a token).
+                    pushDraftToServer(currentScene.id, editor.innerHTML, false);
                 }
                 updateWordCount();
                 refreshDraftPadIfOpen();
@@ -3697,10 +3747,13 @@
             // ensure a clean slate every time the tool initializes.
             resetAllFloatingGuidanceCards();
 
-            // Accounts / landing / progress (Phase 1: local + mocked session)
+            // Accounts / landing / progress. checkSession() gives immediate UI
+            // from the locally-stored session; bootstrapData() then fetches the
+            // real accounts + data repo and re-renders (auto-sync on every load).
             checkSession();
             renderLandingScreen();
             refreshProgressPill();
+            bootstrapData();
 
             // TEMP: ?mockConflict=1 previews the draft-conflict banner UI.
             if (new URLSearchParams(location.search).get('mockConflict') === '1') {
@@ -4686,14 +4739,6 @@
         const SESSION_KEY = 'bigtiff-session';
         const nicknameKey = (u) => `bigtiff-nickname:${u}`;
 
-        // TEMP mock account directory - replaced in Phase 2 by a real
-        // client-side hash check against accounts.json.
-        const MOCK_ACCOUNTS = {
-            ericap: { role: 'primary', canSyncCanon: true },
-            aaronf: { role: 'viewer',  canSyncCanon: true  }, // sync-canon exception
-            guest:  { role: 'viewer',  canSyncCanon: false }
-        };
-
         function setSession(username, role, canSyncCanon, persist) {
             currentUser = username;
             currentUserRole = role;
@@ -4737,10 +4782,13 @@
             const pencil = document.getElementById('nickname-edit-btn');
             const menu = document.getElementById('account-menu');
             if (!label) return;
+            const cloud = document.getElementById('account-menu-cloud');
             if (currentUser) {
                 label.textContent = getNickname();
                 pencil.classList.remove('hidden');
                 pencil.classList.add('flex');
+                if (cloud) cloud.classList.toggle('hidden', currentUserRole !== 'primary');
+                if (cloud && currentUserRole === 'primary') cloud.classList.add('flex');
             } else {
                 label.textContent = 'LOGIN';
                 pencil.classList.add('hidden');
@@ -4787,22 +4835,31 @@
         function hideLoginModal() {
             document.getElementById('login-modal').classList.add('hidden');
         }
-        function submitLogin() {
+        async function submitLogin() {
             const u = document.getElementById('login-username').value.trim().toLowerCase();
+            const pw = document.getElementById('login-password').value;
             const err = document.getElementById('login-error');
-            const acct = MOCK_ACCOUNTS[u];
-            // Phase 1: password not checked (mock). Phase 2: hash-check vs accounts.json.
-            if (!acct) {
-                err.textContent = "That traveler name or secret phrase wasn't recognized.";
+            const fail = () => { err.textContent = "That traveler name or secret phrase wasn't recognized."; err.classList.remove('hidden'); };
+            try {
+                if (!accountsData) await fetchAccounts();
+                const user = (accountsData.users || []).find(x => x.username === u);
+                if (!user) return fail();
+                const ok = await verifyPassword(pw, user.salt, user.hash);
+                if (!ok) return fail();
+                setSession(user.username, user.role, user.canSyncCanon, true);
+                hideLoginModal();
+                refreshAccountButton();
+                applyRoleGating();
+                renderGreeting();
+                await syncFromDataRepo();
+                if (!currentScene) renderLandingScreen();
+                refreshProgressPill();
+                maybePromptWriteTokenSetup();
+            } catch (e) {
+                console.warn('[login] error', e);
+                err.textContent = "Couldn't reach the login data. Check your connection and try again.";
                 err.classList.remove('hidden');
-                return;
             }
-            setSession(u, acct.role, acct.canSyncCanon, true);
-            hideLoginModal();
-            refreshAccountButton();
-            applyRoleGating();
-            renderGreeting();
-            renderLandingScreen();
         }
 
         // ---- Rotating greeting ----
@@ -4829,13 +4886,17 @@
         function getStatsData() {
             const scenes = (currentCanonData && currentCanonData.scenes) || [];
             const total = scenes.length;
-            const done = scenes.filter(s => s.status === 'complete').length;
-            let words = 0;
+            const localDone = scenes.filter(s => s.status === 'complete').length;
+            let localWords = 0;
             for (let i = 0; i < localStorage.length; i++) {
                 const k = localStorage.key(i);
-                if (k && k.startsWith('current-draft:')) words += plainWordCount(localStorage.getItem(k));
+                if (k && k.startsWith('current-draft:')) localWords += plainWordCount(localStorage.getItem(k));
             }
-            const streak = 3; // MOCK - real streak from stats.json events in Phase 2
+            // Prefer shared stats.json (so all profiles see Erica's real numbers);
+            // fall back to locally-derived values when it hasn't loaded yet.
+            const done = (statsData && typeof statsData.scenesCompleted === 'number') ? Math.max(statsData.scenesCompleted, localDone) : localDone;
+            const words = (statsData && typeof statsData.totalWords === 'number') ? Math.max(statsData.totalWords, localWords) : localWords;
+            const streak = (statsData && Array.isArray(statsData.streakDays)) ? statsData.streakDays.length : (localWords > 0 ? 1 : 0);
             return {
                 scenesCompleted: done,
                 totalScenes: total,
@@ -5080,10 +5141,304 @@
             document.getElementById('draft-conflict-banner').classList.add('hidden');
         }
         function resolveDraftConflict(choice) {
-            // Phase 1: log only. Phase 2: auto-checkpoint the loser, then set the
-            // editor + push the chosen version to the data repo.
-            console.log('[DraftConflict] user chose:', choice);
+            const c = pendingConflict;
             hideDraftConflictBanner();
+            if (!c) return;
+            const editor = document.getElementById('editor');
+            const keep = choice === 'local' ? c.localText : c.remoteText;
+            const loser = choice === 'local' ? c.remoteText : c.localText;
+            // Never lose the other version - stash it as a Draft Pad checkpoint first.
+            saveConflictLoserAsCheckpoint(c.sceneId, loser, choice);
+            if (editor && currentScene && currentScene.id === c.sceneId) {
+                editor.innerHTML = keep;
+                updateWordCount();
+            }
+            localStorage.setItem(currentDraftStorageKey(c.sceneId), keep);
+            pendingConflict = null;
+            // Push the kept version as the new authoritative copy.
+            pushDraftToServer(c.sceneId, keep, true);
+        }
+
+        // =====================================================
+        // GITHUB DATA LAYER (Phase 2) - real persistence
+        // Static GitHub Pages host: no backend. State lives as JSON in the
+        // public big-tiff-data repo. Reads are free public fetches; only the
+        // primary (Erica) writes, via a fine-grained PAT she pastes once
+        // (stored in her browser only). Draft prose is AES-GCM encrypted with
+        // an embedded key = "lightly private" (see repo README + plan).
+        // =====================================================
+        const DATA_RAW_BASE = 'https://raw.githubusercontent.com/footeprint-prog/big-tiff-data/main';
+        const DATA_API_BASE = 'https://api.github.com/repos/footeprint-prog/big-tiff-data/contents';
+        const WRITE_TOKEN_KEY = 'bigtiff-write-token';
+        // AES-GCM 256-bit key (base64). Embedded on purpose - lightly private.
+        const DRAFT_ENC_KEY_B64 = 'scAPCdgR089chCHAKHvSb4iwsodUclEAxm6iA6MfmIk=';
+        const PBKDF2_ITER = 100000;
+        const DRAFT_PUSH_DEBOUNCE = 2500;
+
+        let accountsData = null;      // parsed accounts.json
+        let remoteDrafts = {};        // sceneId -> { contentEnc, updatedAt }
+        let remoteCheckpoints = {};   // sceneId -> [ {id,name,contentEnc,createdAt} ]
+        let statsData = null;         // parsed stats.json
+        let pendingConflict = null;   // { sceneId, localText, remoteText }
+        const draftPushTimers = {};
+
+        // ---- base64 / bytes helpers ----
+        function b64ToBytes(b64) { const bin = atob(b64); const a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i); return a; }
+        function bytesToB64(buf) { let s = ''; const a = new Uint8Array(buf); for (let i = 0; i < a.length; i++) s += String.fromCharCode(a[i]); return btoa(s); }
+        function b64EncodeUtf8(str) { return bytesToB64(new TextEncoder().encode(str)); }
+        function stripHtml(html) { const d = document.createElement('div'); d.innerHTML = html || ''; return (d.textContent || '').trim(); }
+
+        // ---- AES-GCM draft encryption ----
+        let _draftKey = null;
+        async function getDraftKey() {
+            if (_draftKey) return _draftKey;
+            _draftKey = await crypto.subtle.importKey('raw', b64ToBytes(DRAFT_ENC_KEY_B64), 'AES-GCM', false, ['encrypt', 'decrypt']);
+            return _draftKey;
+        }
+        async function encryptDraft(text) {
+            const key = await getDraftKey();
+            const iv = crypto.getRandomValues(new Uint8Array(12));
+            const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(text || ''));
+            const out = new Uint8Array(iv.length + ct.byteLength);
+            out.set(iv, 0); out.set(new Uint8Array(ct), iv.length);
+            return bytesToB64(out);
+        }
+        async function decryptDraft(b64) {
+            if (!b64) return '';
+            try {
+                const key = await getDraftKey();
+                const raw = b64ToBytes(b64);
+                const iv = raw.slice(0, 12), ct = raw.slice(12);
+                const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct);
+                return new TextDecoder().decode(pt);
+            } catch (e) { console.warn('[decryptDraft] failed', e); return ''; }
+        }
+
+        // ---- Password verify (must match account-hash-generator.html) ----
+        async function verifyPassword(password, saltB64, expectedHashB64) {
+            const keyMat = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveBits']);
+            const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: b64ToBytes(saltB64), iterations: PBKDF2_ITER }, keyMat, 256);
+            const got = bytesToB64(bits);
+            if (got.length !== expectedHashB64.length) return false;
+            let diff = 0;
+            for (let i = 0; i < got.length; i++) diff |= got.charCodeAt(i) ^ expectedHashB64.charCodeAt(i);
+            return diff === 0;
+        }
+
+        // ---- Fetch layer (public reads) ----
+        async function fetchAccounts() {
+            const r = await fetch(`${DATA_RAW_BASE}/accounts.json?t=${Date.now()}`, { cache: 'no-store' });
+            if (!r.ok) throw new Error('accounts ' + r.status);
+            accountsData = await r.json();
+            return accountsData;
+        }
+        async function syncFromDataRepo() {
+            const grab = async (file) => {
+                try { const r = await fetch(`${DATA_RAW_BASE}/${file}?t=${Date.now()}`, { cache: 'no-store' }); return r.ok ? await r.json() : null; }
+                catch (e) { console.warn('[data sync]', file, e); return null; }
+            };
+            const [d, c, s] = await Promise.all([grab('drafts.json'), grab('checkpoints.json'), grab('stats.json')]);
+            if (d && d.drafts) remoteDrafts = d.drafts;
+            if (c && c.checkpoints) remoteCheckpoints = c.checkpoints;
+            if (s) statsData = s;
+        }
+
+        // ---- Write layer (primary only; needs pasted token) ----
+        function getWriteToken() { return localStorage.getItem(WRITE_TOKEN_KEY) || ''; }
+        async function getFileSha(file) {
+            const token = getWriteToken();
+            const r = await fetch(`${DATA_API_BASE}/${file}?t=${Date.now()}`, {
+                cache: 'no-store',
+                headers: token ? { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' } : {}
+            });
+            if (r.status === 404) return null;
+            if (!r.ok) throw new Error('sha ' + r.status);
+            const j = await r.json();
+            return j.sha;
+        }
+        async function pushToDataRepo(file, obj, opts = {}) {
+            const token = getWriteToken();
+            if (!token) throw new Error('no-token');
+            const sha = (opts.sha !== undefined) ? opts.sha : await getFileSha(file);
+            const body = { message: opts.message || `Update ${file}`, content: b64EncodeUtf8(JSON.stringify(obj, null, 2)) };
+            if (sha) body.sha = sha;
+            const r = await fetch(`${DATA_API_BASE}/${file}`, {
+                method: 'PUT',
+                headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            if (r.status === 409) { const e = new Error('conflict'); e.conflict = true; throw e; }
+            if (!r.ok) throw new Error('push ' + r.status + ' ' + (await r.text()));
+            const j = await r.json();
+            return j.content && j.content.sha;
+        }
+
+        // ---- Draft push (debounced) ----
+        function localPushedAtKey(id) { return `local-draft-pushed-at:${id}`; }
+        function pushDraftToServer(sceneId, html, immediate) {
+            if (currentUserRole === 'viewer') return;   // viewers never write
+            if (!getWriteToken()) return;                // no token yet - local save still works
+            clearTimeout(draftPushTimers[sceneId]);
+            const doPush = async () => {
+                try {
+                    const enc = await encryptDraft(html);
+                    const now = new Date().toISOString();
+                    // Re-read remote first so we merge (never clobber other scenes) and get a fresh sha.
+                    let obj = { schemaVersion: 1, drafts: {} };
+                    let sha = null;
+                    try {
+                        const r = await fetch(`${DATA_API_BASE}/drafts.json?t=${Date.now()}`, {
+                            cache: 'no-store', headers: { Authorization: `Bearer ${getWriteToken()}`, Accept: 'application/vnd.github+json' }
+                        });
+                        if (r.ok) { const j = await r.json(); sha = j.sha; obj = JSON.parse(decodeURIComponent(escape(atob(j.content.replace(/\n/g, ''))))); }
+                    } catch (e) { /* fall back to fresh object */ }
+                    obj.drafts = obj.drafts || {};
+                    obj.drafts[sceneId] = { contentEnc: enc, updatedAt: now };
+                    await pushToDataRepo('drafts.json', obj, { sha, message: `Draft: ${sceneId}` });
+                    remoteDrafts = obj.drafts;
+                    localStorage.setItem(localPushedAtKey(sceneId), now);
+                } catch (e) {
+                    if (e.conflict) console.warn('[draft push] conflict - will reconcile on next open');
+                    else console.warn('[draft push] failed', e);
+                }
+            };
+            if (immediate) doPush(); else draftPushTimers[sceneId] = setTimeout(doPush, DRAFT_PUSH_DEBOUNCE);
+        }
+
+        // ---- Draft pull + conflict (called from loadCurrentDraftForScene) ----
+        async function pullDraftFromServer(sceneId) {
+            const remote = remoteDrafts[sceneId];
+            if (!remote || !remote.contentEnc) return;
+            const editor = document.getElementById('editor');
+            const localText = editor ? editor.innerHTML : (localStorage.getItem(currentDraftStorageKey(sceneId)) || '');
+            const remoteText = await decryptDraft(remote.contentEnc);
+            if (remoteText === localText) return;
+            const lastPushed = localStorage.getItem(localPushedAtKey(sceneId));
+            const remoteNewer = !lastPushed || (remote.updatedAt && remote.updatedAt > lastPushed);
+            if (!remoteNewer) return; // local is newer/unsynced -> keep local
+            if (plainWordCount(localText) === 0) {
+                // Nothing to lose locally: adopt remote quietly.
+                if (editor) editor.innerHTML = remoteText;
+                localStorage.setItem(currentDraftStorageKey(sceneId), remoteText);
+                localStorage.setItem(localPushedAtKey(sceneId), remote.updatedAt || new Date().toISOString());
+                updateWordCount();
+                return;
+            }
+            // Both differ and both have content -> conflict, never silent overwrite.
+            pendingConflict = { sceneId, localText, remoteText };
+            showDraftConflictBanner(stripHtml(localText), stripHtml(remoteText),
+                `A newer draft for this scene was saved from another device${remote.updatedAt ? ' at ' + new Date(remote.updatedAt).toLocaleString() : ''}.`);
+        }
+
+        function saveConflictLoserAsCheckpoint(sceneId, html, keptChoice) {
+            try {
+                const snaps = loadDraftSnapshots(sceneId);
+                snaps.unshift({
+                    id: Date.now().toString(),
+                    title: `Conflict backup (${keptChoice === 'local' ? 'other device' : 'this device'})`,
+                    content: html, created: new Date().toISOString()
+                });
+                saveDraftSnapshots(sceneId, snaps);
+                if (typeof refreshDraftPadIfOpen === 'function') refreshDraftPadIfOpen();
+            } catch (e) { console.warn('[conflict checkpoint] failed', e); }
+        }
+
+        // ---- Stats push (primary only; debounced) ----
+        let statsPushTimer = null;
+        function syncStatsToRepo(eventType, meta) {
+            if (currentUserRole === 'viewer' || !getWriteToken()) return;
+            clearTimeout(statsPushTimer);
+            statsPushTimer = setTimeout(async () => {
+                try {
+                    const scenes = (currentCanonData && currentCanonData.scenes) || [];
+                    const done = scenes.filter(s => s.status === 'complete').length;
+                    let words = 0;
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const k = localStorage.key(i);
+                        if (k && k.startsWith('current-draft:')) words += plainWordCount(localStorage.getItem(k));
+                    }
+                    const base = statsData || { schemaVersion: 1, events: [], achievementsUnlocked: [], streakDays: [] };
+                    base.scenesCompleted = done;
+                    base.totalWords = words;
+                    const today = new Date().toISOString().slice(0, 10);
+                    base.streakDays = Array.isArray(base.streakDays) ? base.streakDays : [];
+                    if (!base.streakDays.includes(today)) base.streakDays.push(today);
+                    base.events = Array.isArray(base.events) ? base.events : [];
+                    if (eventType) base.events.push({ type: eventType, at: new Date().toISOString(), ...(meta || {}) });
+                    if (base.events.length > 2000) base.events = base.events.slice(-2000);
+                    const sha = await getFileSha('stats.json');
+                    await pushToDataRepo('stats.json', base, { sha, message: `Stats: ${eventType || 'update'}` });
+                    statsData = base;
+                    refreshProgressPill();
+                } catch (e) { console.warn('[stats push] failed', e); }
+            }, DRAFT_PUSH_DEBOUNCE);
+        }
+
+        // ---- Session validation against real accounts ----
+        function validateSessionAgainstAccounts() {
+            if (!currentUser || !accountsData || !Array.isArray(accountsData.users)) return;
+            const u = accountsData.users.find(x => x.username === currentUser);
+            if (!u) { logout(); return; }        // account removed -> drop stale session
+            currentUserRole = u.role;             // accounts.json is authoritative
+            currentCanSyncCanon = !!u.canSyncCanon;
+        }
+
+        // ---- Bootstrap: fetch accounts + data repo on load, then re-render ----
+        async function bootstrapData() {
+            try { await fetchAccounts(); validateSessionAgainstAccounts(); } catch (e) { console.warn('[accounts fetch] failed', e); }
+            try { await syncFromDataRepo(); } catch (e) { console.warn('[data sync] failed', e); }
+            refreshAccountButton(); applyRoleGating(); renderGreeting();
+            if (!currentScene) renderLandingScreen();
+            refreshProgressPill();
+            maybePromptWriteTokenSetup();
+        }
+
+        // ---- Write-token first-run setup (primary only) ----
+        const TOKEN_PROMPT_DISMISSED_KEY = 'bigtiff-token-prompt-dismissed';
+        function maybePromptWriteTokenSetup() {
+            if (currentUserRole === 'primary' && !getWriteToken()
+                && !sessionStorage.getItem(TOKEN_PROMPT_DISMISSED_KEY)) {
+                showTokenSetup();
+            }
+        }
+        function showTokenSetup() {
+            const msg = document.getElementById('token-msg');
+            if (msg) { msg.classList.add('hidden'); msg.textContent = ''; }
+            const inp = document.getElementById('token-input');
+            if (inp) inp.value = '';
+            document.getElementById('token-setup-modal').classList.remove('hidden');
+        }
+        function hideTokenSetup() {
+            document.getElementById('token-setup-modal').classList.add('hidden');
+        }
+        function dismissTokenSetup() {
+            // Only skip for this browser session - we'll gently offer again next visit.
+            sessionStorage.setItem(TOKEN_PROMPT_DISMISSED_KEY, '1');
+            hideTokenSetup();
+        }
+        async function saveWriteToken() {
+            const inp = document.getElementById('token-input');
+            const msg = document.getElementById('token-msg');
+            const btn = document.getElementById('token-save-btn');
+            const token = (inp.value || '').trim();
+            const show = (text, ok) => { msg.textContent = text; msg.className = 'text-xs mb-2 ' + (ok ? 'text-[#A3E6C9]' : 'text-red-400'); msg.classList.remove('hidden'); };
+            if (!token) return show('Please paste your token first.', false);
+            btn.disabled = true; btn.textContent = 'Verifying...';
+            try {
+                // Validate by an authenticated read of the data repo.
+                const r = await fetch(`${DATA_API_BASE}/drafts.json?t=${Date.now()}`, {
+                    cache: 'no-store', headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' }
+                });
+                if (r.status === 401 || r.status === 403) return show('That token was rejected. Check it has Contents: Read and write on big-tiff-data.', false);
+                if (!r.ok) return show('Could not verify (HTTP ' + r.status + '). Try again.', false);
+                localStorage.setItem(WRITE_TOKEN_KEY, token);
+                show('Cloud saving is on! Your writing will now sync.', true);
+                setTimeout(hideTokenSetup, 1200);
+            } catch (e) {
+                show('Network error while verifying. Check your connection and try again.', false);
+            } finally {
+                btn.disabled = false; btn.textContent = 'Save & verify';
+            }
         }
 
         window.renderLandingScreen = renderLandingScreen;

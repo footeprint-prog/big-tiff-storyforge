@@ -2,6 +2,70 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-07-23] – GitHub-Native Persistence: Accounts, Draft Sync, Stats (Phase 2 of 2)
+
+Wires the Phase 1 UI to real, shared, cross-device persistence — **with no
+backend**, using the public `big-tiff-data` repo as a JSON store (static
+GitHub Pages hosting; the old Cloudflare assumption was wrong). Login becomes a
+real (soft, client-side) hash check; drafts sync to the cloud.
+
+### Added
+- **`big-tiff-data` repo (public), seeded** with `accounts.json`,
+  `drafts.json`, `checkpoints.json`, `stats.json` scaffolds + a README
+  explaining the privacy model.
+- **`account-hash-generator.html`** — a standalone local page that produces
+  PBKDF2-SHA256 salted hashes and a ready-to-commit `accounts.json`, so real
+  passwords never leave the setter's browser.
+- **`SETUP.md`** — the three one-time setup steps (create accounts, turn on
+  Erica's write token, promote the tool to the launch site's `/app`).
+- **Data layer in `writing.html`:**
+  - AES-GCM `encryptDraft`/`decryptDraft` with an embedded key (drafts stored
+    as ciphertext in the public repo = "lightly private").
+  - `verifyPassword` (PBKDF2-SHA256, 100k iters) — real client-side login vs
+    `accounts.json`, replacing the Phase 1 mock. `submitLogin` is now async.
+  - `syncFromDataRepo()` runs on every load (via `bootstrapData()`): public
+    raw fetch of drafts/checkpoints/stats so every profile opens to the same
+    shared state — no manual Sync needed. `validateSessionAgainstAccounts()`
+    drops stale sessions and treats `accounts.json` as authoritative for role.
+  - Write layer (`pushToDataRepo`, `getFileSha`) via the GitHub Contents API
+    using Erica's pasted token; `pushDraftToServer` (debounced from autosave,
+    immediate from Save) re-reads + merges before writing so other scenes are
+    never clobbered, and the API `sha` gives free conflict detection.
+  - `pullDraftFromServer()` in `loadCurrentDraftForScene`: adopts the remote
+    copy only when local is empty; otherwise, on a real divergence, raises the
+    **conflict banner** — never a silent overwrite. Resolving it saves the
+    not-kept version as a Draft Pad checkpoint first (nothing is ever lost).
+  - `syncStatsToRepo()` pushes scenes-completed / word-count / streak / an
+    open-ended event log to `stats.json`; the progress pill, stats window, and
+    teaser now read real shared stats.
+  - **Write-token first-run walkthrough** (`token-setup-modal` +
+    `saveWriteToken()` which verifies the token with a real authenticated read
+    before storing it, browser-only). Re-openable from the account menu.
+- **Launch page (`big_tiff_launchpage`):** the "follow the light" dialog's stub
+  submit handler is replaced with a real `accounts.json` hash check that writes
+  the same `bigtiff-session` localStorage key the tool reads, then redirects to
+  `/app`; an in-dialog `.portal-error` shows failures. `writing.html` is
+  promoted to `app/index.html` (same origin as the login → shared session).
+
+### Verification notes
+- Verified in a real browser against the **live seeded repo**: AES round-trip
+  (incl. unicode/emoji), `verifyPassword` correct/incorrect, real fetch of all
+  four JSON files, real login (correct → primary session + token prompt; wrong
+  → error). **Full remote round-trip:** a browser-encrypted draft committed to
+  `big-tiff-data`, re-fetched, and decrypted back to the exact original;
+  `pullDraftFromServer` adopt-vs-conflict paths; conflict resolution saving the
+  loser as a checkpoint (nothing lost). Launch-page `authenticate()` verified
+  live (parity + a stubbed-accounts success writing the exact session shape).
+  `api.github.com` CORS reads confirmed from a `file://` origin.
+- **Caveat:** the browser's actual **write PUT** to GitHub (`pushToDataRepo`)
+  could not be exercised end-to-end here because injecting a real token into the
+  sandbox browser was blocked — it's verified **by parity** (identical endpoint/
+  body to a successful git-based commit of the same encrypted payload, plus the
+  confirmed CORS read). True write E2E happens the first time Erica pastes her
+  token via the setup walkthrough. Also: cross-page session sharing relies on
+  same-origin `/app` hosting, which only exists once the launch-page branch is
+  deployed. Accounts are empty until the user runs the hash generator.
+
 ## [2026-07-23] – Landing/Home Screen, Accounts UI, Stats & Role Gating (Phase 1 of 2)
 
 Phase 1 of the larger "accounts + live persistence" effort (full plan lives
