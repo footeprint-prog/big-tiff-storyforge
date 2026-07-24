@@ -83,12 +83,19 @@ they aren't lost now that the old document is marked historical.
 - [ ] **Scene reordering must stay disabled** — confirmed NOT present in the
       live file as of 2026-06-22 (hard requirement, verified, no action
       needed unless this changes).
-- [ ] **Mobile version of the tool.** Current layout/interactions
-      (draggable floating windows, multi-panel desktop layout) were built
-      desktop-first. Needs a real pass for phone/tablet use - touch
-      targets, panel behavior on small screens, whether floating windows
-      (Notepad/DraftPad/Changelog/Coach) even make sense on mobile or need
-      a different pattern there. (Added 2026-06-22.)
+- [x] **Mobile version of the tool.** DONE 2026-07-24 — built as an
+      interaction-model change for touch devices, not a responsive CSS pass.
+      Detection is capability-based (`hover: none` + `pointer: coarse`), never
+      width, so landscape at 956px cannot flip to desktop. Floating windows
+      became full-screen sheets (one at a time); guidance cards became a
+      right-wall rail of six vertical drawer tabs; a bottom nav carries
+      Home/Outline/Library/Notepad/Focus. Full accessibility pass: no text
+      below 12px, zero measured WCAG AA contrast failures, all touch targets
+      ≥44×44. Desktop verified unchanged by direct measurement. See CHANGELOG
+      for what was and was not verified — **notably, nothing was tested on
+      real iOS Safari**, so the iOS-specific items (keyboard/caret behaviour,
+      safe-area insets, real Page Zoom) still want a pass on Erica's actual
+      phone before this is considered closed in the strict sense.
 - [ ] **Visual skinning of the tool.** Aaron is producing a fantasy-themed
       visual mockup separately; once complete, it will be broken down into
       individual elements to "skin" the existing functional tool. Directly

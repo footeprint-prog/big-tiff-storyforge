@@ -2,7 +2,195 @@
 
 All notable changes to the webtool during active development.
 
-## [2026-07-23] – GitHub-Native Persistence: Accounts, Draft Sync, Stats (Phase 2 of 2)
+## [2026-07-24] – Mobile Support: Touch Layout, Guidance Rail, Accessibility Pass
+
+The tool's first real mobile experience, built for Erica's iPhone 16 Pro Max
+(iOS Safari). This is an **interaction-model change for touch devices, not a
+responsive CSS pass** — the desktop layout at ≥1280px with a mouse is
+untouched. Everything new is additive and scoped behind a `body.mobile-layout`
+class, so desktop cannot inherit any of it.
+
+### Added
+- **Capability-based mobile detection** — `isMobileMode()` keys off
+  `(hover: none) and (pointer: coarse)`, deliberately **never width**. Her
+  phone is 956px wide in landscape, which a conventional 768px breakpoint
+  would have flipped into the desktop layout (draggable windows and all)
+  just by rotating. A `matchMedia` change listener re-applies or fully
+  clears the layout, so no half-applied state survives a mode change.
+- **Right-wall guidance rail** (Aaron's drawer concept, 2026-07-24) — six
+  vertical tabs in a 3×2 grid pinned to the right edge whenever a scene is
+  open, staying put while the column scrolls. Tapping a tab pops that
+  guidance card open as a drawer beside the rail; tapping again closes it.
+  Replaces the desktop float/drag model without losing any content: the
+  drawers **move** the real card node (as `floatGuidanceCard` always did),
+  so there is still exactly one copy of each card's data.
+- **Bottom navigation** — Home · Outline · Library · Notepad · Focus, all
+  ≥44px and safe-area padded. **Focus** is the mobile reading of the desktop
+  focus toggle: one tap closes every open drawer, panel and sheet. The
+  header slims to logo + account + progress/stats in exchange.
+- **All six former floating windows open as full-screen sheets**
+  (Notepad, Draft Pad, Changelog, Proofreader, Send to Sammy, Stats),
+  pinned between the header and the bottom nav, strictly one at a time —
+  opening any sheet or panel closes the others via
+  `mobileCloseEverything()`.
+- **Vertical landing nav** — the radial arrangement re-flows into one
+  centred column (GIF, then Where I Left Off, Next Unfinished, Last
+  Completed, Random Unfinished, Stats), each 320×48 with 14px spacing.
+  Nothing sits side-by-side at any phone size, including landscape.
+- **Tap-to-reveal review reasons** — Sammy's `needsReviewReason` was
+  reachable only by hovering a `title=` tooltip, which does not exist on
+  touch, so on mobile that editorial information was completely
+  unreachable. The `!` markers (both per-entry and per-category) are now
+  44×44 bordered tap targets that toggle the reason inline. Tapping the
+  category marker no longer also collapses the category.
+- **`setMobilePreview(true/false)`** — a console/`?forceMobile=1` hook for
+  exercising the mobile layout in a desktop browser, since the mobile media
+  query cannot otherwise be triggered there.
+- **Global UI text size** (`Text` in the bottom nav) — a slider plus large
+  −/+ buttons, 100–175% in 5% steps, with a live preview and a reset. This
+  is deliberately **separate from the editor-only zoom control**: it scales
+  the root font size, so labels, buttons, panels and sheets all grow
+  together rather than only the draft text. Stored per device (a phone and
+  a laptop want different answers) and never synced. Applied as a
+  percentage rather than a px value, so it multiplies the browser's own
+  default text size instead of overriding it.
+- **Add to Home Screen** — `apple-mobile-web-app-capable`, an app title,
+  `theme-color`, a generated `assets/app-icon-{180,192,512}.png` (gold
+  `#D4AF37` ground with dark `#3D2B1F` "BT", existing palette only), and a
+  `manifest.webmanifest` so Android Chrome behaves too. Status bar style is
+  `black`, **not** `black-translucent`, because translucent would put
+  content under the status bar and the viewport meta deliberately does not
+  use `viewport-fit=cover`. Saved to the home screen the tool launches
+  standalone: no Safari chrome, and ~100px more vertical room.
+- **Tap-to-expand for long scene text** — the scene summary and review note
+  clamp to 3 and 2 lines with a "Show more"/"Show less" control (which
+  hides itself when the text is short enough not to need it). Without this
+  the editor started 948px down — past a full screen, meaning a scroll
+  before every spontaneous sentence. Now 752px, with the formatting toolbar
+  at 581px. No content is removed; the full text is one tap away.
+
+### Changed
+- **Aggressive autosave on mobile** — also fires on editor `blur`,
+  `visibilitychange` (only when actually hidden), and `pagehide`.
+  Backgrounding Safari mid-sentence is normal on a phone, and iOS suspends
+  background tabs aggressively. Desktop autosave triggers are unchanged.
+- **Drag/resize wiring is now lazy and desktop-only.** The twelve
+  `make*Draggable`/`make*Resizable` calls moved out of `init()` into
+  `ensureDesktopWindowWiring()`, which returns immediately in mobile mode —
+  so a touch device never attaches a single mouse handler (iOS synthesises
+  mouse events from taps, so "attached but unused" would not have been
+  inert). Verified: on a mobile cold boot the wiring flag stays false.
+- **Window geometry save/restore is skipped in mobile mode** — all six
+  `save*State`/`restore*State` pairs bail out early. A phone session
+  therefore cannot overwrite the desktop window arrangement, and a saved
+  desktop rect cannot break a full-screen sheet. The sheets override the
+  inline `left/top/width/height` with `!important` rather than clearing it,
+  so desktop geometry is preserved rather than lost.
+- **`adjustEditorZoom()` is mode-aware** — mobile runs 100–200% off a
+  17px base (the 70% floor is useless for low vision, and the mobile
+  default is readable without zooming at all). Desktop keeps 70–160% off
+  the original 14px base.
+- **Deferred to desktop on mobile**, per the "curation is a desktop task"
+  decision: library entry deletion, the Notepad's Add-to-Library button,
+  and the Changelog's All/Scene/Library/Structure filter tabs (mobile shows
+  one chronological feed). Notepad note creation and editing stay fully
+  available.
+- **Accessibility scale-up (mobile only).** Nothing below 12px anywhere;
+  editor 17px, body 16px, labels ≥14px; every touch target ≥44×44 with
+  ≥8px spacing; all opacity-dimmed gold/cream labels forced to full-opacity
+  `#D4AF37`/`#F4EDE4`. Inputs are ≥16px so iOS does not auto-zoom on focus.
+  Hover-only tooltips are removed in favour of visible `.m-label` text.
+  The viewport meta is untouched — pinch-to-zoom still works.
+- **Review pill contrast** — the existing dark red on gold measures
+  **4.34:1**, just under AA's 4.5:1. On mobile only, the pill text uses
+  `#3D2B1F`, an existing palette pairing (it is what the gold primary
+  buttons already use) measuring **6.39:1**. Desktop keeps the red. The
+  gold background plus the literal word "Review" still carry the state, so
+  no meaning rides on the text colour alone.
+- **The mobile header now wraps at any width, not just narrow ones.** Found
+  by screenshot, not by measurement: raising the UI text scale made the
+  header's contents outgrow one row on a full-width phone, and because it
+  was a fixed-height non-wrapping flex row they **collided into each other**
+  rather than overflowing — so a right-edge overflow test saw nothing wrong.
+  An overlap check (do sibling boxes actually intersect?) was added to the
+  verification pass alongside the overflow check.
+- The landing GIFs now carry `loading="lazy"` so a phone on cellular does
+  not eagerly pull art it will not show. **The existing random pick of one
+  of the three per landing render is unchanged and confirmed working** —
+  30 consecutive renders drew all three — and only the chosen GIF is ever
+  fetched, so a landing costs ~1.3MB, not 3.5MB.
+
+### Verification notes
+Tested in a real browser (Chromium, live-loaded Tailwind + Font Awesome,
+real canon fetched from GitHub — 4 scenes) at **440×956**, **956×440**,
+**375×812**, **220×478** (the geometric equivalent of Safari Page Zoom at
+200% on a 440px phone), and **1440×900** desktop. Measured, not eyeballed:
+- **Zero** text below 12px, **zero** WCAG AA contrast failures (computed
+  ratios with alpha compositing against the real effective background), and
+  **zero** touch targets under 44×44 — across all ten views (scene editor,
+  all six sheets, outline panel, library panel with categories expanded,
+  landing) at every viewport above.
+- **No horizontal page scroll** at any of the five sizes. Three real
+  overflow bugs were found and fixed this way: the header's right group
+  clipped the STATS button (body has `overflow:hidden`, so clipped meant
+  unreachable), the editor toolbar's inner groups did not wrap at high
+  zoom, and the nav's five flex buttons squeezed to 43.66px at 200% zoom.
+- **Landscape at 956px stays in mobile layout** — confirmed
+  `isMobileMode()` true, margins 0, guidance columns collapsed, nothing
+  side-by-side. Rotated both directions with a drawer open; no stale or
+  half-applied geometry, drawer stayed inside the viewport.
+- **Desktop geometry is safe**: seeded six known window rects, ran a full
+  mobile session opening and closing all six sheets, and confirmed every
+  stored rect was byte-identical afterward and that sheets ignored them.
+- **Autosave**: verified saves on blur, on `pagehide`, on
+  `visibilitychange` only when hidden (not when visible), and that manual
+  Save Draft still writes.
+- **Viewer role**: on mobile a viewer gets `role-viewer`, non-editable
+  editor and notepad, hidden sync button, zero visible `.primary-only`
+  controls, and **no server write is attempted** (confirmed by intercepting
+  `fetch`).
+- **Desktop regression**: measured 126px margins, side-by-side guidance
+  columns, 14px editor, 10.4px status badges, original red review pill,
+  visible tooltips, sticky summary/status bars, 48px status bar, 70–160%
+  zoom range, and working drag **and** resize (dispatched real mouse
+  sequences; geometry moved and persisted). Confirmed by direct
+  before/after comparison, not assumption.
+- Zero console errors throughout (only Tailwind's standard CDN advisory).
+- Diff review: the only reference to protected sync/encryption/auth code in
+  the whole change is a **call site** — `pushDraftToServer(...)` on the new
+  blur/visibilitychange trigger. No protected function definition was
+  modified.
+
+- **UI text scale** verified at 100/125/150/175%: root font tracks
+  (16/20/24/28px), the header re-measures and sheets follow it exactly
+  (94→102→114→130px), and at the 175% maximum there are still zero
+  sub-12px, zero contrast failures, zero undersized targets and no page
+  overflow. Cleared entirely on desktop (no inline root font-size).
+
+**Not verified — stated plainly:**
+- **Add to Home Screen was not tested on a real device.** The meta tags,
+  manifest and icons are in place and the icon renders correctly as a file,
+  but actually saving the tile on an iPhone, its icon appearance on the
+  home screen, and standalone launch behaviour (including how the header
+  sits under the status bar) are all unconfirmed. This is the first thing
+  to check on the phone.
+- **Nothing was tested on real iOS Safari or a real iPhone.** All testing
+  was desktop Chromium. Specifically unverified: `contenteditable` caret
+  visibility and scroll-into-view with the on-screen keyboard up
+  (historically buggy on iOS), the `visualViewport`-driven keyboard padding,
+  `env(safe-area-inset-*)` behaviour around the Dynamic Island and home
+  indicator, real Safari Page Zoom (only its geometric equivalent), actual
+  pinch-to-zoom gestures, and real touch-vs-mouse event behaviour.
+- **The `(hover: none) and (pointer: coarse)` query was never observed
+  matching**, because this environment is mouse-only. The query string was
+  confirmed to parse validly (`matchMedia().media` echoes it back rather
+  than `not all`), and all mobile behaviour was exercised through
+  `setMobilePreview()`, which drives the identical code path. But the
+  detection itself firing on her actual phone is unconfirmed.
+- Real cross-device sync round-trips were not re-tested; the sync layer was
+  not modified, only invoked on additional triggers.
+- Landscape shows the six-tab rail clamped to ~310px tall with internal
+  scrolling — reachable, but it does scroll. Not tested by a human hand.
 
 Wires the Phase 1 UI to real, shared, cross-device persistence — **with no
 backend**, using the public `big-tiff-data` repo as a JSON store (static

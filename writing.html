@@ -4,6 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Big Tiff StoryForge • Writing</title>
+
+    <!-- Add to Home Screen. On iOS these meta tags alone are what make the
+         saved tile launch standalone (no Safari chrome, more vertical room);
+         the manifest is there so Android Chrome behaves too. Status bar style
+         is "black" rather than "black-translucent" on purpose: translucent
+         would put content underneath the status bar, and the viewport meta
+         deliberately does NOT use viewport-fit=cover, so iOS keeps us inside
+         the safe area automatically. Do not add user-scalable=no or
+         maximum-scale above - pinch-to-zoom is a primary accessibility
+         affordance here and must keep working. -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="StoryForge">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1E6B5F">
+    <link rel="apple-touch-icon" href="assets/app-icon-180.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon-192.png">
+    <link rel="manifest" href="manifest.webmanifest">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -581,6 +599,291 @@
         .library-category {
             margin-bottom: 6px;
         }
+
+        /* ==================== MOBILE LAYOUT (touch devices) ====================
+           Everything below is scoped to body.mobile-layout, which JS toggles
+           from the capability query (hover: none) and (pointer: coarse) -
+           NEVER from width, because Erica's iPhone 16 Pro Max is 956px wide
+           in landscape and would fool any width-only breakpoint into desktop
+           mode. Desktop with a mouse never gets the class, so nothing here
+           can regress the desktop layout. */
+
+        html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+        /* Mobile-only chrome stays fully hidden on desktop. */
+        #mobile-nav, #mobile-guidance-rail { display: none; }
+
+        /* Mobile-only inline labels next to otherwise icon-only buttons. */
+        .m-label { display: none; }
+        /* Mobile-only "Show more / Show less" control for clamped text. */
+        .m-expand { display: none; }
+
+        /* Tappable review-flag marker ("!"). On desktop this must look exactly
+           like the plain inline span it replaces (hover tooltip unchanged);
+           the mobile rules further down turn it into a real touch target that
+           toggles the review reason inline instead of relying on hover. */
+        .review-flag-btn { background: none; border: none; padding: 0; margin: 0; color: #D4AF37; font: inherit; cursor: pointer; }
+        .review-reason-inline.hidden { display: none !important; }
+
+        body.mobile-layout {
+            --mobile-header-h: 56px;
+            /* 60px of buttons + the nav's own 2px top border */
+            --mobile-nav-h: 62px;
+            --mobile-nav-clear: calc(var(--mobile-nav-h) + env(safe-area-inset-bottom, 0px));
+            touch-action: manipulation; /* kills iOS double-tap-zoom delay; pinch zoom still works */
+        }
+        @supports (height: 100dvh) {
+            /* h-screen's 100vh misbehaves under iOS Safari's collapsing toolbars */
+            body.mobile-layout { height: 100dvh; }
+        }
+
+        /* ---- Legibility scale-up (poor eyesight is a functional requirement).
+           Nothing below 12px; body/editor >=16px; labels >=13-14px. ---- */
+        body.mobile-layout .text-xs { font-size: 0.875rem; }
+        body.mobile-layout .text-\[10px\], body.mobile-layout .text-\[9px\] { font-size: 0.875rem; }
+        body.mobile-layout .text-sm { font-size: 1rem; }
+        body.mobile-layout .section-label { font-size: 0.875rem; }
+        body.mobile-layout .meta-pill { font-size: 0.875rem; }
+        /* Hover tooltips can't be reached on touch at all. Every one that
+           carried real information now has a visible .m-label beside its
+           control, so the tooltip itself is removed rather than left as an
+           unreachable 11px artifact. */
+        body.mobile-layout .tooltip { display: none !important; }
+        body.mobile-layout .library-text { font-size: 1rem; line-height: 1.45; }
+        body.mobile-layout .minimal-search { font-size: 1rem; } /* >=16px also prevents iOS focus auto-zoom */
+        body.mobile-layout .scene-status { font-size: 0.875rem; width: auto; min-width: 96px; padding: 3px 10px; }
+        body.mobile-layout .status-dropdown-wrapper { width: 140px; }
+        body.mobile-layout .status-dropdown-trigger { font-size: 0.875rem; min-height: 44px; }
+        body.mobile-layout .status-dropdown-option { font-size: 0.875rem; padding: 12px 10px; }
+        body.mobile-layout .status-dropdown-wrapper.open .status-dropdown-menu { max-height: 220px; }
+        body.mobile-layout .changelog-filter-tab { font-size: 0.875rem; }
+        body.mobile-layout .notepad-header h3 { font-size: 1.05rem; }
+        body.mobile-layout .guidance-float-header span { font-size: 1rem; }
+        body.mobile-layout .guidance-float-body { font-size: 1rem; }
+        body.mobile-layout .text-tool-btn { font-size: 1rem; min-height: 44px; min-width: 44px; }
+        body.mobile-layout .control-bar-item { font-size: 0.9375rem; height: auto; min-height: 44px; }
+        body.mobile-layout .m-label { display: inline; font-size: 0.875rem; margin-left: 8px; }
+
+        /* Dimmed gold/cream labels fail WCAG contrast on the dark browns -
+           force full opacity on mobile (same palette colors, no new hues). */
+        body.mobile-layout [class*="text-[#D4AF37]/"] { color: #D4AF37 !important; }
+        body.mobile-layout [class*="text-[#F4EDE4]/"] { color: #F4EDE4 !important; }
+
+        /* The Review pill's dark red on gold measures 4.34:1 - just under
+           AA's 4.5:1 for normal text. #3D2B1F on #D4AF37 is an existing
+           palette pairing (it's what the primary gold buttons already use)
+           and measures 6.39:1. Mobile only; desktop keeps the red. The gold
+           background plus the literal word "Review" still carry the state,
+           so no meaning rides on the text colour alone. */
+        body.mobile-layout .scene-review,
+        body.mobile-layout .status-pill-review { color: #3D2B1F; }
+
+        /* ---- Touch targets (>=44px) ----
+           min-* is used throughout so the fixed Tailwind sizing utilities
+           already on these controls (h-[26px], w-[22px], h-8 …) get lifted
+           without having to fight each element's own layout rules. */
+        body.mobile-layout header button,
+        body.mobile-layout #left-panel button,
+        body.mobile-layout #right-panel button,
+        body.mobile-layout .notepad button,
+        body.mobile-layout .guidance-float-window button,
+        body.mobile-layout #login-modal button,
+        body.mobile-layout #token-setup-modal button,
+        body.mobile-layout #draft-conflict-banner button { min-height: 44px; min-width: 44px; }
+        body.mobile-layout input[type="text"],
+        body.mobile-layout input[type="password"],
+        body.mobile-layout .minimal-search { min-height: 44px; font-size: 1rem; }
+        body.mobile-layout .notepad-close { padding: 10px 16px; font-size: 1.4rem; }
+        body.mobile-layout #account-btn { min-height: 44px; }
+        body.mobile-layout #nickname-edit-btn { height: 44px; width: 44px; }
+        body.mobile-layout #account-menu button { min-height: 44px; }
+        body.mobile-layout .notepad-sidebar button,
+        body.mobile-layout .notepad-main button { min-height: 44px; }
+        body.mobile-layout #notes-list > div, body.mobile-layout #draftpad-list > div { min-height: 48px; }
+        body.mobile-layout .library-category > button { min-height: 48px; }
+        body.mobile-layout .library-entry { padding-top: 10px; padding-bottom: 10px; }
+        body.mobile-layout .review-flag-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; border: 1.5px solid #D4AF37; border-radius: 9999px; font-weight: 700; }
+        body.mobile-layout #proofreader-issues-list button { min-height: 44px; padding: 8px 16px; font-size: 0.875rem; }
+        body.mobile-layout #proofreader-check-btn { min-height: 44px; height: auto; }
+        body.mobile-layout #proofreader-apply-all-row button { min-height: 48px; height: auto; }
+        body.mobile-layout #sammy-export-copy-btn { min-height: 48px; height: auto; }
+        body.mobile-layout #draft-conflict-banner button { min-height: 44px; }
+        body.mobile-layout #login-modal button, body.mobile-layout #token-setup-modal button { min-height: 44px; }
+        body.mobile-layout #login-modal input, body.mobile-layout #token-setup-modal input { min-height: 44px; }
+
+        /* ---- Header: slim down; Notepad + Focus move to the bottom nav ---- */
+        body.mobile-layout header .max-w-screen-2xl { padding-left: 0.25rem; padding-right: 0.25rem; }
+        /* Buy back enough width for the header to stay on one row at the
+           default text scale; it still wraps gracefully when scaled up. */
+        body.mobile-layout #account-btn { padding-left: 0.625rem; padding-right: 0.625rem; }
+        /* Tighten the internal gaps so the full "Big Tiff" wordmark fits
+           rather than truncating to "Big". */
+        body.mobile-layout header .h-14 > div:first-child { gap: 8px; }
+        body.mobile-layout header .h-14 > div:first-child > div:first-child { gap: 6px; }
+        body.mobile-layout #focus-toggle-group,
+        body.mobile-layout #user-greeting,
+        body.mobile-layout #header-notepad-btn,
+        body.mobile-layout #header-divider,
+        body.mobile-layout #progress-pill-track,
+        body.mobile-layout #logo-storyforge { display: none !important; }
+        /* The header is a fixed-height flex row inside a body that clips
+           overflow, so anything past the viewport edge becomes unreachable
+           rather than merely ugly. Let both groups shrink and keep the row
+           on one line. */
+        /* The header must be free to wrap at ANY width, not just narrow ones:
+           raising the UI text scale makes its contents outgrow one row on a
+           full-width phone too, and a fixed-height non-wrapping flex row makes
+           them collide instead of reflow. Height is measured at runtime into
+           --mobile-header-h, so sheets and the rail follow whatever it becomes. */
+        body.mobile-layout header .h-14 { gap: 6px 4px; height: auto; min-height: 56px; flex-wrap: wrap; padding: 6px 0; }
+        body.mobile-layout header .h-14 > div { min-width: 0; }
+        /* Only the branding block may be truncated - clipping the group
+           itself would cut off the account button, which must stay tappable. */
+        body.mobile-layout header .h-14 > div:first-child { flex: 0 1 auto; min-width: 0; }
+        body.mobile-layout header .h-14 > div:first-child > div:first-child { min-width: 0; flex-shrink: 0; }
+        body.mobile-layout header .h-14 > div:last-child { flex: 0 0 auto; gap: 8px; }
+        body.mobile-layout #account-btn-label { max-width: 88px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        body.mobile-layout .section-title { font-size: 1.05rem; white-space: nowrap; }
+        body.mobile-layout header .w-8.h-8 { flex-shrink: 0; }
+        body.mobile-layout #account-btn { flex-shrink: 0; }
+
+        /* ---- No moveable UI on touch: hide every drag/resize/float
+           affordance and every deferred-to-desktop control ---- */
+        body.mobile-layout #outline-btn,
+        body.mobile-layout #library-btn,
+        body.mobile-layout .notepad-resize-handle,
+        body.mobile-layout .guidance-float-resize-handle,
+        body.mobile-layout .guidance-card .guidance-float-btn,
+        body.mobile-layout .guidance-home-slot,
+        body.mobile-layout #changelog-filter-row,
+        body.mobile-layout #add-to-library-wrap,
+        body.mobile-layout .library-entry .primary-only { display: none !important; }
+        body.mobile-layout .notepad-header, body.mobile-layout .guidance-float-header { cursor: default; }
+
+        /* ---- Single vertical column ---- */
+        body.mobile-layout #center-column { margin-left: 0 !important; margin-right: 0 !important; }
+        body.mobile-layout #center-scroll-area { padding-bottom: calc(var(--mobile-nav-clear) + var(--kb-height, 0px) + 12px); overscroll-behavior: contain; }
+
+        /* Landing: the radial re-flows into one centered vertical stack.
+           display:contents lifts the buttons out of their desktop row
+           wrappers so they can be re-ordered; Where I Left Off stays the
+           visually primary action. */
+        body.mobile-layout #landing-radial { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+        body.mobile-layout #landing-radial.hidden { display: none !important; }
+        body.mobile-layout #landing-radial > div:not(#landing-nav-message) { display: contents; }
+        body.mobile-layout #landing-tiff-gif { order: 1; width: 10rem; height: 10rem; }
+        body.mobile-layout #landing-radial button[onclick="goToWhereILeftOff()"] { order: 2; }
+        body.mobile-layout #landing-radial button[onclick="goToNextUnfinishedScene()"] { order: 3; }
+        body.mobile-layout #landing-radial button[onclick="goToLastCompletedScene()"] { order: 4; }
+        body.mobile-layout #landing-radial button[onclick="goToRandomUnfinishedScene()"] { order: 5; }
+        body.mobile-layout #landing-radial button[onclick="showStoryStats()"] { order: 6; }
+        body.mobile-layout #landing-nav-message { order: 7; font-size: 1rem; }
+        body.mobile-layout .landing-nav-btn { min-height: 48px; width: min(320px, 86vw); justify-content: center; font-size: 1rem; }
+        body.mobile-layout #landing-sync-btn { min-height: 48px; }
+        body.mobile-layout #no-scene-placeholder { padding-left: 1rem; padding-right: 1rem; min-height: 0; }
+
+        /* Scene view: summary -> status controls -> editor, with the guidance
+           rail pinned to the right wall. */
+        body.mobile-layout #scene-content { padding-right: 104px; padding-left: 6px; }
+        body.mobile-layout #scene-summary-bar { position: static; padding: 12px; }
+        body.mobile-layout #review-note-box { padding: 12px; }
+        /* The summary's uppercase header repeats the scene title, which is
+           already shown in the DRAFT label below it and in the Outline.
+           At 440px that repetition costs ~3 wrapped lines above the editor. */
+        body.mobile-layout #scene-summary-title,
+        body.mobile-layout #scene-summary-title-sep { display: none !important; }
+        /* 1.5px tracking on a 14px uppercase label wraps hard at this width. */
+        body.mobile-layout .tracking-\[1\.5px\] { letter-spacing: 0.5px; line-height: 1.3; }
+        /* The scene summary and review note are long enough to push the
+           editor a full screen down, which would mean scrolling before
+           every spontaneous sentence. Clamp them to a few lines with an
+           obvious tap-to-expand - the full text is still one tap away, so
+           nothing is lost, but the editor starts near the top. */
+        body.mobile-layout .m-clamped { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+        body.mobile-layout #guidance-summary-text.m-clamped { -webkit-line-clamp: 3; }
+        body.mobile-layout #review-note-text.m-clamped { -webkit-line-clamp: 2; }
+        body.mobile-layout .m-expand { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin-top: 2px; padding: 0 4px; background: none; border: none; color: #D4AF37; font-size: 0.875rem; font-weight: 600; text-decoration: underline; }
+        body.mobile-layout #scene-status-bar { position: static; top: auto !important; height: auto !important; min-height: 48px; flex-wrap: wrap; gap: 8px; padding: 8px; }
+        body.mobile-layout #scene-status-bar > .flex { flex-wrap: wrap; gap: 8px; flex: 1 1 auto; min-width: 0; justify-content: flex-start; }
+        body.mobile-layout #scene-status-bar .control-bar-item { padding: 0 10px; }
+        /* "Auto-saved just now" is reassurance, not a control - it wraps
+           inline with the buttons instead of claiming a row of its own. */
+        body.mobile-layout #auto-save-status { flex: 0 0 auto; min-height: 0; padding: 0 2px; font-size: 0.875rem; }
+        body.mobile-layout #scene-content .gap-3.px-1 { display: block; }
+        body.mobile-layout #scene-content .w-60 { display: none; }
+        body.mobile-layout #scene-content .h-\[496px\] { height: auto; min-height: 60vh; min-height: 60svh; }
+        body.mobile-layout #editor-toolbar { position: sticky; top: 0; z-index: 25; background: #4A3A2E; border-radius: 0 0 12px 12px; flex-wrap: wrap; gap: 6px; padding: 6px; justify-content: flex-start; }
+        /* The toolbar's two inner groups must wrap too, or they overflow at
+           high page-zoom levels even though the toolbar itself wraps. */
+        body.mobile-layout #editor-toolbar > div { flex-wrap: wrap; gap: 6px; min-width: 0; }
+        body.mobile-layout #editor { font-size: 1.0625rem; line-height: 1.65; min-height: 55vh; min-height: 55svh; padding: 1rem; border-radius: 1rem; }
+
+        /* Guidance rail: 3 rows x 2 vertical tabs pinned to the right wall
+           (Aaron's drawer concept, 2026-07-24), visible only while a scene
+           is open. Stays put while the column scrolls. */
+        body.mobile-layout.scene-open #mobile-guidance-rail { display: grid; grid-template-columns: repeat(2, 44px); gap: 10px 8px; position: fixed; right: 4px; top: 50%; transform: translateY(-50%); z-index: 45; max-height: calc(100dvh - var(--mobile-header-h) - var(--mobile-nav-clear) - 12px); overflow-y: auto; }
+        body.mobile-layout .rail-tab { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; min-width: 44px; min-height: 104px; padding: 10px 0; background: #3D2B1F; border: 1px solid rgba(212, 175, 55, 0.55); border-radius: 10px; color: #D4AF37; }
+        body.mobile-layout .rail-tab i { font-size: 0.95rem; }
+        body.mobile-layout .rail-tab span { writing-mode: vertical-rl; text-orientation: mixed; font-size: 0.875rem; font-weight: 600; letter-spacing: 0.5px; }
+        body.mobile-layout .rail-tab.active { background: #D4AF37; color: #3D2B1F; }
+
+        /* Guidance drawer: the existing float-window shells reused as fixed,
+           non-draggable pop-open drawers anchored beside the rail. !important
+           beats the shells' inline desktop left/top/width/height geometry. */
+        body.mobile-layout .guidance-float-window { position: fixed; left: auto !important; right: 100px !important; top: 50% !important; transform: translateY(-50%); width: min(72vw, 340px) !important; height: auto !important; max-height: calc(100dvh - var(--mobile-header-h) - var(--mobile-nav-clear) - 24px); min-width: 0; min-height: 0; z-index: 460; overscroll-behavior: contain; border-width: 2px; }
+        body.mobile-layout .guidance-float-header .guidance-float-btn { opacity: 1; font-size: 1.2rem; padding: 10px 16px; }
+        body.mobile-layout .guidance-float-body .guidance-card { height: auto !important; font-size: 1rem; overflow: visible; }
+        body.mobile-layout .guidance-float-body .text-xs { font-size: 1rem; }
+
+        /* ---- Former floating windows become full-screen sheets (one at a
+           time), pinned below the header and above the bottom nav.
+           !important beats the inline desktop geometry so nothing has to be
+           cleared - and the desktop geometry saved in localStorage is never
+           touched from a phone (save/restore are skipped in mobile mode). ---- */
+        body.mobile-layout .notepad { left: 0 !important; right: 0 !important; top: var(--mobile-header-h) !important; bottom: var(--mobile-nav-clear) !important; width: auto !important; height: auto !important; min-width: 0; min-height: 0; border-radius: 14px 14px 0 0; overscroll-behavior: contain; }
+        body.mobile-layout .notepad-body { flex-direction: column; }
+        body.mobile-layout .notepad-sidebar { width: 100%; max-height: 32%; border-right: none; border-bottom: 1px solid #8B6F47; }
+
+        /* ---- Side panels: full-width slide-in views over the column ---- */
+        body.mobile-layout #left-panel, body.mobile-layout #right-panel { width: 100%; top: var(--mobile-header-h); bottom: var(--mobile-nav-clear); z-index: 300; overscroll-behavior: contain; }
+
+        /* ---- Modals + conflict banner sized for a phone ---- */
+        body.mobile-layout #login-modal > div { width: min(92vw, 420px); }
+        body.mobile-layout #token-setup-modal > div { width: min(92vw, 460px); max-height: 85dvh; }
+        body.mobile-layout #draft-conflict-banner { top: calc(var(--mobile-header-h) + 8px); max-height: calc(100dvh - var(--mobile-header-h) - var(--mobile-nav-clear) - 16px); overflow-y: auto; }
+        body.mobile-layout #draft-conflict-banner .grid-cols-2 { grid-template-columns: 1fr; }
+
+        /* ---- Bottom navigation ---- */
+        body.mobile-layout #mobile-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 320; display: flex; background: #2A2119; border-top: 2px solid rgba(212, 175, 55, 0.6); padding-bottom: env(safe-area-inset-bottom, 0px); overflow-x: auto; overscroll-behavior-x: contain; }
+        /* min-width holds the 44px floor even at high page zoom, where five
+           equal flex items would otherwise be squeezed to ~43.7px; the nav
+           scrolls rather than shrinking its targets below the minimum. */
+        body.mobile-layout #mobile-nav button { flex: 1 0 auto; min-width: 44px; min-height: var(--mobile-nav-h); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: none; border: none; color: #D4AF37; font-size: 0.875rem; }
+        body.mobile-layout #mobile-nav button i { font-size: 1.15rem; }
+
+        /* Very narrow effective widths (e.g. Safari Page Zoom at 200% on a
+           440px screen = ~220 CSS px): collapse the rail to one thinner
+           scrollable column so the editor keeps usable width. Width is used
+           only as a refinement INSIDE mobile mode, never for detection. */
+        @media (max-width: 340px) {
+            body.mobile-layout.scene-open #mobile-guidance-rail { grid-template-columns: 44px; }
+            body.mobile-layout #scene-content { padding-right: 54px; }
+            body.mobile-layout .guidance-float-window { right: 52px !important; width: min(80vw, 300px) !important; }
+            body.mobile-layout #mobile-nav button span { font-size: 0.75rem; }
+            /* At this effective width (roughly Safari Page Zoom 200% on a
+               440px phone) the header cannot hold branding AND controls on
+               one line. Drop the decorative branding and let the remaining
+               controls wrap onto a second row rather than being clipped -
+               body has overflow:hidden, so clipped here means unreachable.
+               The real header height is measured at runtime into
+               --mobile-header-h, so sheets and the rail follow it. */
+            body.mobile-layout header .section-title,
+            body.mobile-layout header .w-8.h-8 { display: none !important; }
+            body.mobile-layout header .h-14 > div { flex: 1 1 100%; justify-content: flex-start; }
+            /* The percentage read-out is still available inside the Stats
+               sheet; at this zoom the header row simply cannot carry it. */
+            body.mobile-layout #progress-pill-group { display: none !important; }
+        }
     </style>
 </head>
 <body class="antialiased h-screen flex flex-col overflow-hidden">
@@ -598,7 +901,7 @@
                         </div>
                         <div class="flex items-baseline gap-x-1.5">
                             <span class="text-[21px] font-semibold tracking-tight section-title">Big Tiff</span>
-                            <span class="text-base text-[#D4AF37] font-medium tracking-[2px]">STORYFORGE</span>
+                            <span id="logo-storyforge" class="text-base text-[#D4AF37] font-medium tracking-[2px]">STORYFORGE</span>
                         </div>
                     </div>
                     
@@ -632,7 +935,7 @@
                 <div class="flex items-center gap-x-3">
                     
                     <!-- Notepad (standalone) -->
-                    <button onclick="openNotepad()"
+                    <button id="header-notepad-btn" onclick="openNotepad()"
                             class="h-8 px-3 py-1 text-sm rounded-2xl border border-[#D4AF37]/50 hover:bg-[#4A3A2E] transition-colors flex items-center gap-x-2">
                         <i class="fa-solid fa-book"></i>
                         <span class="font-medium text-xs tracking-wider">NOTEPAD</span>
@@ -642,12 +945,12 @@
                     <div class="flex items-center h-8 gap-x-2 bg-[#3D2B1F]/70 pl-3 pr-2.5 rounded-2xl border border-[#D4AF37]/60">
                         
                         <!-- Progress Bar -->
-                        <div class="flex items-center gap-x-2">
+                        <div id="progress-pill-group" class="flex items-center gap-x-2">
                             <div class="flex items-center gap-x-1.5">
                                 <div class="w-1.5 h-1.5 bg-[#D4AF37] rounded-full animate-pulse"></div>
                                 <span id="progress-pill-label" class="text-xs font-medium whitespace-nowrap">— %</span>
                             </div>
-                            <div class="w-16 h-1.5 bg-[#3D2B1F] rounded-full overflow-hidden border border-[#D4AF37]/30">
+                            <div id="progress-pill-track" class="w-16 h-1.5 bg-[#3D2B1F] rounded-full overflow-hidden border border-[#D4AF37]/30">
                                 <div id="progress-pill-bar" class="h-full w-0 bg-gradient-to-r from-[#D4AF37] to-[#E8C86B] rounded-full transition-all"></div>
                             </div>
                         </div>
@@ -661,7 +964,7 @@
                     </div>
 
                     <!-- Divider -->
-                    <div class="w-px h-6 bg-[#D4AF37]/40"></div>
+                    <div id="header-divider" class="w-px h-6 bg-[#D4AF37]/40"></div>
 
                     <!-- Focus toggle: pick a mode (writing/reading), then click the
                          track to activate it. Selecting an icon only arms the mode -
@@ -757,7 +1060,7 @@
         </div>
 
                         <!-- CENTER -->
-        <div class="flex-1 flex flex-col min-w-0 overflow-hidden" style="margin-left: 126px; margin-right: 126px;">
+        <div id="center-column" class="flex-1 flex flex-col min-w-0 overflow-hidden" style="margin-left: 126px; margin-right: 126px;">
             <div id="center-scroll-area" class="flex-1 overflow-y-auto overflow-x-hidden">
             <div id="center-content-frame" style="width: 100%;">
             
@@ -795,7 +1098,7 @@
                             <i class="fa-solid fa-circle-check text-[#A3E6C9]"></i> Last Completed
                         </button>
 
-                        <img id="landing-tiff-gif" src="" alt="Big Tiff"
+                        <img id="landing-tiff-gif" src="" alt="Big Tiff" loading="lazy"
                              class="w-40 h-40 md:w-52 md:h-52 object-contain flex-shrink-0 select-none" draggable="false">
 
                         <button onclick="goToNextUnfinishedScene()"
@@ -839,6 +1142,7 @@
                                 <span id="scene-summary-title"></span><span id="scene-summary-title-sep" class="hidden"> &mdash; </span>SCENE SUMMARY
                             </div>
                             <div id="guidance-summary-text" class="text-sm leading-relaxed text-[#F4EDE4]"></div>
+                            <button type="button" id="summary-expand-btn" class="m-expand" onclick="toggleMobileClamp('guidance-summary-text', this)"></button>
                         </div>
                     </div>
                 </div>
@@ -958,6 +1262,7 @@
                                 <div class="flex-1 min-w-0">
                                     <div class="uppercase text-[10px] tracking-[1.5px] text-[#D4AF37] font-semibold mb-1">Review Note — What Changed</div>
                                     <div id="review-note-text" class="text-sm leading-relaxed text-[#F4EDE4]"></div>
+                                    <button type="button" id="review-expand-btn" class="m-expand" onclick="toggleMobileClamp('review-note-text', this)"></button>
                                 </div>
                             </div>
                         </div>
@@ -967,7 +1272,7 @@
                                 <span id="scene-label" class="section-label text-[#D4AF37]">DRAFT</span>
                             </div>
 
-                            <div class="flex items-center justify-between mb-2 border-b border-[#D4AF37]/20 pb-2 flex-shrink-0">
+                            <div id="editor-toolbar" class="flex items-center justify-between mb-2 border-b border-[#D4AF37]/20 pb-2 flex-shrink-0">
                                 <div class="flex items-center gap-x-1">
                                     <button onclick="formatEditorText('bold')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 font-bold">B</button>
                                     <button onclick="formatEditorText('italic')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 italic">I</button>
@@ -1228,10 +1533,10 @@
 
                 <div class="flex justify-between items-center pt-2 mt-auto">
                     <button onclick="requestDeleteNote()" class="primary-only text-red-400 hover:text-red-300 px-2 py-1">
-                        <i class="fa-solid fa-trash fa-lg"></i>
+                        <i class="fa-solid fa-trash fa-lg"></i><span class="m-label">Delete note</span>
                     </button>
 
-                    <div class="primary-only relative group">
+                    <div id="add-to-library-wrap" class="primary-only relative group">
                         <button onclick="addCurrentNoteToLibrary()" class="text-[#D4AF37] hover:text-[#E8C86B] px-2 py-1">
                             <i class="fa-solid fa-book-open fa-lg"></i>
                         </button>
@@ -1324,12 +1629,12 @@
 
                 <div class="flex justify-between items-center pt-2 mt-auto">
                     <button onclick="requestDeleteDraftSnapshot()" class="text-red-400 hover:text-red-300 px-2 py-1">
-                        <i class="fa-solid fa-trash fa-lg"></i>
+                        <i class="fa-solid fa-trash fa-lg"></i><span class="m-label">Delete</span>
                     </button>
 
                     <div class="relative group">
                         <button onclick="restoreDraftSnapshotToEditor()" class="text-[#D4AF37] hover:text-[#E8C86B] px-2 py-1">
-                            <i class="fa-solid fa-arrow-rotate-left fa-lg"></i>
+                            <i class="fa-solid fa-arrow-rotate-left fa-lg"></i><span class="m-label">Load into Editor</span>
                         </button>
                         <div class="tooltip">Load into Editor</div>
                     </div>
@@ -1513,8 +1818,8 @@
             </button>
         </div>
 
-        <!-- Filter tabs -->
-        <div class="flex items-center gap-x-1 px-3 pt-2 pb-1 border-b border-[#D4AF37]/20">
+        <!-- Filter tabs (hidden on mobile - a single chronological feed there) -->
+        <div id="changelog-filter-row" class="flex items-center gap-x-1 px-3 pt-2 pb-1 border-b border-[#D4AF37]/20">
             <button onclick="setChangelogFilter('all')" id="changelog-filter-all"
                     class="changelog-filter-tab text-[10px] px-2.5 py-1 rounded-full">All</button>
             <button onclick="setChangelogFilter('scene')" id="changelog-filter-scene"
@@ -1623,6 +1928,82 @@
         <div id="sammy-export-resize-handle" class="notepad-resize-handle"></div>
     </div>
 
+    <!-- ==================== MOBILE-ONLY CHROME ==================== -->
+    <!-- Guidance rail: six tabs pinned to the right wall while a scene is
+         open (Aaron's drawer concept, 2026-07-24: 3 rows x 2 vertical bars
+         with vertical labels). Tapping a tab pops that guidance card open as
+         a drawer beside it; tapping again (or the drawer's close button)
+         puts it back. display:none on desktop - purely additive. -->
+    <div id="mobile-guidance-rail" aria-label="Scene guidance drawers">
+        <button type="button" class="rail-tab" data-rail-key="purpose" onclick="mobileToggleGuidanceDrawer('purpose')"><i class="fa-solid fa-bullseye"></i><span>Purpose</span></button>
+        <button type="button" class="rail-tab" data-rail-key="canon" onclick="mobileToggleGuidanceDrawer('canon')"><i class="fa-solid fa-gem"></i><span>Canon</span></button>
+        <button type="button" class="rail-tab" data-rail-key="emotional" onclick="mobileToggleGuidanceDrawer('emotional')"><i class="fa-solid fa-heart-pulse"></i><span>Emotion</span></button>
+        <button type="button" class="rail-tab" data-rail-key="beats" onclick="mobileToggleGuidanceDrawer('beats')"><i class="fa-solid fa-list-check"></i><span>Beats</span></button>
+        <button type="button" class="rail-tab" data-rail-key="setting" onclick="mobileToggleGuidanceDrawer('setting')"><i class="fa-solid fa-mountain-sun"></i><span>Setting</span></button>
+        <button type="button" class="rail-tab" data-rail-key="success" onclick="mobileToggleGuidanceDrawer('success')"><i class="fa-solid fa-trophy"></i><span>Success</span></button>
+    </div>
+
+    <!-- Bottom navigation (mobile only): thumb-reachable, safe-area padded.
+         Focus = close every open drawer/panel/sheet, back to a calm column. -->
+    <nav id="mobile-nav" aria-label="Main navigation">
+        <button type="button" onclick="mobileNav('home')"><i class="fa-solid fa-house"></i><span>Home</span></button>
+        <button type="button" onclick="mobileNav('outline')"><i class="fa-solid fa-sitemap"></i><span>Outline</span></button>
+        <button type="button" onclick="mobileNav('library')"><i class="fa-solid fa-book-open"></i><span>Library</span></button>
+        <button type="button" onclick="mobileNav('notepad')"><i class="fa-solid fa-book"></i><span>Notepad</span></button>
+        <button type="button" onclick="mobileNav('text')"><i class="fa-solid fa-font"></i><span>Text</span></button>
+        <button type="button" onclick="mobileNav('focus')"><i class="fa-solid fa-crosshairs"></i><span>Focus</span></button>
+    </nav>
+
+    <!-- ==================== TEXT SIZE (mobile sheet) ====================
+         A global UI text-size preference, separate from the editor-only
+         zoom control. Scales the root font size, so every rem-based size in
+         the tool grows together instead of only the draft text. Stored per
+         device (a phone and a laptop want different sizes) and never synced. -->
+    <div id="textsize-window" class="notepad hidden">
+        <div class="notepad-header">
+            <div class="flex items-center gap-x-2">
+                <i class="fa-solid fa-font text-[#D4AF37]"></i>
+                <h3>Text Size</h3>
+            </div>
+            <button onclick="hideTextSize()" class="notepad-close" aria-label="Close text size">
+                <i class="fa-solid fa-times"></i>
+            </button>
+        </div>
+
+        <div class="notepad-body" style="flex-direction: column;">
+            <div class="p-4 overflow-y-auto flex-1 w-full">
+                <p class="text-sm text-[#F4EDE4] mb-4">Make everything in the tool bigger or smaller. This changes the whole app, not just your draft.</p>
+
+                <div class="flex items-center gap-x-3 mb-2">
+                    <button onclick="stepUiScale(-1)" aria-label="Smaller text"
+                            class="flex-shrink-0 rounded-2xl border border-[#D4AF37] text-[#D4AF37] font-bold"
+                            style="min-width:56px;min-height:56px;font-size:1.5rem;">&minus;</button>
+                    <input id="ui-scale-slider" type="range" min="100" max="175" step="5" value="100"
+                           oninput="setUiScale(this.value)" aria-label="Text size"
+                           class="flex-1" style="min-height:44px;accent-color:#D4AF37;">
+                    <button onclick="stepUiScale(1)" aria-label="Bigger text"
+                            class="flex-shrink-0 rounded-2xl border border-[#D4AF37] text-[#D4AF37] font-bold"
+                            style="min-width:56px;min-height:56px;font-size:1.5rem;">+</button>
+                </div>
+
+                <div class="text-center mb-4">
+                    <span id="ui-scale-readout" class="text-[#D4AF37] font-bold" style="font-size:1.35rem;">100%</span>
+                </div>
+
+                <div class="bg-[#4A3A2E] border border-[#D4AF37]/50 rounded-2xl p-3 mb-4">
+                    <div class="section-label text-[#D4AF37] mb-1">Preview</div>
+                    <p class="text-sm text-[#F4EDE4]">Tiff steadied the wobbling plate before it could fall.</p>
+                </div>
+
+                <button onclick="setUiScale(100)"
+                        class="w-full rounded-2xl border border-[#D4AF37] text-[#D4AF37]"
+                        style="min-height:48px;">Reset to 100%</button>
+
+                <p class="text-sm text-[#D4AF37] mt-4">You can still pinch with two fingers to zoom in on anything &mdash; that keeps working as normal.</p>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ==================== PANEL + BUTTON VISIBILITY ====================
         function hideSideButton(id) {
@@ -1649,6 +2030,10 @@
                     console.error("[Debug] Left panel element not found!");
                     return;
                 }
+                // Mobile: about to open -> close everything else first.
+                if (isMobileMode() && panel.classList.contains('-translate-x-full')) {
+                    mobileCloseEverything('left-panel');
+                }
                 panel.classList.toggle('-translate-x-full');
                 const isNowOpen = !panel.classList.contains('-translate-x-full');
                 console.log("[Debug] Left panel is now:", isNowOpen ? "OPEN" : "CLOSED");
@@ -1664,6 +2049,10 @@
                 if (!panel) {
                     console.error("[Debug] Right panel element not found!");
                     return;
+                }
+                // Mobile: about to open -> close everything else first.
+                if (isMobileMode() && panel.classList.contains('translate-x-full')) {
+                    mobileCloseEverything('right-panel');
                 }
                 panel.classList.toggle('translate-x-full');
                 const isNowOpen = !panel.classList.contains('translate-x-full');
@@ -1981,8 +2370,13 @@
             // review by Sammy, so the category header can show a marker without
             // requiring the user to expand it first to notice anything changed.
             const flaggedEntries = (entries || []).filter(e => e.status === 'review' && !!e.needsReviewReason);
+            // The "!" is a span (not a button - it lives inside the header
+            // button) that keeps the hover tooltip on desktop, and on mobile
+            // becomes a tap target revealing the same info inline, since
+            // hover doesn't exist on touch.
+            const flaggedTitles = flaggedEntries.map(e => e.title).join(', ');
             const categoryMarker = flaggedEntries.length > 0
-                ? `<span class="text-[#D4AF37]" title="Updated: ${flaggedEntries.map(e => e.title).join(', ').replace(/"/g, '&quot;')}">!</span> `
+                ? `<span class="review-flag-btn" role="button" tabindex="0" title="Updated: ${flaggedTitles.replace(/"/g, '&quot;')}" onclick="toggleReviewReason(this, event)">!</span> `
                 : '';
 
             const header = document.createElement('button');
@@ -2016,6 +2410,16 @@
             };
 
             section.appendChild(header);
+
+            // Touch-reachable equivalent of the category marker's hover
+            // tooltip: toggled by tapping the "!" above (mobile only).
+            if (flaggedEntries.length > 0) {
+                const reasonBar = document.createElement('div');
+                reasonBar.className = 'review-reason-inline hidden px-4 py-2 text-sm text-[#D4AF37] bg-[#3D2B1F] border-t border-[#D4AF37]/30';
+                reasonBar.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1.5"></i>Updated: ${flaggedTitles}`;
+                section.appendChild(reasonBar);
+            }
+
             section.appendChild(content);
 
             return section;
@@ -2032,8 +2436,11 @@
             // "new/changed and not yet looked at" rather than every entry that
             // happened to be present in the last sync.
             const isFlagged = entry.status === 'review' && !!entry.needsReviewReason;
+            // Desktop keeps the hover tooltip; on mobile the "!" is a tap
+            // target that reveals Sammy's review reason inline (hover-only
+            // info is unreachable on touch).
             const titleDisplay = isFlagged
-                ? `<span class="text-[#D4AF37]" title="${(entry.needsReviewReason || '').replace(/"/g, '&quot;')}">!</span> ${entry.title}`
+                ? `<span class="review-flag-btn" role="button" tabindex="0" title="${(entry.needsReviewReason || '').replace(/"/g, '&quot;')}" onclick="toggleReviewReason(this, event)">!</span> ${entry.title}`
                 : entry.title;
 
             let html = `
@@ -2041,6 +2448,7 @@
                     <div class="flex-1 min-w-0">
                         <div class="font-medium">${titleDisplay}</div>
                         ${entry.content ? `<div class="text-[#E8D9C0] mt-0.5 text-xs break-words">${entry.content}</div>` : ''}
+                        ${isFlagged ? `<div class="review-reason-inline hidden text-sm text-[#D4AF37] mt-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i>${entry.needsReviewReason || ''}</div>` : ''}
                     </div>
             `;
 
@@ -2132,6 +2540,9 @@
         }
 
         function saveNotepadState() {
+            // Mobile sheets have no geometry of their own - never let a phone
+            // session overwrite the saved desktop window arrangement.
+            if (isMobileMode()) return;
             const notepad = document.getElementById('notepad-window');
             if (!notepad) return;
 
@@ -2145,6 +2556,8 @@
         }
 
         function restoreNotepadState() {
+            // Saved desktop rects would break the full-screen mobile sheet.
+            if (isMobileMode()) return;
             const notepad = document.getElementById('notepad-window');
             const saved = localStorage.getItem(NOTEPAD_STORAGE_KEY);
             
@@ -2523,6 +2936,7 @@
         }
 
         function openNotepad() {
+            if (isMobileMode()) mobileCloseEverything('notepad-window');
             const notepad = document.getElementById('notepad-window');
             notepad.classList.remove('hidden');
             notepad.style.display = 'flex';
@@ -2763,6 +3177,7 @@
                 alert('Select a scene first to view its drafts.');
                 return;
             }
+            if (isMobileMode()) mobileCloseEverything('draftpad-window');
             const draftpad = document.getElementById('draftpad-window');
             draftpad.classList.remove('hidden');
             draftpad.style.display = 'flex';
@@ -2851,6 +3266,7 @@
         const DRAFTPAD_STATE_KEY = 'draftpad-state';
 
         function saveDraftPadState() {
+            if (isMobileMode()) return;
             const draftpad = document.getElementById('draftpad-window');
             if (!draftpad) return;
             const state = {
@@ -2863,6 +3279,7 @@
         }
 
         function restoreDraftPadState() {
+            if (isMobileMode()) return;
             const draftpad = document.getElementById('draftpad-window');
             if (!draftpad) return;
             try {
@@ -2977,6 +3394,12 @@
         }
 
         function openChangelog(filter) {
+            if (isMobileMode()) {
+                mobileCloseEverything('changelog-window');
+                // Mobile shows one chronological feed - the filter tabs are
+                // hidden there, so always land on 'all'.
+                filter = 'all';
+            }
             const win = document.getElementById('changelog-window');
             win.classList.remove('hidden');
             win.style.display = 'flex';
@@ -3052,6 +3475,7 @@
         }
 
         function saveChangelogState() {
+            if (isMobileMode()) return;
             const win = document.getElementById('changelog-window');
             if (!win) return;
             localStorage.setItem(CHANGELOG_STATE_KEY, JSON.stringify({
@@ -3061,6 +3485,7 @@
         }
 
         function restoreChangelogState() {
+            if (isMobileMode()) return;
             const win = document.getElementById('changelog-window');
             if (!win) return;
             try {
@@ -3130,13 +3555,18 @@
         let editorZoomPercent = 100;
         function adjustEditorZoom(direction) {
             const step = 10;
-            const min = 70;
-            const max = 160;
+            // Mobile: 17px base at 100%, and never below 100% - a shrunken
+            // editor is useless for low vision; ceiling raised to 200%.
+            // Desktop range/base unchanged.
+            const mobile = isMobileMode();
+            const min = mobile ? 100 : 70;
+            const max = mobile ? 200 : 160;
+            const base = mobile ? 1.0625 : 0.875; // rem at 100%
             editorZoomPercent = Math.min(max, Math.max(min, editorZoomPercent + direction * step));
 
             const editor = document.getElementById('editor');
             const label = document.getElementById('editor-zoom-label');
-            if (editor) editor.style.fontSize = (editorZoomPercent / 100 * 0.875) + 'rem'; // base text-sm (0.875rem) * zoom
+            if (editor) editor.style.fontSize = (editorZoomPercent / 100 * base) + 'rem';
             if (label) label.textContent = editorZoomPercent + '%';
         }
 
@@ -3208,6 +3638,7 @@
         let lastProofreaderCheckedText = ''; // exact plain text the current issues' offsets are valid against
 
         function openProofreader() {
+            if (isMobileMode()) mobileCloseEverything('proofreader-window');
             const win = document.getElementById('proofreader-window');
             win.classList.remove('hidden');
             win.style.display = 'flex';
@@ -3508,6 +3939,7 @@
         }
 
         function saveProofreaderState() {
+            if (isMobileMode()) return;
             const win = document.getElementById('proofreader-window');
             if (!win) return;
             localStorage.setItem(PROOFREADER_STATE_KEY, JSON.stringify({
@@ -3517,6 +3949,7 @@
         }
 
         function restoreProofreaderState() {
+            if (isMobileMode()) return;
             const win = document.getElementById('proofreader-window');
             if (!win) return;
             try {
@@ -3588,6 +4021,8 @@
                 alert('Select a scene first.');
                 return;
             }
+
+            if (isMobileMode()) mobileCloseEverything('sammy-export-window');
 
             const textarea = document.getElementById('sammy-export-text');
             textarea.value = buildSammyExportText();
@@ -3672,6 +4107,7 @@
         }
 
         function saveSammyExportState() {
+            if (isMobileMode()) return;
             const win = document.getElementById('sammy-export-window');
             if (!win) return;
             localStorage.setItem(SAMMY_EXPORT_STATE_KEY, JSON.stringify({
@@ -3681,6 +4117,7 @@
         }
 
         function restoreSammyExportState() {
+            if (isMobileMode()) return;
             const win = document.getElementById('sammy-export-window');
             if (!win) return;
             try {
@@ -3702,6 +4139,10 @@
 
         // ==================== INITIALIZATION ====================
         function init() {
+            // Mobile/touch layout mode first, so everything below renders
+            // into the correct layout (see MOBILE MODE section).
+            initMobileMode();
+
             // Initialize main editor
             const editor = document.getElementById('editor');
 
@@ -3721,31 +4162,13 @@
 
             renderLibrary();
 
-            // Notepad setup (single initialization)
-            makeNotepadDraggable();
-            makeNotepadResizable();
+            // Drag/resize wiring for all six floating windows - desktop only
+            // (single initialization; skipped entirely on touch devices, where
+            // the same windows open as fixed sheets instead).
+            ensureDesktopWindowWiring();
+
             setupNotepadBorderBehavior();
             setupKeyboardShortcuts();
-
-            // Draft Pad setup (single initialization)
-            makeDraftPadDraggable();
-            makeDraftPadResizable();
-
-            // Changelog setup (single initialization)
-            makeChangelogDraggable();
-            makeChangelogResizable();
-
-            // Proofreader setup (single initialization)
-            makeProofreaderDraggable();
-            makeProofreaderResizable();
-
-            // Send to Sammy window setup (single initialization)
-            makeSammyExportDraggable();
-            makeSammyExportResizable();
-
-            // Stats window setup (single initialization)
-            makeStatsWindowDraggable();
-            makeStatsWindowResizable();
 
             // Floating guidance cards never persist across a reload/session -
             // ensure a clean slate every time the tool initializes.
@@ -4528,6 +4951,9 @@
         const guidanceFloatInitialized = new Set();
 
         function floatGuidanceCard(key) {
+            // Touch devices never float cards - route to the drawer instead
+            // (safety net; the float buttons are hidden on mobile anyway).
+            if (isMobileMode()) { mobileToggleGuidanceDrawer(key); return; }
             const card = document.getElementById(`guidance-card-${key}`);
             const homeSlot = document.getElementById(`guidance-home-${key}`);
             const floatWindow = document.getElementById(`guidance-float-${key}`);
@@ -4583,6 +5009,14 @@
             homeSlot.classList.add('hidden');
             floatWindow.classList.add('hidden');
             floatWindow.style.display = 'none';
+
+            // If this card was open as a mobile drawer, its rail tab must
+            // stop showing as active (also covers the drawer's own close
+            // button, which calls this function directly).
+            if (typeof mobileOpenDrawerKey !== 'undefined' && mobileOpenDrawerKey === key) {
+                mobileOpenDrawerKey = null;
+                updateRailActiveState();
+            }
         }
 
         /**
@@ -4706,6 +5140,16 @@
             localStorage.setItem('last-selected-scene-id', scene.id);
             if (typeof pushStateToServer === 'function') pushStateToServer();
 
+            // Mobile: a scene pick means "take me to the editor" - close the
+            // outline (or whatever else is open), show the guidance rail, and
+            // start at the top of the scene.
+            document.body.classList.add('scene-open');
+            if (isMobileMode()) {
+                mobileCloseEverything(null);
+                const scroller = document.getElementById('center-scroll-area');
+                if (scroller) scroller.scrollTop = 0;
+            }
+
             const placeholder = document.getElementById('no-scene-placeholder');
             const sceneContent = document.getElementById('scene-content');
             if (placeholder) placeholder.style.display = 'none';
@@ -4734,6 +5178,7 @@
             // Recalculate after the DOM updates with this scene's (possibly
             // multi-line) summary text, so the status bar sits flush beneath it.
             requestAnimationFrame(syncControlBarStickyOffset);
+            requestAnimationFrame(refreshMobileClamps);
 
             console.log("%c[Scene] Loaded into writing area with guidance:", "color:#8B6F47", scene.id, scene.title);
         }
@@ -4938,6 +5383,7 @@
 
         // ---- Stats window (mirrors Draft Pad's window pattern) ----
         function showStoryStats() {
+            if (isMobileMode()) mobileCloseEverything('stats-window');
             const win = document.getElementById('stats-window');
             win.classList.remove('hidden');
             win.style.display = 'flex';
@@ -5012,6 +5458,7 @@
         }
         const STATS_STATE_KEY = 'stats-window-state';
         function saveStatsWindowState() {
+            if (isMobileMode()) return;
             const win = document.getElementById('stats-window');
             if (!win) return;
             localStorage.setItem(STATS_STATE_KEY, JSON.stringify({
@@ -5019,6 +5466,7 @@
             }));
         }
         function restoreStatsWindowState() {
+            if (isMobileMode()) return;
             const win = document.getElementById('stats-window');
             if (!win) return;
             try {
@@ -5073,6 +5521,7 @@
 
         function goHome() {
             currentScene = null;
+            document.body.classList.remove('scene-open'); // hides the mobile guidance rail
             closeAllFloatingWindows();
             const placeholder = document.getElementById('no-scene-placeholder');
             const sceneContent = document.getElementById('scene-content');
@@ -5573,6 +6022,375 @@
 
         // Expose for debugging / future use
         window.fetchLatestFromCanon = fetchLatestFromCanon;
+
+        // =====================================================
+        // MOBILE MODE (touch layout)
+        // =====================================================
+        // Detection is capability-based (hover/pointer), NEVER width-based:
+        // Erica's iPhone 16 Pro Max is 956px wide in landscape, which would
+        // fool any width breakpoint into desktop layout just by rotating.
+        // ?forceMobile=1 exists so the mobile layout can be exercised in a
+        // desktop browser during testing.
+        const MOBILE_MEDIA_QUERY = window.matchMedia('(hover: none) and (pointer: coarse)');
+
+        // Testing override. Set via ?forceMobile=1, or at runtime from the
+        // console with setMobilePreview(true/false) - some preview/test
+        // harnesses strip query strings, and this project's convention is
+        // that layout work must be verifiable in a real browser.
+        const FORCE_MOBILE_KEY = 'bigtiff-force-mobile-preview';
+        let forceMobileOverride = (() => {
+            try {
+                if (new URLSearchParams(location.search).get('forceMobile') === '1') return true;
+                return sessionStorage.getItem(FORCE_MOBILE_KEY) === '1';
+            } catch (e) { return false; }
+        })();
+
+        function isMobileMode() {
+            return forceMobileOverride || MOBILE_MEDIA_QUERY.matches;
+        }
+
+        function setMobilePreview(on) {
+            forceMobileOverride = !!on;
+            // Survives a reload (same tab only), so the mobile layout can be
+            // cold-booted for testing exactly as a real phone boots it.
+            try {
+                if (on) sessionStorage.setItem(FORCE_MOBILE_KEY, '1');
+                else sessionStorage.removeItem(FORCE_MOBILE_KEY);
+            } catch (e) { /* private mode - runtime toggle still works */ }
+            handleMobileModeChange();
+            return isMobileMode();
+        }
+        window.setMobilePreview = setMobilePreview;
+
+        function applyMobileLayoutClass() {
+            document.body.classList.toggle('mobile-layout', isMobileMode());
+            applyUiScale();          // no-op / cleared when not mobile
+            syncMobileHeaderHeight();
+        }
+
+        /**
+         * The header's real height changes when it wraps (which it does at
+         * high Safari Page Zoom levels). Sheets, side panels and the
+         * guidance rail all anchor to --mobile-header-h, so measure it
+         * rather than hard-coding a value that would be wrong when zoomed.
+         */
+        function syncMobileHeaderHeight() {
+            const header = document.querySelector('header');
+            if (!header) return;
+            if (!isMobileMode()) {
+                document.body.style.removeProperty('--mobile-header-h');
+                return;
+            }
+            const h = Math.round(header.getBoundingClientRect().height);
+            if (h > 0) document.body.style.setProperty('--mobile-header-h', h + 'px');
+        }
+        window.addEventListener('resize', syncMobileHeaderHeight);
+        window.addEventListener('orientationchange', () => setTimeout(syncMobileHeaderHeight, 120));
+
+        // Desktop drag/resize wiring happens lazily and exactly once, and
+        // only outside mobile mode - so no touch device ever gets drag
+        // handlers attached (iOS synthesizes mouse events from taps, so
+        // "attached but unused" would not actually be inert there).
+        let desktopWindowsWired = false;
+        function ensureDesktopWindowWiring() {
+            if (desktopWindowsWired || isMobileMode()) return;
+            desktopWindowsWired = true;
+            makeNotepadDraggable();
+            makeNotepadResizable();
+            makeDraftPadDraggable();
+            makeDraftPadResizable();
+            makeChangelogDraggable();
+            makeChangelogResizable();
+            makeProofreaderDraggable();
+            makeProofreaderResizable();
+            makeSammyExportDraggable();
+            makeSammyExportResizable();
+            makeStatsWindowDraggable();
+            makeStatsWindowResizable();
+        }
+
+        function handleMobileModeChange() {
+            applyMobileLayoutClass();
+            if (isMobileMode()) {
+                // Entering mobile: nothing may stay floating or half-applied.
+                mobileCloseEverything(null);
+            } else {
+                ensureDesktopWindowWiring();
+            }
+            refreshMobileClamps();
+        }
+        try { MOBILE_MEDIA_QUERY.addEventListener('change', handleMobileModeChange); }
+        catch (e) { if (MOBILE_MEDIA_QUERY.addListener) MOBILE_MEDIA_QUERY.addListener(handleMobileModeChange); }
+
+        /**
+         * Mobile is strictly one-thing-at-a-time: opening any sheet, panel,
+         * or guidance drawer closes all the others first. exceptId names the
+         * one thing allowed to stay (or about to open).
+         */
+        function mobileCloseEverything(exceptId) {
+            if (!isMobileMode()) return;
+            const sheets = {
+                'notepad-window': hideNotepad,
+                'draftpad-window': hideDraftPad,
+                'changelog-window': hideChangelog,
+                'proofreader-window': hideProofreader,
+                'sammy-export-window': hideSammyExport,
+                'stats-window': hideStatsWindow,
+                'textsize-window': hideTextSize
+            };
+            Object.keys(sheets).forEach(id => { if (id !== exceptId) sheets[id](); });
+            const left = document.getElementById('left-panel');
+            const right = document.getElementById('right-panel');
+            if (left && exceptId !== 'left-panel') left.classList.add('-translate-x-full');
+            if (right && exceptId !== 'right-panel') right.classList.add('translate-x-full');
+            if (exceptId !== 'guidance-drawer') mobileCloseGuidanceDrawer();
+        }
+
+        // ---- Guidance drawers (reuse the float-window shells + the
+        //      move-the-real-node pattern; nothing is duplicated) ----
+        let mobileOpenDrawerKey = null;
+
+        function mobileToggleGuidanceDrawer(key) {
+            if (!isMobileMode()) return;
+            if (mobileOpenDrawerKey === key) { mobileCloseGuidanceDrawer(); return; }
+            mobileCloseEverything('guidance-drawer');
+            mobileCloseGuidanceDrawer();
+            const card = document.getElementById(`guidance-card-${key}`);
+            const floatWindow = document.getElementById(`guidance-float-${key}`);
+            if (!card || !floatWindow) return;
+            // A drawer always shows full content - undo any minimized state.
+            if (guidanceMinimized.has(key)) toggleGuidanceCardMinimize(key);
+            floatWindow.querySelector('[data-float-body]').appendChild(card);
+            floatWindow.classList.remove('hidden');
+            floatWindow.style.display = 'flex';
+            mobileOpenDrawerKey = key;
+            updateRailActiveState();
+        }
+
+        function mobileCloseGuidanceDrawer() {
+            if (mobileOpenDrawerKey) snapGuidanceCardHome(mobileOpenDrawerKey);
+            mobileOpenDrawerKey = null;
+            updateRailActiveState();
+        }
+
+        function updateRailActiveState() {
+            document.querySelectorAll('#mobile-guidance-rail .rail-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.railKey === mobileOpenDrawerKey);
+            });
+        }
+
+        // ---- Bottom navigation ----
+        function mobileNav(what) {
+            const left = document.getElementById('left-panel');
+            const right = document.getElementById('right-panel');
+            switch (what) {
+                case 'home':
+                    mobileCloseEverything(null);
+                    goHome();
+                    break;
+                case 'outline': {
+                    const wasOpen = !left.classList.contains('-translate-x-full');
+                    mobileCloseEverything(null);
+                    if (!wasOpen) left.classList.remove('-translate-x-full');
+                    break;
+                }
+                case 'library': {
+                    const wasOpen = !right.classList.contains('translate-x-full');
+                    mobileCloseEverything(null);
+                    if (!wasOpen) right.classList.remove('translate-x-full');
+                    break;
+                }
+                case 'notepad': {
+                    const np = document.getElementById('notepad-window');
+                    const wasOpen = np.classList.contains('active') && np.style.display !== 'none';
+                    mobileCloseEverything(null);
+                    if (!wasOpen) openNotepad();
+                    break;
+                }
+                case 'text': {
+                    const ts = document.getElementById('textsize-window');
+                    const wasOpen = ts.classList.contains('active') && ts.style.display !== 'none';
+                    mobileCloseEverything(null);
+                    if (!wasOpen) openTextSize();
+                    break;
+                }
+                case 'focus':
+                    // One calm action: close every drawer, panel and sheet.
+                    mobileCloseEverything(null);
+                    break;
+            }
+        }
+
+        /**
+         * Tap-to-reveal for review-flag "!" markers - hover tooltips don't
+         * exist on touch, and the review reason is real editorial info.
+         * Desktop is untouched: this returns immediately there, keeping the
+         * original hover-tooltip behavior (and category-header click-through)
+         * exactly as before.
+         */
+        function toggleReviewReason(el, ev) {
+            if (!isMobileMode()) return;
+            ev.stopPropagation();
+            ev.preventDefault();
+            const host = el.closest('.library-entry, .library-category');
+            if (!host) return;
+            const reason = host.querySelector('.review-reason-inline');
+            if (reason) reason.classList.toggle('hidden');
+        }
+
+        // ---- Global UI text size (mobile) ----
+        // Distinct from adjustEditorZoom(), which only scales draft text in
+        // the editor. This scales the ROOT font size, so every rem-based
+        // size in the tool grows together - labels, buttons, panels, sheets.
+        // Set as a percentage (not a px value) so it multiplies the browser's
+        // own default text size rather than overriding it, and stored per
+        // device because a phone and a laptop want different answers.
+        const UI_SCALE_KEY = 'bigtiff-ui-scale';
+        const UI_SCALE_MIN = 100, UI_SCALE_MAX = 175, UI_SCALE_STEP = 5;
+
+        function getUiScale() {
+            const v = parseInt(localStorage.getItem(UI_SCALE_KEY), 10);
+            return (isFinite(v) && v >= UI_SCALE_MIN && v <= UI_SCALE_MAX) ? v : 100;
+        }
+
+        function applyUiScale() {
+            const root = document.documentElement;
+            if (!isMobileMode()) { root.style.removeProperty('font-size'); return; }
+            const pct = getUiScale();
+            // 100% is the browser default - don't pin a value at all there.
+            if (pct === 100) root.style.removeProperty('font-size');
+            else root.style.fontSize = pct + '%';
+            const slider = document.getElementById('ui-scale-slider');
+            const readout = document.getElementById('ui-scale-readout');
+            if (slider) slider.value = pct;
+            if (readout) readout.textContent = pct + '%';
+        }
+
+        function setUiScale(pct) {
+            const v = Math.min(UI_SCALE_MAX, Math.max(UI_SCALE_MIN, parseInt(pct, 10) || 100));
+            localStorage.setItem(UI_SCALE_KEY, String(v));
+            applyUiScale();
+            // Both of these measure real geometry, which just changed.
+            syncMobileHeaderHeight();
+            refreshMobileClamps();
+        }
+
+        function stepUiScale(direction) {
+            setUiScale(getUiScale() + direction * UI_SCALE_STEP);
+        }
+
+        function openTextSize() {
+            mobileCloseEverything('textsize-window');
+            const win = document.getElementById('textsize-window');
+            win.classList.remove('hidden');
+            win.style.display = 'flex';
+            win.classList.add('active');
+            applyUiScale();
+        }
+
+        function hideTextSize() {
+            const win = document.getElementById('textsize-window');
+            if (!win) return;
+            win.style.display = 'none';
+            win.classList.remove('active');
+        }
+
+        /**
+         * Tap-to-expand for the long scene-summary / review-note text on
+         * mobile. Nothing is hidden permanently - this only decides whether
+         * the block starts clamped, so the editor isn't pushed off-screen.
+         * The button only exists on mobile (.m-expand is display:none on
+         * desktop), so desktop text is never clamped.
+         */
+        function toggleMobileClamp(textId, btn) {
+            const el = document.getElementById(textId);
+            if (!el) return;
+            const clamped = el.classList.toggle('m-clamped');
+            btn.innerHTML = clamped
+                ? '<i class="fa-solid fa-chevron-down"></i> Show more'
+                : '<i class="fa-solid fa-chevron-up"></i> Show less';
+        }
+
+        /**
+         * Re-applies the clamped starting state each time a scene loads,
+         * and hides the toggle entirely when the text is short enough not
+         * to need one (no dead control for a two-line summary).
+         */
+        function refreshMobileClamps() {
+            [['guidance-summary-text', 'summary-expand-btn', 3],
+             ['review-note-text', 'review-expand-btn', 2]].forEach(([textId, btnId, lines]) => {
+                const el = document.getElementById(textId);
+                const btn = document.getElementById(btnId);
+                if (!el || !btn) return;
+                if (!isMobileMode()) { el.classList.remove('m-clamped'); return; }
+                el.classList.remove('m-clamped');
+                const lineH = parseFloat(getComputedStyle(el).lineHeight) || 24;
+                const needsClamp = el.scrollHeight > lineH * lines + 4;
+                btn.style.display = needsClamp ? '' : 'none';
+                if (needsClamp) {
+                    el.classList.add('m-clamped');
+                    btn.innerHTML = '<i class="fa-solid fa-chevron-down"></i> Show more';
+                }
+            });
+        }
+
+        // ---- Aggressive autosave + keyboard handling ----
+        // Backgrounding Safari mid-sentence is normal on a phone; iOS also
+        // aggressively suspends background tabs. Save + push immediately on
+        // blur / hide / pagehide (mobile only, so desktop behavior is
+        // unchanged).
+        function mobileImmediateSave() {
+            if (!isMobileMode() || !currentScene) return;
+            const editor = document.getElementById('editor');
+            if (!editor) return;
+            localStorage.setItem(currentDraftStorageKey(currentScene.id), editor.innerHTML);
+            pushDraftToServer(currentScene.id, editor.innerHTML, true);
+        }
+
+        function initMobileMode() {
+            applyMobileLayoutClass();
+            // Header height can change after webfonts/icons finish loading.
+            if (typeof ResizeObserver === 'function') {
+                const header = document.querySelector('header');
+                if (header) new ResizeObserver(syncMobileHeaderHeight).observe(header);
+            }
+            if (isMobileMode()) {
+                // Desktop opens with the outline panel visible; mobile starts
+                // with the calm landing column instead.
+                const left = document.getElementById('left-panel');
+                if (left) left.classList.add('-translate-x-full');
+            }
+            const editor = document.getElementById('editor');
+            if (editor) {
+                editor.addEventListener('blur', mobileImmediateSave);
+                editor.addEventListener('focus', () => {
+                    if (!isMobileMode()) return;
+                    // Give the on-screen keyboard time to settle, then bring
+                    // the toolbar + caret area back into view.
+                    setTimeout(() => {
+                        const tb = document.getElementById('editor-toolbar');
+                        if (tb) tb.scrollIntoView({ block: 'start' });
+                    }, 350);
+                });
+            }
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') mobileImmediateSave();
+            });
+            window.addEventListener('pagehide', mobileImmediateSave);
+            // Keep typed text above the on-screen keyboard: track how much of
+            // the layout viewport the keyboard covers and pad the scroll area
+            // by that amount (see --kb-height use in the mobile CSS).
+            if (window.visualViewport) {
+                const vv = window.visualViewport;
+                const onVV = () => {
+                    if (!isMobileMode()) return;
+                    const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+                    document.documentElement.style.setProperty('--kb-height', kb + 'px');
+                };
+                vv.addEventListener('resize', onVV);
+                vv.addEventListener('scroll', onVV);
+            }
+        }
 
         window.onload = init;
     </script>
