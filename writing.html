@@ -644,6 +644,87 @@
             margin-left: -2.4rem;
         }
 
+        /* ===== Landing navigation cluster (shared: desktop + mobile) =====
+           GIF on top, then a compact button group beneath it: WHERE I LEFT
+           OFF across the top; LAST COMPLETED / NEXT UNFINISHED flanking a
+           central SYNC circle; RANDOM SCENE centered below. One layout for
+           both, per Aaron's 2026-07-24 direction (was a desktop radial +
+           separate mobile reflow). */
+        #landing-radial { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; }
+        #landing-radial.hidden { display: none !important; }
+
+        .landing-gif { display: block; width: 12rem; height: 12rem; max-width: 62vw; object-fit: contain; user-select: none; }
+
+        #landing-nav-cluster {
+            position: relative;
+            width: min(22rem, 92vw);
+            display: flex;
+            flex-direction: column;
+            gap: 1.35rem;
+        }
+
+        .landing-nav-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            gap: 0.5rem;
+            border: 1px solid rgba(212, 175, 55, 0.5);
+            background: rgba(61, 43, 31, 0.7);
+            color: #F4EDE4;
+            font-weight: 600; letter-spacing: 0.5px; line-height: 1.15;
+            border-radius: 1rem;
+            padding: 0.5rem 0.7rem;
+            min-height: 2.75rem;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+        .landing-nav-btn:hover { background: #4A3A2E; }
+        .landing-nav-btn i { color: #D4AF37; }
+
+        /* WHERE I LEFT OFF: full cluster width, ~50% taller than the rest. */
+        .landing-nav-btn.nav-primary {
+            width: 100%;
+            background: #D4AF37; color: #3D2B1F;
+            font-weight: 800; font-size: 1.05rem;
+            min-height: 4.1rem;
+            box-shadow: 0 6px 16px -6px rgba(0, 0, 0, 0.5);
+        }
+        .landing-nav-btn.nav-primary:hover { background: #E8C86B; }
+        .landing-nav-btn.nav-primary i { color: #3D2B1F; }
+
+        /* Half buttons pinned to the outer edges, leaving a square hole in
+           the centre for the SYNC circle. Arrows sit at the outer ends. */
+        .landing-half-row { position: relative; display: flex; justify-content: space-between; align-items: stretch; }
+        .nav-half { width: calc(50% - 2.4rem); font-size: 0.82rem; }
+        .nav-half-left { justify-content: flex-start; }
+        .nav-half-right { justify-content: flex-end; }
+
+        .landing-random-row { display: flex; justify-content: center; }
+        .nav-random { width: calc(50% - 2.4rem); }
+
+        /* SYNC circle floating in the empty square between the two half
+           buttons. The circular-arrow icon fills the disc; the SYNC label
+           sits over it. */
+        .landing-sync-circle {
+            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+            width: 3.5rem; height: 3.5rem;
+            border-radius: 9999px;
+            background: #3D2B1F;
+            border: 2px solid #D4AF37;
+            display: grid; place-items: center;
+            cursor: pointer; overflow: hidden;
+            box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.6);
+            transition: background-color 0.15s ease;
+        }
+        .landing-sync-circle:hover { background: #4A3A2E; }
+        .landing-sync-circle .sync-icon {
+            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+            font-size: 2.6rem; color: #D4AF37; opacity: 0.35;
+        }
+        .landing-sync-circle .sync-label {
+            position: relative; z-index: 1;
+            font-size: 0.75rem; font-weight: 800; letter-spacing: 0.5px;
+            color: #F4EDE4; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+        }
+
         /* ==================== MOBILE LAYOUT (touch devices) ====================
            Everything below is scoped to body.mobile-layout, which JS toggles
            from the capability query (hover: none) and (pointer: coarse) -
@@ -850,22 +931,10 @@
         body.mobile-layout #center-column { margin-left: 0 !important; margin-right: 0 !important; }
         body.mobile-layout #center-scroll-area { padding-bottom: calc(var(--mobile-nav-clear) + var(--kb-height, 0px) + 12px); overscroll-behavior: contain; }
 
-        /* Landing: the radial re-flows into one centered vertical stack.
-           display:contents lifts the buttons out of their desktop row
-           wrappers so they can be re-ordered; Where I Left Off stays the
-           visually primary action. */
-        body.mobile-layout #landing-radial { display: flex; flex-direction: column; align-items: center; gap: 14px; }
-        body.mobile-layout #landing-radial.hidden { display: none !important; }
-        body.mobile-layout #landing-radial > div:not(#landing-nav-message):not(#landing-sync-row) { display: contents; }
-        body.mobile-layout #landing-sync-row { order: 8; }
-        body.mobile-layout #landing-tiff-gif { order: 1; width: 10rem; height: 10rem; }
-        body.mobile-layout #landing-radial button[onclick="goToWhereILeftOff()"] { order: 2; }
-        body.mobile-layout #landing-radial button[onclick="goToNextUnfinishedScene()"] { order: 3; }
-        body.mobile-layout #landing-radial button[onclick="goToLastCompletedScene()"] { order: 4; }
-        body.mobile-layout #landing-radial button[onclick="goToRandomUnfinishedScene()"] { order: 5; }
-        body.mobile-layout #landing-nav-message { order: 7; font-size: 1rem; }
-        body.mobile-layout .landing-nav-btn { min-height: 48px; width: min(320px, 86vw); justify-content: center; font-size: 1rem; }
-        body.mobile-layout #landing-sync-btn { min-height: 48px; }
+        /* The landing now uses one shared cluster on desktop and mobile
+           (see the "Landing navigation cluster" block above), so no
+           mobile-specific reflow is needed here - just keep the placeholder
+           padding sane on a phone. */
         body.mobile-layout #no-scene-placeholder { padding-left: 1rem; padding-right: 1rem; min-height: 0; }
 
         /* Scene view: summary -> status controls -> editor, with the guidance
@@ -1228,50 +1297,44 @@
                      "sync first" gate any more; Sync lives down with the
                      timestamp below, so the landing is the only front door. -->
                 <div id="landing-radial" class="hidden">
-                    <!-- Top: Random Unfinished -->
-                    <div class="flex justify-center mb-3">
-                        <button onclick="goToRandomUnfinishedScene()"
-                                class="landing-nav-btn px-4 py-2 rounded-2xl border border-[#D4AF37]/50 bg-[#3D2B1F]/70 hover:bg-[#4A3A2E] text-xs font-medium text-[#F4EDE4] flex items-center gap-x-2 transition-colors">
-                            <i class="fa-solid fa-shuffle text-[#D4AF37]"></i> Random Unfinished
-                        </button>
-                    </div>
 
-                    <!-- Middle row: Left · Tiff GIF · Right -->
-                    <div class="flex items-center justify-center gap-x-5">
-                        <button onclick="goToLastCompletedScene()"
-                                class="landing-nav-btn px-4 py-2 rounded-2xl border border-[#D4AF37]/50 bg-[#3D2B1F]/70 hover:bg-[#4A3A2E] text-xs font-medium text-[#F4EDE4] flex items-center gap-x-2 transition-colors">
-                            <i class="fa-solid fa-circle-check text-[#A3E6C9]"></i> Last Completed
+                    <!-- Tiff on top; the whole nav group sits beneath her. -->
+                    <img id="landing-tiff-gif" src="" alt="Big Tiff" loading="lazy"
+                         class="landing-gif" draggable="false">
+
+                    <div id="landing-nav-cluster">
+                        <!-- Primary: full width, tall -->
+                        <button onclick="goToWhereILeftOff()" class="landing-nav-btn nav-primary">
+                            <i class="fa-solid fa-feather-pointed"></i> WHERE I LEFT OFF
                         </button>
 
-                        <img id="landing-tiff-gif" src="" alt="Big Tiff" loading="lazy"
-                             class="w-40 h-40 md:w-52 md:h-52 object-contain flex-shrink-0 select-none" draggable="false">
+                        <!-- Two half-width buttons flanking the SYNC circle -->
+                        <div class="landing-half-row">
+                            <button onclick="goToLastCompletedScene()" class="landing-nav-btn nav-half nav-half-left" aria-label="Last completed scene">
+                                <i class="fa-solid fa-arrow-left"></i> LAST COMPLETED
+                            </button>
 
-                        <button onclick="goToNextUnfinishedScene()"
-                                class="landing-nav-btn px-4 py-2 rounded-2xl border border-[#D4AF37]/50 bg-[#3D2B1F]/70 hover:bg-[#4A3A2E] text-xs font-medium text-[#F4EDE4] flex items-center gap-x-2 transition-colors">
-                            <i class="fa-solid fa-pen-nib text-[#E8C86B]"></i> Next Unfinished
-                        </button>
-                    </div>
+                            <button id="landing-sync-btn" onclick="fetchLatestFromCanon()" class="landing-sync-circle" aria-label="Sync Canon">
+                                <i class="fa-solid fa-sync-alt sync-icon"></i>
+                                <span class="sync-label">SYNC</span>
+                            </button>
 
-                    <!-- Center/main: Where I Left Off -->
-                    <div class="flex justify-center mt-4">
-                        <button onclick="goToWhereILeftOff()"
-                                class="landing-nav-btn px-7 py-3 rounded-2xl bg-[#D4AF37] text-[#3D2B1F] font-bold text-sm hover:bg-[#E8C86B] flex items-center gap-x-2 shadow-lg transition-colors">
-                            <i class="fa-solid fa-feather-pointed"></i> Where I Left Off
-                        </button>
+                            <button onclick="goToNextUnfinishedScene()" class="landing-nav-btn nav-half nav-half-right" aria-label="Next unfinished scene">
+                                NEXT UNFINISHED <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </div>
+
+                        <!-- Random, centered, same size as a half button -->
+                        <div class="landing-random-row">
+                            <button onclick="goToRandomUnfinishedScene()" class="landing-nav-btn nav-half nav-random">
+                                <i class="fa-solid fa-shuffle"></i> RANDOM SCENE
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Inline message area (no-op feedback, never an alert) -->
-                    <div id="landing-nav-message" class="text-xs text-[#D4AF37]/70 mt-4 min-h-[1rem]"></div>
-
-                    <!-- Sync lives here now, deliberately quiet: it is
-                         occasional maintenance, not the way in. -->
-                    <div id="landing-sync-row" class="flex flex-col items-center mt-5">
-                        <button id="landing-sync-btn" onclick="fetchLatestFromCanon()" aria-label="Sync Canon"
-                                class="rounded-2xl border border-[#D4AF37]/50 text-[#D4AF37] hover:bg-[#4A3A2E] transition-colors flex items-center gap-x-2 px-3 py-1 text-xs">
-                            <i class="fa-solid fa-sync-alt"></i><span class="btn-text">Sync Canon</span>
-                        </button>
-                        <div id="landing-sync-time" class="text-[10px] text-[#D4AF37]/60 mt-1"></div>
-                    </div>
+                    <div id="landing-nav-message" class="text-xs text-[#D4AF37]/70 mt-3 min-h-[1rem]"></div>
+                    <div id="landing-sync-time" class="text-[10px] text-[#D4AF37]/60 mt-1"></div>
                 </div>
             </div>
             

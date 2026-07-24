@@ -2,6 +2,43 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-07-24] – Landing Nav Redesign (shared desktop + mobile)
+
+Reworks the landing navigation into one deliberate cluster, used identically
+on desktop and mobile (the old split — a desktop radial plus a separate
+mobile reflow with `display:contents` + `order` — is gone).
+
+### Changed
+- **Tiff on top, buttons grouped beneath her**, all labels ALL CAPS.
+- **WHERE I LEFT OFF** stays the hero: full cluster width, ~38% taller than
+  the other buttons.
+- **LAST COMPLETED** (left arrow at the left end) and **NEXT UNFINISHED**
+  (right arrow at the right end) sit on one row directly beneath it, pinned
+  to the outer edges.
+- **RANDOM SCENE** centered below, matched to the half-button size.
+- **SYNC is now a circle** floating in the empty square between the two half
+  buttons — the circular-arrow icon fills the disc at low opacity with the
+  SYNC label over it. It kept its `#landing-sync-btn` id and
+  `fetchLatestFromCanon()` handler, so viewer-role gating and every call
+  site still work untouched; the sync timestamp moved just below the cluster.
+- Removed the obsolete mobile landing reflow CSS and the `#landing-sync-row`
+  wrapper.
+
+### Verification notes
+Measured at 1440×900 and 440×956: GIF above the cluster, WHERE I LEFT OFF
+352px wide / 66px tall, the two halves flanking a perfectly round 56px
+circle centered on the cluster axis, RANDOM SCENE matched to the halves,
+scene still opens from WHERE I LEFT OFF, editor still 14px on desktop, 126px
+desktop margins intact, no horizontal scroll, no console errors, 0 sub-12px
+text and 0 contrast failures in the landing.
+
+**Open tradeoff, flagged not settled:** the half buttons come out ~39% of
+WHERE I LEFT OFF, not the requested 50%. Exact-half + a visible central gap
++ a real circle can't all three hold in one row (two 50% halves leave zero
+gap, so the circle would have to overlap them rather than sit in an empty
+square). Kept the clean empty circle; the halves can be pushed wider if the
+circle is allowed to shrink or overlap — Aaron's call.
+
 ## [2026-07-24] – Mobile Revision After First Device Review
 
 Aaron reviewed the mobile build on the phone ("everything appears to function
