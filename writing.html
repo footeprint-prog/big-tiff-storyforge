@@ -1221,7 +1221,7 @@
             <div class="notepad-sidebar p-2 text-sm flex flex-col">
                 <div class="flex justify-between items-center mb-2 px-1">
                     <span class="text-xs font-medium text-[#D4AF37]/80">Your Notes</span>
-                    <button onclick="createNewNote()" class="text-[10px] px-2 py-0.5 bg-[#D4AF37] text-[#3D2B1F] rounded font-semibold">+ New</button>
+                    <button onclick="createNewNote()" class="primary-only text-[10px] px-2 py-0.5 bg-[#D4AF37] text-[#3D2B1F] rounded font-semibold">+ New</button>
                 </div>
                 
                 <div id="notes-list" class="space-y-0.5 flex-1 overflow-y-auto text-xs pr-1"></div>
@@ -1267,8 +1267,8 @@
                      class="flex-1 bg-[#4A3A2E] border border-[#D4AF37]/40 rounded-xl p-3 text-sm focus:outline-none focus:border-[#D4AF37] overflow-y-auto"></div>
                 
                 <div class="flex justify-start mt-2">
-                    <button onclick="saveCurrentNote()" 
-                            class="px-5 py-1.5 text-xs bg-[#D4AF37] text-[#3D2B1F] font-bold rounded-2xl">
+                    <button onclick="saveCurrentNote()"
+                            class="primary-only px-5 py-1.5 text-xs bg-[#D4AF37] text-[#3D2B1F] font-bold rounded-2xl">
                         Save
                     </button>
                 </div>
@@ -2127,6 +2127,8 @@
         function saveToStorage() {
             localStorage.setItem('notepad-notes', JSON.stringify(notepadNotes));
             localStorage.setItem('library-entries', JSON.stringify(libraryEntries));
+            // Notes + library entries follow Erica across devices.
+            if (typeof pushStateToServer === 'function') pushStateToServer();
         }
 
         function saveNotepadState() {
@@ -2577,6 +2579,7 @@
 
         function saveDraftSnapshots(sceneId, snapshots) {
             localStorage.setItem(draftSnapshotsStorageKey(sceneId), JSON.stringify(snapshots));
+            if (typeof pushCheckpointsToServer === 'function') pushCheckpointsToServer();
         }
 
         function renderDraftPadList() {
@@ -2906,6 +2909,7 @@
                 ...entry
             });
             localStorage.setItem(CHANGELOG_STORAGE_KEY, JSON.stringify(entries));
+            if (typeof pushStateToServer === 'function') pushStateToServer();
             refreshChangelogIfOpen();
         }
 
@@ -3804,6 +3808,7 @@
             const saved = loadSavedStatuses();
             saved[sceneId] = { status, needsReviewReason };
             localStorage.setItem(STATUS_STORAGE_KEY, JSON.stringify(saved));
+            if (typeof pushStateToServer === 'function') pushStateToServer();
         }
 
         /**
@@ -3932,6 +3937,7 @@
             const saved = loadSavedLibraryStatuses();
             saved[entryId] = { status, needsReviewReason };
             localStorage.setItem(LIBRARY_STATUS_STORAGE_KEY, JSON.stringify(saved));
+            if (typeof pushStateToServer === 'function') pushStateToServer();
         }
 
         /**
@@ -4698,6 +4704,7 @@
 
             currentScene = scene;
             localStorage.setItem('last-selected-scene-id', scene.id);
+            if (typeof pushStateToServer === 'function') pushStateToServer();
 
             const placeholder = document.getElementById('no-scene-placeholder');
             const sceneContent = document.getElementById('scene-content');
@@ -5129,6 +5136,10 @@
             document.body.classList.toggle('role-viewer', isViewer);
             const editor = document.getElementById('editor');
             if (editor) editor.contentEditable = isViewer ? 'false' : 'true';
+            // Viewers are strictly read-only everywhere, Notepad included - they can
+            // read Erica's notes but never create, edit or delete them.
+            const noteEditor = document.getElementById('note-content');
+            if (noteEditor) noteEditor.contentEditable = isViewer ? 'false' : 'true';
             const syncBtn = document.getElementById('sync-canon-btn');
             if (syncBtn) syncBtn.style.display = (isViewer && !currentCanSyncCanon) ? 'none' : '';
             const landingSync = document.getElementById('landing-sync-btn');
@@ -5243,10 +5254,28 @@
                 try { const r = await fetch(`${DATA_RAW_BASE}/${file}?t=${Date.now()}`, { cache: 'no-store' }); return r.ok ? await r.json() : null; }
                 catch (e) { console.warn('[data sync]', file, e); return null; }
             };
-            const [d, c, s] = await Promise.all([grab('drafts.json'), grab('checkpoints.json'), grab('stats.json')]);
+            const [d, c, s, st] = await Promise.all([
+                grab('drafts.json'), grab('checkpoints.json'), grab('stats.json'), grab('state.json')
+            ]);
             if (d && d.drafts) remoteDrafts = d.drafts;
-            if (c && c.checkpoints) remoteCheckpoints = c.checkpoints;
             if (s) statsData = s;
+
+            // Hydrate cross-device state. Adopt remote only when this device has no
+            // newer unsynced changes, so local edits are never silently clobbered.
+            if (st && st.stateEnc) {
+                const lastPushed = localStorage.getItem('local-state-pushed-at');
+                if (!lastPushed || (st.updatedAt && st.updatedAt > lastPushed)) {
+                    const json = await decryptDraft(st.stateEnc);
+                    if (json) { try { applyRemoteState(JSON.parse(json)); } catch (e) { console.warn('[state hydrate]', e); } }
+                }
+            }
+            if (c && c.checkpointsEnc) {
+                const lastPushed = localStorage.getItem('local-checkpoints-pushed-at');
+                if (!lastPushed || (c.updatedAt && c.updatedAt > lastPushed)) {
+                    const json = await decryptDraft(c.checkpointsEnc);
+                    if (json) { try { applyRemoteCheckpoints(JSON.parse(json)); } catch (e) { console.warn('[checkpoints hydrate]', e); } }
+                }
+            }
         }
 
         // ---- Write layer (primary only; needs pasted token) ----
@@ -5378,6 +5407,95 @@
                     refreshProgressPill();
                 } catch (e) { console.warn('[stats push] failed', e); }
             }, DRAFT_PUSH_DEBOUNCE);
+        }
+
+        // ---- Cross-device state sync (notes, library, statuses, changelog) ----
+        // Everything Erica creates must follow her to any device, not just drafts.
+        // Bulky per-scene checkpoints live in their own file to keep this one small.
+        const STATE_PUSH_DEBOUNCE = 2500;
+        let statePushTimer = null;
+        let checkpointPushTimer = null;
+
+        function _lsJSON(key, fallback) {
+            try { return JSON.parse(localStorage.getItem(key) || fallback); }
+            catch (e) { return JSON.parse(fallback); }
+        }
+
+        function collectLocalState() {
+            return {
+                notes: _lsJSON('notepad-notes', '[]'),
+                libraryEntries: _lsJSON('library-entries', '[]'),
+                sceneStatuses: _lsJSON(STATUS_STORAGE_KEY, '{}'),
+                libraryStatuses: _lsJSON(LIBRARY_STATUS_STORAGE_KEY, '{}'),
+                changelog: _lsJSON(CHANGELOG_STORAGE_KEY, '[]'),
+                lastSceneId: localStorage.getItem('last-selected-scene-id') || null
+            };
+        }
+
+        function applyRemoteState(st) {
+            if (!st || typeof st !== 'object') return;
+            if (Array.isArray(st.notes)) {
+                localStorage.setItem('notepad-notes', JSON.stringify(st.notes));
+                if (typeof notepadNotes !== 'undefined') notepadNotes = st.notes;
+            }
+            if (Array.isArray(st.libraryEntries)) {
+                localStorage.setItem('library-entries', JSON.stringify(st.libraryEntries));
+                if (typeof libraryEntries !== 'undefined') libraryEntries = st.libraryEntries;
+            }
+            if (st.sceneStatuses) localStorage.setItem(STATUS_STORAGE_KEY, JSON.stringify(st.sceneStatuses));
+            if (st.libraryStatuses) localStorage.setItem(LIBRARY_STATUS_STORAGE_KEY, JSON.stringify(st.libraryStatuses));
+            if (Array.isArray(st.changelog)) localStorage.setItem(CHANGELOG_STORAGE_KEY, JSON.stringify(st.changelog));
+            if (st.lastSceneId) localStorage.setItem('last-selected-scene-id', st.lastSceneId);
+            // Re-render anything that reads the hydrated data.
+            try { if (typeof renderNotesList === 'function') renderNotesList(); } catch (e) {}
+            try { if (typeof renderLibrary === 'function') renderLibrary(); } catch (e) {}
+            try { if (currentCanonData && typeof renderDynamicOutline === 'function') renderDynamicOutline(); } catch (e) {}
+        }
+
+        function pushStateToServer(immediate) {
+            if (currentUserRole !== 'primary' || !getWriteToken()) return;
+            clearTimeout(statePushTimer);
+            const doPush = async () => {
+                try {
+                    const enc = await encryptDraft(JSON.stringify(collectLocalState()));
+                    const now = new Date().toISOString();
+                    const sha = await getFileSha('state.json');
+                    await pushToDataRepo('state.json', { schemaVersion: 1, stateEnc: enc, updatedAt: now }, { sha, message: 'State sync' });
+                    localStorage.setItem('local-state-pushed-at', now);
+                } catch (e) { console.warn('[state push] failed', e); }
+            };
+            if (immediate) doPush(); else statePushTimer = setTimeout(doPush, STATE_PUSH_DEBOUNCE);
+        }
+
+        function collectLocalCheckpoints() {
+            const out = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                if (k && k.startsWith('draft-snapshots:')) {
+                    out[k.slice('draft-snapshots:'.length)] = _lsJSON(k, '[]');
+                }
+            }
+            return out;
+        }
+
+        function applyRemoteCheckpoints(cp) {
+            if (!cp || typeof cp !== 'object') return;
+            Object.keys(cp).forEach(id => localStorage.setItem('draft-snapshots:' + id, JSON.stringify(cp[id])));
+            try { if (typeof refreshDraftPadIfOpen === 'function') refreshDraftPadIfOpen(); } catch (e) {}
+        }
+
+        function pushCheckpointsToServer() {
+            if (currentUserRole !== 'primary' || !getWriteToken()) return;
+            clearTimeout(checkpointPushTimer);
+            checkpointPushTimer = setTimeout(async () => {
+                try {
+                    const enc = await encryptDraft(JSON.stringify(collectLocalCheckpoints()));
+                    const now = new Date().toISOString();
+                    const sha = await getFileSha('checkpoints.json');
+                    await pushToDataRepo('checkpoints.json', { schemaVersion: 1, checkpointsEnc: enc, updatedAt: now }, { sha, message: 'Checkpoints sync' });
+                    localStorage.setItem('local-checkpoints-pushed-at', now);
+                } catch (e) { console.warn('[checkpoints push] failed', e); }
+            }, STATE_PUSH_DEBOUNCE);
         }
 
         // ---- Session validation against real accounts ----
