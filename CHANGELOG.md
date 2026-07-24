@@ -2,6 +2,68 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-07-24] – Mobile Revision After First Device Review
+
+Aaron reviewed the mobile build on the phone ("everything appears to function
+fine, but we need to make adjustments") and gave ten notes. All ten are in.
+
+### Changed
+- **Two control tiers, both in `rem`.** `--tap` (2.75rem) for things touched
+  while writing — bottom nav, editor toolbar, scene actions, landing nav.
+  `--tap-sm` (1.875rem) for set-once chrome — header, panel headers, close
+  buttons, sync, review markers. Because both are `rem`, lowering the UI text
+  scale now genuinely **shrinks the buttons**, not just their labels; the
+  scale range gained a downward half (**75–175%**, was 100–175%).
+- **Header roughly halved**: logo mark 32px → 16px, header row 56px → ~34px.
+- **Text buttons became icons on mobile** (Save Draft, Draft Log, Sammy,
+  Proofreader, New, Save, Rename, Sync). Desktop keeps every word — the
+  labels are wrapped in `.btn-text`, hidden only under `body.mobile-layout` —
+  and each button carries an `aria-label` so nothing is lost to screen
+  readers.
+- **Nickname editing removed** entirely (button, handler, and the now-dead
+  reference in `refreshAccountButton` that would have thrown without it).
+- **The sync-first gate is gone.** `#landing-empty` was deleted; the landing
+  is now the only front door, with Sync and its own timestamp moved to the
+  bottom of it. "Stats & Progress" dropped from the landing nav, since Stats
+  already sits in the header.
+- **Stat teaser is now a thought bubble above Tiff's head** — CSS, not art,
+  so the text reflows at any length and any UI scale rather than clipping
+  inside fixed-size bitmap.
+- **Bottom nav**: Focus moved to the left corner, ~36% larger, with the bar
+  bulging up around it. Whichever view is open stays raised and gold until
+  it closes — driven by what is actually open, so closing a sheet from its
+  own X also drops the highlight.
+- **Nothing covers the whole screen any more.** Sheets are bottom-anchored
+  at 66dvh, leaving ~263px of the scene visible above them ("makes me feel
+  like I've forgotten what I was working on"). Outline and Library are now
+  **50% width** with a tap-to-dismiss scrim over the exposed half.
+- **Outline condensed** for the narrower panel: "Act 1" → "A1", "Chapter 2"
+  → "Ch2", and status words → distinct icons (check / exclamation / pen —
+  still a shape per state, never colour alone), with padding stripped
+  throughout. **Library** trimmed the same way, separators kept, and the
+  review marker is now a smaller `fa-circle-exclamation` icon rather than a
+  text "!".
+- **Six guidance tabs split into two rails of three**, one per side, with
+  the editor between them. Drawers open beside whichever rail they belong to.
+- **Notepad and Draft Pad list headers** ("Your Notes", "Drafts") hidden on
+  mobile, along with the outline hint text and both panel sync timestamps
+  (the landing carries the timestamp now).
+
+### Verification notes
+Re-audited at 440×956 after every change: **0** text under 12px, **0**
+measured WCAG AA contrast failures, **0** primary controls under 44px, **0**
+sibling overlaps, no horizontal scroll, no console errors. Sheets confirmed
+at 631px tall with 263px of scene still visible; both panels measured at
+exactly 220px (50%); rails confirmed 3-and-3 with the editor between them.
+Desktop re-measured and unchanged: 56px header, 32px logo, 126px margins,
+side-by-side guidance columns, 320px panels, floating 480×380 Notepad, full
+"Act 1"/"Review" wording, 14px editor, original red review pill.
+
+**Still not verified:** nothing has run on real iOS Safari. The `:has()`
+selector driving the panel scrim needs Safari 15.4+ (fine on her iOS 18
+device, but unconfirmed on hardware), and Add to Home Screen remains
+untested on a real phone.
+
 ## [2026-07-24] – Mobile Support: Touch Layout, Guidance Rail, Accessibility Pass
 
 The tool's first real mobile experience, built for Erica's iPhone 16 Pro Max

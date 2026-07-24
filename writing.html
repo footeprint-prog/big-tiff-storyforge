@@ -600,6 +600,50 @@
             margin-bottom: 6px;
         }
 
+        /* Thought bubble holding the rotating stat teaser, floating above
+           Tiff's head on the landing screen. Drawn in CSS rather than as an
+           image so the text reflows at any length and any UI text scale -
+           a fixed-size bitmap bubble would clip the longer stat lines. The
+           two trailing dots are pseudo-elements pointing down toward her. */
+        .thought-bubble {
+            position: relative;
+            display: inline-block;
+            max-width: 22rem;
+            margin-bottom: 1.75rem;
+            padding: 0.6rem 1rem;
+            background: #3D2B1F;
+            border: 2px solid #D4AF37;
+            border-radius: 1.25rem;
+            color: #F4EDE4;
+            font-style: italic;
+            line-height: 1.35;
+            text-align: center;
+        }
+
+        .thought-bubble::before,
+        .thought-bubble::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            background: #3D2B1F;
+            border: 2px solid #D4AF37;
+            border-radius: 9999px;
+        }
+
+        .thought-bubble::before {
+            width: 0.8rem;
+            height: 0.8rem;
+            bottom: -0.65rem;
+            margin-left: -1.6rem;
+        }
+
+        .thought-bubble::after {
+            width: 0.5rem;
+            height: 0.5rem;
+            bottom: -1.4rem;
+            margin-left: -2.4rem;
+        }
+
         /* ==================== MOBILE LAYOUT (touch devices) ====================
            Everything below is scoped to body.mobile-layout, which JS toggles
            from the capability query (hover: none) and (pointer: coarse) -
@@ -611,10 +655,18 @@
         html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 
         /* Mobile-only chrome stays fully hidden on desktop. */
-        #mobile-nav, #mobile-guidance-rail { display: none; }
+        #mobile-nav, .mobile-rail { display: none; }
 
-        /* Mobile-only inline labels next to otherwise icon-only buttons. */
-        .m-label { display: none; }
+        /* .m-label was an inline text label beside icon-only controls. Per
+           Aaron's 2026-07-24 review the mobile direction is icons instead of
+           text, so these stay hidden everywhere; the controls carry
+           aria-label so assistive tech still announces them. */
+        .m-label { display: none !important; }
+        /* Button wording that collapses to just its icon on mobile. Desktop
+           keeps the words, so nothing there changes. */
+        body.mobile-layout .btn-text { display: none; }
+        /* Chrome that earns no space on a phone (list headers, hints). */
+        body.mobile-layout .m-hide { display: none !important; }
         /* Mobile-only "Show more / Show less" control for clamped text. */
         .m-expand { display: none; }
 
@@ -629,6 +681,14 @@
             --mobile-header-h: 56px;
             /* 60px of buttons + the nav's own 2px top border */
             --mobile-nav-h: 62px;
+            /* Two control tiers, both in rem so they scale with the UI text
+               size in BOTH directions - scaling down genuinely shrinks the
+               buttons, it doesn't just shrink their labels.
+               --tap  = things touched while writing (nav, toolbar, Save)
+               --tap-sm = chrome she sets once and ignores (panel headers,
+                          close buttons, sync, filters) */
+            --tap: 2.75rem;      /* 44px at default scale */
+            --tap-sm: 1.875rem;  /* 30px at default scale */
             --mobile-nav-clear: calc(var(--mobile-nav-h) + env(safe-area-inset-bottom, 0px));
             touch-action: manipulation; /* kills iOS double-tap-zoom delay; pinch zoom still works */
         }
@@ -662,7 +722,6 @@
         body.mobile-layout .guidance-float-body { font-size: 1rem; }
         body.mobile-layout .text-tool-btn { font-size: 1rem; min-height: 44px; min-width: 44px; }
         body.mobile-layout .control-bar-item { font-size: 0.9375rem; height: auto; min-height: 44px; }
-        body.mobile-layout .m-label { display: inline; font-size: 0.875rem; margin-left: 8px; }
 
         /* Dimmed gold/cream labels fail WCAG contrast on the dark browns -
            force full opacity on mobile (same palette colors, no new hues). */
@@ -678,10 +737,9 @@
         body.mobile-layout .scene-review,
         body.mobile-layout .status-pill-review { color: #3D2B1F; }
 
-        /* ---- Touch targets (>=44px) ----
-           min-* is used throughout so the fixed Tailwind sizing utilities
-           already on these controls (h-[26px], w-[22px], h-8 …) get lifted
-           without having to fight each element's own layout rules. */
+        /* ---- Control sizing, two tiers ----
+           CHROME tier: set-once controls - header, panel headers, close
+           buttons, sync, filters. Deliberately small and dense. */
         body.mobile-layout header button,
         body.mobile-layout #left-panel button,
         body.mobile-layout #right-panel button,
@@ -689,11 +747,22 @@
         body.mobile-layout .guidance-float-window button,
         body.mobile-layout #login-modal button,
         body.mobile-layout #token-setup-modal button,
-        body.mobile-layout #draft-conflict-banner button { min-height: 44px; min-width: 44px; }
+        body.mobile-layout #draft-conflict-banner button { min-height: var(--tap-sm); min-width: var(--tap-sm); }
+        body.mobile-layout .notepad-close { padding: 0 0.5rem; font-size: 1.1rem; min-width: var(--tap-sm); min-height: var(--tap-sm); }
+
+        /* PRIMARY tier: touched constantly while writing. These stay
+           comfortable even though the chrome around them shrank. */
+        body.mobile-layout #mobile-nav button,
+        body.mobile-layout .rail-tab,
+        body.mobile-layout #editor-toolbar button,
+        body.mobile-layout #scene-status-bar button,
+        body.mobile-layout .landing-nav-btn,
+        body.mobile-layout .status-dropdown-trigger,
+        body.mobile-layout .m-expand { min-height: var(--tap); min-width: var(--tap); }
+
         body.mobile-layout input[type="text"],
         body.mobile-layout input[type="password"],
-        body.mobile-layout .minimal-search { min-height: 44px; font-size: 1rem; }
-        body.mobile-layout .notepad-close { padding: 10px 16px; font-size: 1.4rem; }
+        body.mobile-layout .minimal-search { min-height: var(--tap); font-size: 1rem; }
         body.mobile-layout #account-btn { min-height: 44px; }
         body.mobile-layout #nickname-edit-btn { height: 44px; width: 44px; }
         body.mobile-layout #account-menu button { min-height: 44px; }
@@ -702,7 +771,19 @@
         body.mobile-layout #notes-list > div, body.mobile-layout #draftpad-list > div { min-height: 48px; }
         body.mobile-layout .library-category > button { min-height: 48px; }
         body.mobile-layout .library-entry { padding-top: 10px; padding-bottom: 10px; }
-        body.mobile-layout .review-flag-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; border: 1.5px solid #D4AF37; border-radius: 9999px; font-weight: 700; }
+        body.mobile-layout .review-flag-btn { display: inline-flex; align-items: center; justify-content: center; min-width: var(--tap-sm); min-height: var(--tap-sm); border: 1px solid #D4AF37; border-radius: 9999px; font-size: 0.8rem; }
+
+        /* ---- Half-width Outline + Library: strip the breathing room ---- */
+        body.mobile-layout #dynamic-outline { font-size: 0.85rem; }
+        body.mobile-layout #left-panel .hierarchy-item { padding: 0.25rem 0.4rem; }
+        body.mobile-layout #left-panel [data-scenes-list] { padding-left: 0.5rem; }
+        body.mobile-layout #left-panel [data-scenes-list] > div { padding: 0.2rem 0.3rem; }
+        body.mobile-layout #left-panel [data-chapters-container] { padding-left: 0.6rem; }
+        body.mobile-layout .scene-status { min-width: 0; width: auto; padding: 2px 6px; font-size: 0.8rem; }
+        body.mobile-layout .library-category { margin-bottom: 2px; }
+        body.mobile-layout .library-category > button { padding: 0.3rem 0.5rem; min-height: var(--tap-sm); }
+        body.mobile-layout .library-entry { padding: 6px 8px; }
+        body.mobile-layout #right-panel .mb-3 { margin-bottom: 0.5rem; }
         body.mobile-layout #proofreader-issues-list button { min-height: 44px; padding: 8px 16px; font-size: 0.875rem; }
         body.mobile-layout #proofreader-check-btn { min-height: 44px; height: auto; }
         body.mobile-layout #proofreader-apply-all-row button { min-height: 48px; height: auto; }
@@ -735,7 +816,13 @@
            full-width phone too, and a fixed-height non-wrapping flex row makes
            them collide instead of reflow. Height is measured at runtime into
            --mobile-header-h, so sheets and the rail follow whatever it becomes. */
-        body.mobile-layout header .h-14 { gap: 6px 4px; height: auto; min-height: 56px; flex-wrap: wrap; padding: 6px 0; }
+        body.mobile-layout header .h-14 { gap: 4px; height: auto; min-height: var(--tap-sm); flex-wrap: wrap; padding: 2px 0; }
+        /* Logo mark at half its desktop size, and the header row is not
+           allowed to be taller than that mark demands. */
+        body.mobile-layout header .w-8.h-8 { width: 1rem; height: 1rem; flex-shrink: 0; }
+        body.mobile-layout header .w-8.h-8 i { font-size: 0.6rem; }
+        body.mobile-layout #account-btn { height: var(--tap-sm); min-height: var(--tap-sm); }
+        body.mobile-layout header .h-8 { height: var(--tap-sm); }
         body.mobile-layout header .h-14 > div { min-width: 0; }
         /* Only the branding block may be truncated - clipping the group
            itself would cut off the account button, which must stay tappable. */
@@ -743,8 +830,7 @@
         body.mobile-layout header .h-14 > div:first-child > div:first-child { min-width: 0; flex-shrink: 0; }
         body.mobile-layout header .h-14 > div:last-child { flex: 0 0 auto; gap: 8px; }
         body.mobile-layout #account-btn-label { max-width: 88px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        body.mobile-layout .section-title { font-size: 1.05rem; white-space: nowrap; }
-        body.mobile-layout header .w-8.h-8 { flex-shrink: 0; }
+        body.mobile-layout header .section-title { font-size: 0.85rem; white-space: nowrap; }
         body.mobile-layout #account-btn { flex-shrink: 0; }
 
         /* ---- No moveable UI on touch: hide every drag/resize/float
@@ -770,13 +856,13 @@
            visually primary action. */
         body.mobile-layout #landing-radial { display: flex; flex-direction: column; align-items: center; gap: 14px; }
         body.mobile-layout #landing-radial.hidden { display: none !important; }
-        body.mobile-layout #landing-radial > div:not(#landing-nav-message) { display: contents; }
+        body.mobile-layout #landing-radial > div:not(#landing-nav-message):not(#landing-sync-row) { display: contents; }
+        body.mobile-layout #landing-sync-row { order: 8; }
         body.mobile-layout #landing-tiff-gif { order: 1; width: 10rem; height: 10rem; }
         body.mobile-layout #landing-radial button[onclick="goToWhereILeftOff()"] { order: 2; }
         body.mobile-layout #landing-radial button[onclick="goToNextUnfinishedScene()"] { order: 3; }
         body.mobile-layout #landing-radial button[onclick="goToLastCompletedScene()"] { order: 4; }
         body.mobile-layout #landing-radial button[onclick="goToRandomUnfinishedScene()"] { order: 5; }
-        body.mobile-layout #landing-radial button[onclick="showStoryStats()"] { order: 6; }
         body.mobile-layout #landing-nav-message { order: 7; font-size: 1rem; }
         body.mobile-layout .landing-nav-btn { min-height: 48px; width: min(320px, 86vw); justify-content: center; font-size: 1rem; }
         body.mobile-layout #landing-sync-btn { min-height: 48px; }
@@ -784,7 +870,8 @@
 
         /* Scene view: summary -> status controls -> editor, with the guidance
            rail pinned to the right wall. */
-        body.mobile-layout #scene-content { padding-right: 104px; padding-left: 6px; }
+        /* Editor sits between the two rails. */
+        body.mobile-layout #scene-content { padding-left: 3.4rem; padding-right: 3.4rem; }
         body.mobile-layout #scene-summary-bar { position: static; padding: 12px; }
         body.mobile-layout #review-note-box { padding: 12px; }
         /* The summary's uppercase header repeats the scene title, which is
@@ -821,8 +908,12 @@
         /* Guidance rail: 3 rows x 2 vertical tabs pinned to the right wall
            (Aaron's drawer concept, 2026-07-24), visible only while a scene
            is open. Stays put while the column scrolls. */
-        body.mobile-layout.scene-open #mobile-guidance-rail { display: grid; grid-template-columns: repeat(2, 44px); gap: 10px 8px; position: fixed; right: 4px; top: 50%; transform: translateY(-50%); z-index: 45; max-height: calc(100dvh - var(--mobile-header-h) - var(--mobile-nav-clear) - 12px); overflow-y: auto; }
-        body.mobile-layout .rail-tab { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; min-width: 44px; min-height: 104px; padding: 10px 0; background: #3D2B1F; border: 1px solid rgba(212, 175, 55, 0.55); border-radius: 10px; color: #D4AF37; }
+        /* Two rails, three tabs each, one column per side - the editor sits
+           between them (Aaron, 2026-07-24). */
+        body.mobile-layout.scene-open .mobile-rail { display: flex; flex-direction: column; gap: 10px; position: fixed; top: 50%; transform: translateY(-50%); z-index: 45; max-height: calc(100dvh - var(--mobile-header-h) - var(--mobile-nav-clear) - 12px); overflow-y: auto; }
+        body.mobile-layout.scene-open #mobile-guidance-rail { left: 4px; }
+        body.mobile-layout.scene-open #mobile-guidance-rail-right { right: 4px; }
+        body.mobile-layout .rail-tab { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; width: var(--tap); min-height: 6.5rem; padding: 0.6rem 0; background: #3D2B1F; border: 1px solid rgba(212, 175, 55, 0.55); border-radius: 10px; color: #D4AF37; }
         body.mobile-layout .rail-tab i { font-size: 0.95rem; }
         body.mobile-layout .rail-tab span { writing-mode: vertical-rl; text-orientation: mixed; font-size: 0.875rem; font-weight: 600; letter-spacing: 0.5px; }
         body.mobile-layout .rail-tab.active { background: #D4AF37; color: #3D2B1F; }
@@ -830,7 +921,9 @@
         /* Guidance drawer: the existing float-window shells reused as fixed,
            non-draggable pop-open drawers anchored beside the rail. !important
            beats the shells' inline desktop left/top/width/height geometry. */
-        body.mobile-layout .guidance-float-window { position: fixed; left: auto !important; right: 100px !important; top: 50% !important; transform: translateY(-50%); width: min(72vw, 340px) !important; height: auto !important; max-height: calc(100dvh - var(--mobile-header-h) - var(--mobile-nav-clear) - 24px); min-width: 0; min-height: 0; z-index: 460; overscroll-behavior: contain; border-width: 2px; }
+        /* Drawers open beside whichever rail they belong to. */
+        body.mobile-layout .guidance-float-window { position: fixed; left: auto !important; right: 3.4rem !important; top: 50% !important; transform: translateY(-50%); width: min(72vw, 340px) !important; height: auto !important; max-height: calc(100dvh - var(--mobile-header-h) - var(--mobile-nav-clear) - 24px); min-width: 0; min-height: 0; z-index: 460; overscroll-behavior: contain; border-width: 2px; }
+        body.mobile-layout .guidance-float-window.drawer-left { left: 3.4rem !important; right: auto !important; }
         body.mobile-layout .guidance-float-header .guidance-float-btn { opacity: 1; font-size: 1.2rem; padding: 10px 16px; }
         body.mobile-layout .guidance-float-body .guidance-card { height: auto !important; font-size: 1rem; overflow: visible; }
         body.mobile-layout .guidance-float-body .text-xs { font-size: 1rem; }
@@ -840,12 +933,47 @@
            !important beats the inline desktop geometry so nothing has to be
            cleared - and the desktop geometry saved in localStorage is never
            touched from a phone (save/restore are skipped in mobile mode). ---- */
-        body.mobile-layout .notepad { left: 0 !important; right: 0 !important; top: var(--mobile-header-h) !important; bottom: var(--mobile-nav-clear) !important; width: auto !important; height: auto !important; min-width: 0; min-height: 0; border-radius: 14px 14px 0 0; overscroll-behavior: contain; }
+        /* Sheets are bottom-anchored and deliberately DO NOT reach the top:
+           a panel covering the whole screen is disorienting and loses your
+           place (Aaron, 2026-07-24). Leaving the scene visible above keeps
+           the context you were working in on screen the whole time. */
+        body.mobile-layout .notepad {
+            left: 0 !important; right: 0 !important;
+            top: auto !important;
+            bottom: var(--mobile-nav-clear) !important;
+            width: auto !important;
+            height: 66dvh !important;
+            max-height: calc(100dvh - var(--mobile-header-h) - var(--mobile-nav-clear) - 0.5rem) !important;
+            min-width: 0; min-height: 0;
+            border-radius: 16px 16px 0 0;
+            border-width: 2px 0 0 0;
+            box-shadow: 0 -8px 24px rgba(0,0,0,0.45);
+            overscroll-behavior: contain;
+        }
         body.mobile-layout .notepad-body { flex-direction: column; }
-        body.mobile-layout .notepad-sidebar { width: 100%; max-height: 32%; border-right: none; border-bottom: 1px solid #8B6F47; }
+        body.mobile-layout .notepad-sidebar { width: 100%; max-height: 34%; border-right: none; border-bottom: 1px solid #8B6F47; }
+        body.mobile-layout .notepad-header { padding: 4px 8px; }
+        body.mobile-layout .notepad-header h3 { font-size: 0.95rem; }
 
-        /* ---- Side panels: full-width slide-in views over the column ---- */
-        body.mobile-layout #left-panel, body.mobile-layout #right-panel { width: 100%; top: var(--mobile-header-h); bottom: var(--mobile-nav-clear); z-index: 300; overscroll-behavior: contain; }
+        /* ---- Side panels: half-width slide-ins, never full screen ---- */
+        body.mobile-layout #left-panel, body.mobile-layout #right-panel {
+            width: 50%; min-width: 12rem;
+            top: var(--mobile-header-h); bottom: var(--mobile-nav-clear);
+            z-index: 300; overscroll-behavior: contain;
+        }
+        body.mobile-layout #left-panel > div, body.mobile-layout #right-panel > div { padding: 0.5rem; }
+        /* Tap the exposed half of the page to dismiss an open panel. Driven
+           by :has() so it needs no state tracking of its own - the panel's
+           own transform class is the single source of truth. */
+        #panel-scrim { display: none; }
+        body.mobile-layout:has(#left-panel:not(.-translate-x-full)) #panel-scrim,
+        body.mobile-layout:has(#right-panel:not(.translate-x-full)) #panel-scrim {
+            display: block;
+            position: fixed;
+            top: var(--mobile-header-h); left: 0; right: 0; bottom: var(--mobile-nav-clear);
+            z-index: 290;
+            background: rgba(0, 0, 0, 0.35);
+        }
 
         /* ---- Modals + conflict banner sized for a phone ---- */
         body.mobile-layout #login-modal > div { width: min(92vw, 420px); }
@@ -854,21 +982,46 @@
         body.mobile-layout #draft-conflict-banner .grid-cols-2 { grid-template-columns: 1fr; }
 
         /* ---- Bottom navigation ---- */
-        body.mobile-layout #mobile-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 320; display: flex; background: #2A2119; border-top: 2px solid rgba(212, 175, 55, 0.6); padding-bottom: env(safe-area-inset-bottom, 0px); overflow-x: auto; overscroll-behavior-x: contain; }
-        /* min-width holds the 44px floor even at high page zoom, where five
-           equal flex items would otherwise be squeezed to ~43.7px; the nav
-           scrolls rather than shrinking its targets below the minimum. */
-        body.mobile-layout #mobile-nav button { flex: 1 0 auto; min-width: 44px; min-height: var(--mobile-nav-h); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: none; border: none; color: #D4AF37; font-size: 0.875rem; }
-        body.mobile-layout #mobile-nav button i { font-size: 1.15rem; }
+        /* padding-top reserves the space the Focus bulge rises into, so the
+           bulge lives inside the nav's own padding box and is not clipped by
+           overflow-x (which the browser forces to clip vertically too). */
+        body.mobile-layout #mobile-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 320; display: flex; align-items: flex-start; background: #2A2119; border-top: 2px solid rgba(212, 175, 55, 0.6); padding-top: 0.9rem; padding-bottom: env(safe-area-inset-bottom, 0px); overflow-x: auto; overscroll-behavior-x: contain; }
+        /* min-width holds the touch floor even at high zoom, where six equal
+           flex items would be squeezed under it; the nav scrolls instead. */
+        body.mobile-layout #mobile-nav button { flex: 1 1 0; min-width: var(--tap); min-height: var(--mobile-nav-h); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: none; border: none; color: #D4AF37; font-size: 0.8rem; transition: background-color 0.18s ease, color 0.18s ease, font-size 0.18s ease; }
+        body.mobile-layout #mobile-nav button i { font-size: 1.1rem; }
+
+        /* Focus sits in the left corner and the bar bulges up around it. */
+        body.mobile-layout #mobile-nav button[data-nav="focus"] {
+            /* flex-basis 0 on every button makes widths strictly
+               proportional to grow, so 1.3 is exactly 30% wider. */
+            flex: 1.3 1 0;
+            min-width: calc(var(--tap) * 1.1);
+            margin-top: -0.9rem;
+            padding-top: 0.75rem;
+            background: #2A2119;
+            border: 2px solid rgba(212, 175, 55, 0.6);
+            border-bottom: none;
+            border-radius: 1.1rem 1.1rem 0 0;
+        }
+        body.mobile-layout #mobile-nav button[data-nav="focus"] i { font-size: 1.45rem; }
+
+        /* Whichever view is open stays visibly raised until it is closed. */
+        body.mobile-layout #mobile-nav button.nav-active {
+            background: #D4AF37;
+            color: #3D2B1F;
+            border-radius: 0.9rem;
+            font-size: 0.9rem;
+        }
+        body.mobile-layout #mobile-nav button.nav-active i { font-size: 1.3rem; }
+        body.mobile-layout #mobile-nav button[data-nav="focus"].nav-active { border-radius: 1.1rem 1.1rem 0 0; border-color: #D4AF37; }
 
         /* Very narrow effective widths (e.g. Safari Page Zoom at 200% on a
            440px screen = ~220 CSS px): collapse the rail to one thinner
            scrollable column so the editor keeps usable width. Width is used
            only as a refinement INSIDE mobile mode, never for detection. */
         @media (max-width: 340px) {
-            body.mobile-layout.scene-open #mobile-guidance-rail { grid-template-columns: 44px; }
-            body.mobile-layout #scene-content { padding-right: 54px; }
-            body.mobile-layout .guidance-float-window { right: 52px !important; width: min(80vw, 300px) !important; }
+            body.mobile-layout .guidance-float-window { width: min(80vw, 300px) !important; }
             body.mobile-layout #mobile-nav button span { font-size: 0.75rem; }
             /* At this effective width (roughly Safari Page Zoom 200% on a
                440px phone) the header cannot hold branding AND controls on
@@ -911,10 +1064,6 @@
                                 class="h-8 px-3.5 py-1 text-sm rounded-2xl border border-[#D4AF37]/50 hover:bg-[#D4AF37]/10 transition-colors flex items-center gap-x-2">
                             <i class="fa-solid fa-user fa-sm"></i>
                             <span id="account-btn-label" class="font-medium text-xs tracking-wider">LOGIN</span>
-                        </button>
-                        <button id="nickname-edit-btn" onclick="startNicknameEdit()" title="Edit display name"
-                                class="hidden h-7 w-7 items-center justify-center rounded-full text-[#D4AF37]/70 hover:text-[#D4AF37] hover:bg-[#4A3A2E] transition-colors">
-                            <i class="fa-solid fa-pencil text-xs"></i>
                         </button>
                         <!-- Logout menu (shown when logged in) -->
                         <div id="account-menu" class="hidden absolute top-9 left-0 z-[60] bg-[#3D2B1F] border border-[#D4AF37]/50 rounded-xl shadow-xl py-1 min-w-[160px]">
@@ -1044,7 +1193,7 @@
                             <i class="fa-solid fa-clock-rotate-left text-xs"></i>
                         </button>
                     </div>
-                    <div id="last-sync-time" class="text-[10px] text-[#D4AF37]/40 text-center mt-1"></div>
+                    <div id="last-sync-time" class="m-hide text-[10px] text-[#D4AF37]/40 text-center mt-1"></div>
                 </div>
 
                 <!-- Dynamic Outline Container -->
@@ -1052,7 +1201,7 @@
                     <!-- Populated dynamically by renderDynamicOutline() after sync -->
                 </div>
 
-                <div class="px-1 mt-3 text-[10px] text-[#D4AF37]/40 text-center">
+                <div class="m-hide px-1 mt-3 text-[10px] text-[#D4AF37]/40 text-center">
                     Outline updates automatically after syncing with canon
                 </div>
 
@@ -1067,21 +1216,17 @@
             <!-- HTML-driven Initial State: Landing / Home screen (rendered by renderLandingScreen()) -->
             <div id="no-scene-placeholder" class="flex flex-col items-center justify-center min-h-[520px] text-center px-8 py-6">
 
-                <!-- Rotating stat teaser -->
-                <div id="landing-stat-teaser" class="text-sm text-[#D4AF37]/80 italic mb-4 min-h-[1.25rem]"></div>
-
-                <!-- When no canon is loaded yet: a calm one-tap sync -->
-                <div id="landing-empty" class="hidden max-w-md">
-                    <div class="mb-6"><i class="fa-solid fa-sitemap text-[#D4AF37] text-6xl"></i></div>
-                    <p class="text-xl text-[#D4AF37] font-medium mb-3">Let's load your story.</p>
-                    <p class="text-sm text-[#D4AF37]/70 mb-5">Tap below to sync the latest scenes and pick up where you left off.</p>
-                    <button id="landing-sync-btn" onclick="fetchLatestFromCanon()"
-                            class="px-5 py-2 text-sm bg-[#D4AF37] text-[#3D2B1F] font-bold rounded-2xl hover:bg-[#E8C86B] transition-colors">
-                        <i class="fa-solid fa-sync-alt mr-1.5"></i> Sync Canon
-                    </button>
+                <!-- Rotating stat teaser, drawn as a thought bubble floating
+                     above Tiff's head. Pure CSS (rounded body + two trailing
+                     dots) so the text reflows at any length or text scale
+                     instead of being baked into fixed-size art. -->
+                <div id="landing-bubble-wrap" class="flex justify-center px-2">
+                    <div id="landing-stat-teaser" class="thought-bubble"></div>
                 </div>
 
-                <!-- Radial navigation (shown once canon is loaded) -->
+                <!-- Landing nav. Always shown - there is no separate
+                     "sync first" gate any more; Sync lives down with the
+                     timestamp below, so the landing is the only front door. -->
                 <div id="landing-radial" class="hidden">
                     <!-- Top: Random Unfinished -->
                     <div class="flex justify-center mb-3">
@@ -1115,16 +1260,18 @@
                         </button>
                     </div>
 
-                    <!-- Bottom: Stats snapshot -->
-                    <div class="flex justify-center mt-3">
-                        <button onclick="showStoryStats()"
-                                class="landing-nav-btn px-4 py-1.5 rounded-2xl text-xs font-medium text-[#D4AF37]/90 hover:text-[#D4AF37] hover:bg-[#4A3A2E]/60 flex items-center gap-x-2 transition-colors">
-                            <i class="fa-solid fa-chart-line"></i> Stats & Progress
-                        </button>
-                    </div>
-
                     <!-- Inline message area (no-op feedback, never an alert) -->
                     <div id="landing-nav-message" class="text-xs text-[#D4AF37]/70 mt-4 min-h-[1rem]"></div>
+
+                    <!-- Sync lives here now, deliberately quiet: it is
+                         occasional maintenance, not the way in. -->
+                    <div id="landing-sync-row" class="flex flex-col items-center mt-5">
+                        <button id="landing-sync-btn" onclick="fetchLatestFromCanon()" aria-label="Sync Canon"
+                                class="rounded-2xl border border-[#D4AF37]/50 text-[#D4AF37] hover:bg-[#4A3A2E] transition-colors flex items-center gap-x-2 px-3 py-1 text-xs">
+                            <i class="fa-solid fa-sync-alt"></i><span class="btn-text">Sync Canon</span>
+                        </button>
+                        <div id="landing-sync-time" class="text-[10px] text-[#D4AF37]/60 mt-1"></div>
+                    </div>
                 </div>
             </div>
             
@@ -1154,17 +1301,17 @@
                     <div id="scene-status-select" class="status-dropdown-wrapper control-bar-item" style="display:none;"></div>
                     <div class="flex items-center gap-x-3">
                         <div id="auto-save-status" class="control-bar-item text-[#F4EDE4]/80">Auto-saved just now</div>
-                        <button onclick="saveDraft()" class="control-bar-item bg-transparent border border-[#D4AF37]/60 hover:bg-[#D4AF37]/10 rounded-xl text-[#F4EDE4] transition-colors flex items-center gap-x-1.5">
-                            <i class="fa-solid fa-save"></i>
-                            <span>Save Draft</span>
+                        <button onclick="saveDraft()" aria-label="Save Draft" class="control-bar-item bg-transparent border border-[#D4AF37]/60 hover:bg-[#D4AF37]/10 rounded-xl text-[#F4EDE4] transition-colors flex items-center gap-x-1.5">
+                            <i class="fa-solid fa-floppy-disk"></i>
+                            <span class="btn-text">Save Draft</span>
                         </button>
-                        <button onclick="openDraftPad()" class="control-bar-item bg-transparent border border-[#D4AF37]/60 hover:bg-[#D4AF37]/10 rounded-xl text-[#F4EDE4] transition-colors flex items-center gap-x-1.5">
+                        <button onclick="openDraftPad()" aria-label="Draft Log" class="control-bar-item bg-transparent border border-[#D4AF37]/60 hover:bg-[#D4AF37]/10 rounded-xl text-[#F4EDE4] transition-colors flex items-center gap-x-1.5">
                             <i class="fa-solid fa-layer-group"></i>
-                            <span>Draft Log</span>
+                            <span class="btn-text">Draft Log</span>
                         </button>
-                        <button onclick="sendSceneToSammy()" class="control-bar-item bg-transparent border border-[#D4AF37]/60 hover:bg-[#D4AF37]/10 rounded-xl text-[#F4EDE4] transition-colors flex items-center gap-x-1.5">
+                        <button onclick="sendSceneToSammy()" aria-label="Send to Sammy" class="control-bar-item bg-transparent border border-[#D4AF37]/60 hover:bg-[#D4AF37]/10 rounded-xl text-[#F4EDE4] transition-colors flex items-center gap-x-1.5">
                             <i class="fa-solid fa-paper-plane"></i>
-                            <span>Sammy</span>
+                            <span class="btn-text">Sammy</span>
                         </button>
                     </div>
                 </div>
@@ -1286,9 +1433,9 @@
                                     <div class="text-xs text-[#D4AF37]/70">
                                         <span id="word-count">0 words</span>
                                     </div>
-                                    <button onclick="openProofreader()" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 flex items-center gap-x-1.5">
+                                    <button onclick="openProofreader()" aria-label="Proofreader" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 flex items-center gap-x-1.5">
                                         <i class="fa-solid fa-magnifying-glass"></i>
-                                        <span>Proofreader</span>
+                                        <span class="btn-text">Proofreader</span>
                                     </button>
                                     <div class="flex items-center gap-x-1 border border-[#D4AF37]/40 rounded-xl px-1.5 py-0.5" title="Display size only — does not affect saved draft">
                                         <button onclick="adjustEditorZoom(-1)" class="text-tool-btn px-1.5 leading-none">−</button>
@@ -1417,7 +1564,7 @@
                         </button>
                     </div>
                 </div>
-                <div id="library-last-sync-time" class="text-[10px] text-[#D4AF37]/40 px-1 mb-3">Not yet synced this session</div>
+                <div id="library-last-sync-time" class="m-hide text-[10px] text-[#D4AF37]/40 px-1 mb-3">Not yet synced this session</div>
 
                 <!-- Search Bar -->
                 <div class="mb-3">
@@ -1525,15 +1672,17 @@
             <!-- Sidebar -->
             <div class="notepad-sidebar p-2 text-sm flex flex-col">
                 <div class="flex justify-between items-center mb-2 px-1">
-                    <span class="text-xs font-medium text-[#D4AF37]/80">Your Notes</span>
-                    <button onclick="createNewNote()" class="primary-only text-[10px] px-2 py-0.5 bg-[#D4AF37] text-[#3D2B1F] rounded font-semibold">+ New</button>
+                    <span class="m-hide text-xs font-medium text-[#D4AF37]/80">Your Notes</span>
+                    <button onclick="createNewNote()" aria-label="New note" class="primary-only text-[10px] px-2 py-0.5 bg-[#D4AF37] text-[#3D2B1F] rounded font-semibold">
+                        <i class="fa-solid fa-plus"></i><span class="btn-text"> New</span>
+                    </button>
                 </div>
                 
                 <div id="notes-list" class="space-y-0.5 flex-1 overflow-y-auto text-xs pr-1"></div>
 
                 <div class="flex justify-between items-center pt-2 mt-auto">
-                    <button onclick="requestDeleteNote()" class="primary-only text-red-400 hover:text-red-300 px-2 py-1">
-                        <i class="fa-solid fa-trash fa-lg"></i><span class="m-label">Delete note</span>
+                    <button onclick="requestDeleteNote()" aria-label="Delete note" class="primary-only text-red-400 hover:text-red-300 px-2 py-1">
+                        <i class="fa-solid fa-trash fa-lg"></i>
                     </button>
 
                     <div id="add-to-library-wrap" class="primary-only relative group">
@@ -1572,9 +1721,9 @@
                      class="flex-1 bg-[#4A3A2E] border border-[#D4AF37]/40 rounded-xl p-3 text-sm focus:outline-none focus:border-[#D4AF37] overflow-y-auto"></div>
                 
                 <div class="flex justify-start mt-2">
-                    <button onclick="saveCurrentNote()"
+                    <button onclick="saveCurrentNote()" aria-label="Save note"
                             class="primary-only px-5 py-1.5 text-xs bg-[#D4AF37] text-[#3D2B1F] font-bold rounded-2xl">
-                        Save
+                        <i class="fa-solid fa-floppy-disk"></i><span class="btn-text"> Save</span>
                     </button>
                 </div>
             </div>
@@ -1621,20 +1770,22 @@
             <!-- Sidebar: Current Draft (live) + list of saved snapshots -->
             <div class="notepad-sidebar p-2 text-sm flex flex-col">
                 <div class="flex justify-between items-center mb-2 px-1">
-                    <span class="text-xs font-medium text-[#D4AF37]/80">Drafts</span>
-                    <button onclick="createNewDraftSnapshot()" class="text-[10px] px-2 py-0.5 bg-[#D4AF37] text-[#3D2B1F] rounded font-semibold">+ New</button>
+                    <span class="m-hide text-xs font-medium text-[#D4AF37]/80">Drafts</span>
+                    <button onclick="createNewDraftSnapshot()" aria-label="New draft snapshot" class="text-[10px] px-2 py-0.5 bg-[#D4AF37] text-[#3D2B1F] rounded font-semibold">
+                        <i class="fa-solid fa-plus"></i><span class="btn-text"> New</span>
+                    </button>
                 </div>
 
                 <div id="draftpad-list" class="space-y-0.5 flex-1 overflow-y-auto text-xs pr-1"></div>
 
                 <div class="flex justify-between items-center pt-2 mt-auto">
-                    <button onclick="requestDeleteDraftSnapshot()" class="text-red-400 hover:text-red-300 px-2 py-1">
-                        <i class="fa-solid fa-trash fa-lg"></i><span class="m-label">Delete</span>
+                    <button onclick="requestDeleteDraftSnapshot()" aria-label="Delete snapshot" class="text-red-400 hover:text-red-300 px-2 py-1">
+                        <i class="fa-solid fa-trash fa-lg"></i>
                     </button>
 
                     <div class="relative group">
-                        <button onclick="restoreDraftSnapshotToEditor()" class="text-[#D4AF37] hover:text-[#E8C86B] px-2 py-1">
-                            <i class="fa-solid fa-arrow-rotate-left fa-lg"></i><span class="m-label">Load into Editor</span>
+                        <button onclick="restoreDraftSnapshotToEditor()" aria-label="Load into editor" class="text-[#D4AF37] hover:text-[#E8C86B] px-2 py-1">
+                            <i class="fa-solid fa-arrow-rotate-left fa-lg"></i>
                         </button>
                         <div class="tooltip">Load into Editor</div>
                     </div>
@@ -1653,9 +1804,9 @@
                      class="flex-1 bg-[#4A3A2E] border border-[#D4AF37]/40 rounded-xl p-3 text-sm overflow-y-auto opacity-90"></div>
 
                 <div class="flex justify-start mt-2">
-                    <button onclick="saveDraftSnapshotName()" 
+                    <button onclick="saveDraftSnapshotName()" aria-label="Rename snapshot"
                             class="px-5 py-1.5 text-xs bg-[#D4AF37] text-[#3D2B1F] font-bold rounded-2xl">
-                        Rename
+                        <i class="fa-solid fa-pen"></i><span class="btn-text"> Rename</span>
                     </button>
                 </div>
             </div>
@@ -1934,24 +2085,29 @@
          with vertical labels). Tapping a tab pops that guidance card open as
          a drawer beside it; tapping again (or the drawer's close button)
          puts it back. display:none on desktop - purely additive. -->
-    <div id="mobile-guidance-rail" aria-label="Scene guidance drawers">
+    <div id="mobile-guidance-rail" class="mobile-rail" aria-label="Scene guidance drawers (left)">
         <button type="button" class="rail-tab" data-rail-key="purpose" onclick="mobileToggleGuidanceDrawer('purpose')"><i class="fa-solid fa-bullseye"></i><span>Purpose</span></button>
         <button type="button" class="rail-tab" data-rail-key="canon" onclick="mobileToggleGuidanceDrawer('canon')"><i class="fa-solid fa-gem"></i><span>Canon</span></button>
         <button type="button" class="rail-tab" data-rail-key="emotional" onclick="mobileToggleGuidanceDrawer('emotional')"><i class="fa-solid fa-heart-pulse"></i><span>Emotion</span></button>
+    </div>
+    <div id="mobile-guidance-rail-right" class="mobile-rail" aria-label="Scene guidance drawers (right)">
         <button type="button" class="rail-tab" data-rail-key="beats" onclick="mobileToggleGuidanceDrawer('beats')"><i class="fa-solid fa-list-check"></i><span>Beats</span></button>
         <button type="button" class="rail-tab" data-rail-key="setting" onclick="mobileToggleGuidanceDrawer('setting')"><i class="fa-solid fa-mountain-sun"></i><span>Setting</span></button>
         <button type="button" class="rail-tab" data-rail-key="success" onclick="mobileToggleGuidanceDrawer('success')"><i class="fa-solid fa-trophy"></i><span>Success</span></button>
     </div>
 
+    <!-- Dismiss layer for open side panels (mobile only; see #panel-scrim CSS) -->
+    <div id="panel-scrim" onclick="mobileCloseEverything(null)" aria-hidden="true"></div>
+
     <!-- Bottom navigation (mobile only): thumb-reachable, safe-area padded.
          Focus = close every open drawer/panel/sheet, back to a calm column. -->
     <nav id="mobile-nav" aria-label="Main navigation">
-        <button type="button" onclick="mobileNav('home')"><i class="fa-solid fa-house"></i><span>Home</span></button>
-        <button type="button" onclick="mobileNav('outline')"><i class="fa-solid fa-sitemap"></i><span>Outline</span></button>
-        <button type="button" onclick="mobileNav('library')"><i class="fa-solid fa-book-open"></i><span>Library</span></button>
-        <button type="button" onclick="mobileNav('notepad')"><i class="fa-solid fa-book"></i><span>Notepad</span></button>
-        <button type="button" onclick="mobileNav('text')"><i class="fa-solid fa-font"></i><span>Text</span></button>
-        <button type="button" onclick="mobileNav('focus')"><i class="fa-solid fa-crosshairs"></i><span>Focus</span></button>
+        <button type="button" data-nav="focus" onclick="mobileNav('focus')"><i class="fa-solid fa-crosshairs"></i><span>Focus</span></button>
+        <button type="button" data-nav="home" onclick="mobileNav('home')"><i class="fa-solid fa-house"></i><span>Home</span></button>
+        <button type="button" data-nav="outline" onclick="mobileNav('outline')"><i class="fa-solid fa-sitemap"></i><span>Outline</span></button>
+        <button type="button" data-nav="library" onclick="mobileNav('library')"><i class="fa-solid fa-book-open"></i><span>Library</span></button>
+        <button type="button" data-nav="notepad" onclick="mobileNav('notepad')"><i class="fa-solid fa-book"></i><span>Notepad</span></button>
+        <button type="button" data-nav="text" onclick="mobileNav('text')"><i class="fa-solid fa-font"></i><span>Text</span></button>
     </nav>
 
     <!-- ==================== TEXT SIZE (mobile sheet) ====================
@@ -1978,7 +2134,7 @@
                     <button onclick="stepUiScale(-1)" aria-label="Smaller text"
                             class="flex-shrink-0 rounded-2xl border border-[#D4AF37] text-[#D4AF37] font-bold"
                             style="min-width:56px;min-height:56px;font-size:1.5rem;">&minus;</button>
-                    <input id="ui-scale-slider" type="range" min="100" max="175" step="5" value="100"
+                    <input id="ui-scale-slider" type="range" min="75" max="175" step="5" value="100"
                            oninput="setUiScale(this.value)" aria-label="Text size"
                            class="flex-1" style="min-height:44px;accent-color:#D4AF37;">
                     <button onclick="stepUiScale(1)" aria-label="Bigger text"
@@ -2036,6 +2192,7 @@
                 }
                 panel.classList.toggle('-translate-x-full');
                 const isNowOpen = !panel.classList.contains('-translate-x-full');
+                if (typeof updateNavActiveState === 'function') updateNavActiveState();
                 console.log("[Debug] Left panel is now:", isNowOpen ? "OPEN" : "CLOSED");
             } catch (err) {
                 console.error("[Debug] Error in toggleLeftPanel():", err);
@@ -2056,6 +2213,7 @@
                 }
                 panel.classList.toggle('translate-x-full');
                 const isNowOpen = !panel.classList.contains('translate-x-full');
+                if (typeof updateNavActiveState === 'function') updateNavActiveState();
                 console.log("[Debug] Right panel is now:", isNowOpen ? "OPEN" : "CLOSED");
             } catch (err) {
                 console.error("[Debug] Error in toggleRightPanel():", err);
@@ -2376,7 +2534,7 @@
             // hover doesn't exist on touch.
             const flaggedTitles = flaggedEntries.map(e => e.title).join(', ');
             const categoryMarker = flaggedEntries.length > 0
-                ? `<span class="review-flag-btn" role="button" tabindex="0" title="Updated: ${flaggedTitles.replace(/"/g, '&quot;')}" onclick="toggleReviewReason(this, event)">!</span> `
+                ? `<span class="review-flag-btn" role="button" tabindex="0" aria-label="Updated entries" title="Updated: ${flaggedTitles.replace(/"/g, '&quot;')}" onclick="toggleReviewReason(this, event)"><i class="fa-solid fa-circle-exclamation"></i></span> `
                 : '';
 
             const header = document.createElement('button');
@@ -2440,7 +2598,7 @@
             // target that reveals Sammy's review reason inline (hover-only
             // info is unreachable on touch).
             const titleDisplay = isFlagged
-                ? `<span class="review-flag-btn" role="button" tabindex="0" title="${(entry.needsReviewReason || '').replace(/"/g, '&quot;')}" onclick="toggleReviewReason(this, event)">!</span> ${entry.title}`
+                ? `<span class="review-flag-btn" role="button" tabindex="0" aria-label="Why this changed" title="${(entry.needsReviewReason || '').replace(/"/g, '&quot;')}" onclick="toggleReviewReason(this, event)"><i class="fa-solid fa-circle-exclamation"></i></span> ${entry.title}`
                 : entry.title;
 
             let html = `
@@ -2967,6 +3125,7 @@
             
             document.getElementById('delete-confirm-modal').classList.remove('flex');
             document.getElementById('delete-confirm-modal').classList.add('hidden');
+            if (typeof updateNavActiveState === 'function') updateNavActiveState();
         }
 
         // ==================== DRAFT PAD ====================
@@ -4476,6 +4635,7 @@
 
             const timeStr = lastSyncTimestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             el.innerHTML = `Last synced ${timeStr}`;
+            updateLandingSyncTime();
         }
 
         /**
@@ -4790,10 +4950,13 @@
                 // Act header (collapsible)
                 const actHeader = document.createElement('div');
                 actHeader.className = `hierarchy-item flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer`;
+                // The panel is half-width on mobile, so labels abbreviate
+                // rather than wrap: "Act 1" -> "A1", "Chapter 2" -> "Ch2".
+                const shortLabels = typeof isMobileMode === 'function' && isMobileMode();
                 actHeader.innerHTML = `
                     <div class="flex items-center gap-x-2">
                         <i class="fa-solid fa-folder text-[#D4AF37]"></i>
-                        <span class="font-medium">Act ${actNum}</span>
+                        <span class="font-medium">${shortLabels ? 'A' : 'Act '}${actNum}</span>
                     </div>
                     <i class="fa-solid fa-chevron-down text-xs act-chevron"></i>
                 `;
@@ -4831,7 +4994,7 @@
                     const chHeader = document.createElement('div');
                     chHeader.className = `hierarchy-item flex items-center justify-between px-3 py-1.5 rounded-xl cursor-pointer text-sm`;
                     chHeader.innerHTML = `
-                        <span>Chapter ${chNum}</span>
+                        <span>${shortLabels ? 'Ch' : 'Chapter '}${chNum}</span>
                         <i class="fa-solid fa-chevron-down text-xs ch-chevron"></i>
                     `;
 
@@ -4862,12 +5025,20 @@
 
                             const statusClass = scene.status === 'complete' ? 'scene-complete' :
                                                 scene.status === 'review'   ? 'scene-review' : 'scene-unfinished';
-                            const statusLabel = scene.status === 'complete' ? 'Complete' :
-                                                scene.status === 'review'   ? 'Review'   : 'Unfinished';
+                            const statusWord = scene.status === 'complete' ? 'Complete' :
+                                               scene.status === 'review'   ? 'Review'   : 'Unfinished';
+                            // Icon instead of the word on mobile - still a
+                            // distinct shape per state, so status is never
+                            // carried by colour alone.
+                            const statusIcon = scene.status === 'complete' ? 'fa-circle-check' :
+                                               scene.status === 'review'   ? 'fa-circle-exclamation' : 'fa-pen';
+                            const statusLabel = shortLabels
+                                ? `<i class="fa-solid ${statusIcon}"></i>`
+                                : statusWord;
 
                             sceneEl.innerHTML = `
                                 <span class="flex-1 min-w-0 leading-tight">${shortenSceneTitleForOutline(scene.title)}</span>
-                                <span class="scene-status ${statusClass}" style="flex-shrink:0; align-self:flex-start;">${statusLabel}</span>
+                                <span class="scene-status ${statusClass}" title="${statusWord}" aria-label="${statusWord}" style="flex-shrink:0; align-self:flex-start;">${statusLabel}</span>
                             `;
 
                             // Future: clicking a scene will load it into the editor + prompt
@@ -5237,20 +5408,15 @@
 
         function refreshAccountButton() {
             const label = document.getElementById('account-btn-label');
-            const pencil = document.getElementById('nickname-edit-btn');
             const menu = document.getElementById('account-menu');
             if (!label) return;
             const cloud = document.getElementById('account-menu-cloud');
             if (currentUser) {
                 label.textContent = getNickname();
-                pencil.classList.remove('hidden');
-                pencil.classList.add('flex');
                 if (cloud) cloud.classList.toggle('hidden', currentUserRole !== 'primary');
                 if (cloud && currentUserRole === 'primary') cloud.classList.add('flex');
             } else {
                 label.textContent = 'LOGIN';
-                pencil.classList.add('hidden');
-                pencil.classList.remove('flex');
                 if (menu) menu.classList.add('hidden');
             }
         }
@@ -5269,16 +5435,6 @@
             document.getElementById('account-menu').classList.add('hidden');
             refreshAccountButton();
             applyRoleGating();
-            renderGreeting();
-        }
-
-        function startNicknameEdit() {
-            if (!currentUser) return;
-            const next = prompt('Display name (nickname only - your username stays the same):', getNickname());
-            if (next === null) return;
-            const trimmed = next.trim();
-            localStorage.setItem(nicknameKey(currentUser), trimmed || currentUser);
-            refreshAccountButton();
             renderGreeting();
         }
 
@@ -5498,25 +5654,37 @@
             if (!el) return;
             const s = getStatsData();
             const pick = STAT_TEASERS[Math.floor(Math.random() * STAT_TEASERS.length)];
-            el.textContent = pick(s);
+            const text = pick(s);
+            el.textContent = text;
+            // An empty bubble would just be a stray outline above her head.
+            const wrap = document.getElementById('landing-bubble-wrap');
+            if (wrap) wrap.style.display = text ? '' : 'none';
         }
 
+        /**
+         * The landing screen is now the only front door - there is no
+         * separate "sync first" gate ahead of it. Sync moved down beside its
+         * own timestamp, so an unsynced state just shows the nav with nothing
+         * to navigate to yet rather than a whole extra screen to get past.
+         */
         function renderLandingScreen() {
-            const empty = document.getElementById('landing-empty');
             const radial = document.getElementById('landing-radial');
             const gif = document.getElementById('landing-tiff-gif');
             const msg = document.getElementById('landing-nav-message');
             if (msg) msg.textContent = '';
             renderStatTeaser();
-            const hasCanon = !!(currentCanonData && currentCanonData.scenes && currentCanonData.scenes.length);
-            if (hasCanon) {
-                empty.classList.add('hidden');
-                radial.classList.remove('hidden');
-                if (gif) gif.src = TIFF_GIFS[Math.floor(Math.random() * TIFF_GIFS.length)];
-            } else {
-                radial.classList.add('hidden');
-                empty.classList.remove('hidden');
-            }
+            if (radial) radial.classList.remove('hidden');
+            // One of the three Tiff GIFs, re-picked on every landing render.
+            if (gif) gif.src = TIFF_GIFS[Math.floor(Math.random() * TIFF_GIFS.length)];
+            updateLandingSyncTime();
+        }
+
+        function updateLandingSyncTime() {
+            const el = document.getElementById('landing-sync-time');
+            if (!el) return;
+            el.textContent = lastSyncTimestamp
+                ? 'Synced ' + lastSyncTimestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : 'Not synced yet';
         }
 
         function goHome() {
@@ -5528,6 +5696,7 @@
             if (sceneContent) sceneContent.classList.add('hidden');
             if (placeholder) placeholder.style.display = 'flex';
             renderLandingScreen();
+            if (typeof updateNavActiveState === 'function') updateNavActiveState();
         }
 
         function landingNavMessage(text) {
@@ -6144,10 +6313,41 @@
             if (left && exceptId !== 'left-panel') left.classList.add('-translate-x-full');
             if (right && exceptId !== 'right-panel') right.classList.add('translate-x-full');
             if (exceptId !== 'guidance-drawer') mobileCloseGuidanceDrawer();
+            updateNavActiveState();
+        }
+
+        /**
+         * Keeps the bottom nav's raised/highlighted item matching whatever is
+         * actually open, rather than whatever was last tapped - so closing a
+         * view from its own X button also drops the nav highlight.
+         */
+        function updateNavActiveState() {
+            if (!isMobileMode()) return;
+            const visible = id => {
+                const el = document.getElementById(id);
+                return !!el && getComputedStyle(el).display !== 'none';
+            };
+            const left = document.getElementById('left-panel');
+            const right = document.getElementById('right-panel');
+            const state = {
+                outline: left && !left.classList.contains('-translate-x-full'),
+                library: right && !right.classList.contains('translate-x-full'),
+                notepad: visible('notepad-window'),
+                text: visible('textsize-window'),
+                home: !currentScene,
+                focus: false
+            };
+            document.querySelectorAll('#mobile-nav button[data-nav]').forEach(btn => {
+                btn.classList.toggle('nav-active', !!state[btn.dataset.nav]);
+                if (state[btn.dataset.nav]) btn.setAttribute('aria-current', 'true');
+                else btn.removeAttribute('aria-current');
+            });
         }
 
         // ---- Guidance drawers (reuse the float-window shells + the
         //      move-the-real-node pattern; nothing is duplicated) ----
+        // Three tabs per side; a drawer opens beside its own rail.
+        const RAIL_LEFT_KEYS = ['purpose', 'canon', 'emotional'];
         let mobileOpenDrawerKey = null;
 
         function mobileToggleGuidanceDrawer(key) {
@@ -6161,6 +6361,7 @@
             // A drawer always shows full content - undo any minimized state.
             if (guidanceMinimized.has(key)) toggleGuidanceCardMinimize(key);
             floatWindow.querySelector('[data-float-body]').appendChild(card);
+            floatWindow.classList.toggle('drawer-left', RAIL_LEFT_KEYS.includes(key));
             floatWindow.classList.remove('hidden');
             floatWindow.style.display = 'flex';
             mobileOpenDrawerKey = key;
@@ -6174,7 +6375,7 @@
         }
 
         function updateRailActiveState() {
-            document.querySelectorAll('#mobile-guidance-rail .rail-tab').forEach(tab => {
+            document.querySelectorAll('.mobile-rail .rail-tab').forEach(tab => {
                 tab.classList.toggle('active', tab.dataset.railKey === mobileOpenDrawerKey);
             });
         }
@@ -6219,6 +6420,7 @@
                     mobileCloseEverything(null);
                     break;
             }
+            updateNavActiveState();
         }
 
         /**
@@ -6246,7 +6448,9 @@
         // own default text size rather than overriding it, and stored per
         // device because a phone and a laptop want different answers.
         const UI_SCALE_KEY = 'bigtiff-ui-scale';
-        const UI_SCALE_MIN = 100, UI_SCALE_MAX = 175, UI_SCALE_STEP = 5;
+        // Goes below 100 on purpose: control sizes are rem-based, so scaling
+        // down genuinely shrinks the buttons, not just their labels.
+        const UI_SCALE_MIN = 75, UI_SCALE_MAX = 175, UI_SCALE_STEP = 5;
 
         function getUiScale() {
             const v = parseInt(localStorage.getItem(UI_SCALE_KEY), 10);
@@ -6293,6 +6497,7 @@
             if (!win) return;
             win.style.display = 'none';
             win.classList.remove('active');
+            updateNavActiveState();
         }
 
         /**
