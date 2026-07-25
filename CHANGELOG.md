@@ -2,6 +2,55 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-07-24] – Panel & Guidance Refinements (second device review)
+
+Ten targeted notes from Aaron's review of the panels and guidance UI.
+
+### Changed
+1. **Landing:** the sync timestamp sits directly under RANDOM SCENE; the
+   thought bubble is now 70% opacity so it reads as a quiet aside.
+2. **Outline** uses full labels again — "Act 1", "Chapter 0" — on both
+   desktop and mobile (only the per-scene status still collapses to an icon
+   on mobile).
+3. **Entry counts** in the Outline and Library headers are now a bold number
+   in a gold circle, no text (both wired to the live count).
+4. **Outline panel:** the sync button reads "Canon Sync" and matches the
+   Changelog button's height; the Changelog icon is a sheet-of-paper glyph
+   (`fa-file-lines`) so it no longer resembles the sync icon; "STORY OUTLINE"
+   is right-aligned to the panel edge.
+5. **Library panel:** category titles are ALL CAPS and clamp to 2 lines; the
+   search field, the "Erica's Entries" banner, and the category review icons
+   all share one height (44px), verified equal.
+6. **Review markers:** the circle stays at the START of a category title but
+   now sits at the END of an individual entry title. Tapping an entry's
+   marker shows the reason; the next tap elsewhere clears that marker for
+   good (persisted locally, and re-surfaced only if Sammy sends a genuinely
+   new reason). Full reveal→clear→persist→re-surface cycle tested.
+7. **Guidance rail:** all six tabs are now one icon-only strip on the right
+   edge, touching each other, each only as wide as its icon (36px) but 44px
+   tall for the tap. The editor sits to its left with more width.
+8. **Guidance drawers** are more minimal: the duplicate outer title row is
+   gone, the close (X) moved inline with the card's own icon+title row, a
+   single separator line sits under that row, and the only other line is the
+   2px window border.
+
+### Verification notes
+Re-audited at 440×956 across scene/drawer/notepad/stats/text-size/outline/
+library/landing: 0 text under 12px, 0 measured WCAG AA contrast failures, no
+horizontal scroll, no console errors. Library heights measured equal (44px);
+category titles confirmed 1 line for short labels, 2-line clamp for long
+ones. Desktop re-checked and behaviorally unchanged: full "Act 1" labels,
+category titles NOT uppercased (mobile-only), review-marker click inert on
+desktop (hover tooltip preserved), rail/nav hidden, 126px margins, 14px
+editor, scene opens. The count-circle, "Canon Sync"/file-icon, and
+end-positioned entry marker are intentional cross-platform changes Aaron
+asked for, not regressions.
+
+**Interpretation flagged:** item 5 says "review icons the same height as the
+banner." Applied to the CATEGORY markers (which sit in the banner) = 44px;
+entry markers were kept a compact inline 28px so a flagged entry row isn't
+dominated by a 44px circle. Easy to change if all were meant.
+
 ## [2026-07-24] – Landing Nav Redesign (shared desktop + mobile)
 
 Reworks the landing navigation into one deliberate cluster, used identically
