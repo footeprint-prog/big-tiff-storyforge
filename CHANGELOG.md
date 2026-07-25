@@ -2,7 +2,497 @@
 
 All notable changes to the webtool during active development.
 
-## [2026-07-23] – GitHub-Native Persistence: Accounts, Draft Sync, Stats (Phase 2 of 2)
+## [2026-07-25] – Control Sizing Corrections (fifth review)
+
+### Fixed
+- **Status pill dimensions were inverted in the previous entry.** "Height of
+  the Scene Summary title line" had been applied as the pill's *height*
+  (20px tall × 60px wide). Corrected to the actual intent: the pill is
+  **double the Sammy button's width and the same height** — 88 × 44px.
+  Its dropdown options follow the wider pill.
+
+### Changed
+- **Green control shape tightened**: padding reduced to a uniform 4px and the
+  buttons left-aligned rather than centred, so the pill and all three action
+  buttons sit the same short distance from the window edge with an equal
+  green margin all round. The summary/review indent follows the wider shape.
+- **List tool removed** from the editor toolbar (desktop and mobile — the
+  request wasn't mobile-scoped), leaving B / I / U / Proofreader / zoom.
+- **Glasses icon centred** within its button.
+- **Show more/less chevrons now use the whole line as the hit area** (308px
+  wide instead of 48px). The row is otherwise empty, so this costs no
+  vertical space at all.
+- **Auto-save text is now light brown (`#8B6F47`)** and pulled further in
+  from the editor's rounded border so the two never touch.
+
+### Verification notes
+Measured at 440×956: pill 88×44 with Sammy at 44×44 (exactly double width,
+equal height); all four controls at x=4 inside a 4px-padded shape; list
+button absent; glasses `justify-content: center`; chevron hit area 308px
+matching the summary's inner width; auto-save at `rgb(139,111,71)` ending
+14px clear of the editor's right border. Toolbar still one line. **0**
+sub-12px text, **0** controls under 44px, no horizontal scroll, no console
+errors across eight views. Desktop re-measured unchanged: sticky 48px green
+row, auto-save still inside it in the original cream, 100×19 pill, book icon
+visible, 126px margins, 14px editor, 320px panels.
+
+**Intentional sub-AA exception:** the auto-save line now measures **1.34:1**
+— that is what "hardly noticeable" produces, and it was asked for
+explicitly. It is decorative reassurance only; saving happens regardless and
+is not conveyed by that text alone. Easy to raise if it turns out to matter.
+
+## [2026-07-24] – Proofreader "Go To" + Header/Control Polish (fourth review)
+
+Seven notes from Aaron's fourth pass. Six are visual; the seventh adds a
+genuinely new Proofreader capability.
+
+### Added
+- **Proofreader "go to" arrow.** Every listed issue now carries an arrow that
+  closes the Proofreader, scrolls the offending text into view, and
+  highlights it. **It never mutates the draft**: wrapping the match in a
+  `<span>` would land in `editor.innerHTML` and autosave would persist the
+  highlight into Erica's prose. Instead it paints a `Range` via the CSS
+  Custom Highlight API (`::highlight(proofreader-target)`) where available,
+  and falls back to a plain text selection otherwise — both purely visual.
+  Because `getEditorPlainText()` injects newlines at block boundaries, the
+  issue offset doesn't map 1:1 onto DOM text nodes, so it picks the
+  occurrence *nearest* the expected offset rather than the first match. If
+  the draft changed and the text is gone, it says so instead of failing
+  silently.
+
+### Changed
+1. **Header logo**: the circular mark now matches the Login button's height
+   (30px on mobile), and the "Big Tiff" wordmark matches the circle.
+2. **The pill corner and button arm are one shape** — a single green block
+   with one 2px solid gold outline, instead of two separate green areas.
+3. **Status pill is shorter but longer**: 20px tall (the Scene Summary title
+   line height) and 60px wide, occupying the slot the summary's book icon
+   used to hold — that icon is hidden on mobile since the pill now sits
+   there. The morph-down options match the thinner pill exactly.
+4. **Sammy / Draft Log / Save** reordered in the arm (Sammy on top).
+5. **Scene summary and review note content moved left**, now sitting 21px
+   clear of the green shape instead of indented well past it.
+6. **All editor tools on one line** above the field, and the Proofreader's
+   magnifying glass is now a pair of glasses. Measured that full 44px-wide
+   tools still fit one line at 440px, so the single row costs nothing in
+   touch size.
+
+### Verification notes
+Go-to arrow tested end to end: correct word highlighted for two different
+issues, correct fallback selection when the Highlight API is stubbed out,
+**draft `innerHTML` byte-identical before and after** on both paths, and the
+"couldn't find that text" path when the draft no longer contains the match.
+Full audit at 440×956 across scene / proofreader / notepad / stats / text
+size / outline / library / landing: **0** sub-12px text, **0** WCAG AA
+contrast failures, **0** controls under 44px, no horizontal scroll, no
+console errors. Desktop re-measured unchanged: 32px logo mark, 21px
+wordmark, sticky 48px green row bar with its 5px gold cap, book icon still
+visible, 16px summary padding, autosave still inside the bar, 126px margins,
+14px editor, 320px panels.
+
+**Deliberate sub-44px exceptions (unchanged from the last round, both
+requested):** the status pill (20px, item 3 asked for shorter) and its
+dropdown options (30px). Everything else is at or above 44px.
+
+## [2026-07-24] – Scene View Redesign: Green Control Arm (third device review)
+
+Nine notes from Aaron's third pass. The biggest is a structural change to the
+scene view: the horizontal green status bar becomes a fixed vertical control
+arm in the upper-left, with the editor scrolling beneath it.
+
+### Changed
+1. **Outline and Library panels open to 70%** of the window width (was 50%).
+2. **Status pill** is now the same height as the guidance rail buttons
+   (44px), and its morph-down options match the thinner pill — inset by the
+   green padding so the menu lines up with the pill instead of jutting past.
+3. **"Auto-saved just now"** left the status bar and now sits semi-transparent
+   in the bottom-right corner of the writing area, `pointer-events: none` so
+   taps pass through to the editor beneath.
+4. **The green status bar is now a fixed top-layer control arm** pinned under
+   the header: the status pill sits in a green corner, and a green arm runs
+   down the left edge with Save / Draft Log / Sammy stacked as 44px square
+   icon buttons matching the guidance rail opposite. Editor content scrolls
+   beneath it.
+5. **The thick gold line** is now the scene summary's bottom border (it used
+   to cap the status bar, which no longer sits there).
+6. **Guidance rail buttons are square** (44×44).
+7. **The rail is a top layer** and the editor now extends to the right edge
+   with the same margin as the left, scrolling under the tabs.
+8. **Show more/less is a bare chevron** on its own bottom line, lower-left —
+   no text label, which reclaims a lot of vertical space.
+
+### Fixed (found during verification, not reported)
+- **Nav-height feedback loop.** Measuring the nav's real height into
+  `--mobile-nav-h` fed straight back into its own buttons' `min-height`,
+  so each measurement grew the nav (62→110px) and bottom-anchored elements
+  drifted under it. Split into `--mobile-nav-h` (button height, fixed) and
+  `--mobile-nav-measured` (runtime total incl. the Focus-bulge padding and
+  safe area). Verified stable across repeated runs.
+- **Summary/review text was permanently hidden** behind the new arm. Those
+  two blocks are now indented clear of it; the editor still scrolls beneath
+  as intended.
+- **Review-note heading contrast, pre-existing:** gold on the box's
+  translucent `bg-[#D4AF37]/15` measured **4.19:1**, under AA. Surfaced only
+  after the contrast audit was corrected to composite an element's *own*
+  translucent background (it had been scoring translucent chips against the
+  wrong backdrop). Fixed with a solid `#3D2B1F` ground on mobile — same
+  palette, same gold border — taking it to **6.4:1**.
+- Guidance rail now scrolls rather than clipping if a large text scale makes
+  six tabs outgrow a short landscape viewport.
+
+### Verification notes
+440×956, 956×440, and at 75–175% UI text scale: **0** text under 12px, **0**
+WCAG AA contrast failures (with the corrected compositing), **0** primary
+controls under 44px, no horizontal scroll, no console errors. Landscape
+re-checked after the nav fix: arm, rail, sheets and the auto-save chip all
+clear the nav. Desktop re-measured and unchanged: status bar still a sticky
+48px green row, auto-save still inside it and static, expand arrows hidden,
+review box keeps its `/15` tint, 320px panels, 126px margins, 14px editor,
+100px pill, guidance columns side-by-side.
+
+**Deliberate sub-44px exceptions, flagged not settled:** the status dropdown
+*options* (~33px) and the expand chevrons (48×32) are both smaller than the
+44px floor because item 3 asked for smaller options and item 8 asked to
+reclaim vertical space. The chevrons were widened to 48px horizontally,
+which costs no vertical space since they sit alone on their line.
+
+## [2026-07-24] – Panel & Guidance Refinements (second device review)
+
+Ten targeted notes from Aaron's review of the panels and guidance UI.
+
+### Changed
+1. **Landing:** the sync timestamp sits directly under RANDOM SCENE; the
+   thought bubble is now 70% opacity so it reads as a quiet aside.
+2. **Outline** uses full labels again — "Act 1", "Chapter 0" — on both
+   desktop and mobile (only the per-scene status still collapses to an icon
+   on mobile).
+3. **Entry counts** in the Outline and Library headers are now a bold number
+   in a gold circle, no text (both wired to the live count).
+4. **Outline panel:** the sync button reads "Canon Sync" and matches the
+   Changelog button's height; the Changelog icon is a sheet-of-paper glyph
+   (`fa-file-lines`) so it no longer resembles the sync icon; "STORY OUTLINE"
+   is right-aligned to the panel edge.
+5. **Library panel:** category titles are ALL CAPS and clamp to 2 lines; the
+   search field, the "Erica's Entries" banner, and the category review icons
+   all share one height (44px), verified equal.
+6. **Review markers:** the circle stays at the START of a category title but
+   now sits at the END of an individual entry title. Tapping an entry's
+   marker shows the reason; the next tap elsewhere clears that marker for
+   good (persisted locally, and re-surfaced only if Sammy sends a genuinely
+   new reason). Full reveal→clear→persist→re-surface cycle tested.
+7. **Guidance rail:** all six tabs are now one icon-only strip on the right
+   edge, touching each other, each only as wide as its icon (36px) but 44px
+   tall for the tap. The editor sits to its left with more width.
+8. **Guidance drawers** are more minimal: the duplicate outer title row is
+   gone, the close (X) moved inline with the card's own icon+title row, a
+   single separator line sits under that row, and the only other line is the
+   2px window border.
+
+### Verification notes
+Re-audited at 440×956 across scene/drawer/notepad/stats/text-size/outline/
+library/landing: 0 text under 12px, 0 measured WCAG AA contrast failures, no
+horizontal scroll, no console errors. Library heights measured equal (44px);
+category titles confirmed 1 line for short labels, 2-line clamp for long
+ones. Desktop re-checked and behaviorally unchanged: full "Act 1" labels,
+category titles NOT uppercased (mobile-only), review-marker click inert on
+desktop (hover tooltip preserved), rail/nav hidden, 126px margins, 14px
+editor, scene opens. The count-circle, "Canon Sync"/file-icon, and
+end-positioned entry marker are intentional cross-platform changes Aaron
+asked for, not regressions.
+
+**Interpretation flagged:** item 5 says "review icons the same height as the
+banner." Applied to the CATEGORY markers (which sit in the banner) = 44px;
+entry markers were kept a compact inline 28px so a flagged entry row isn't
+dominated by a 44px circle. Easy to change if all were meant.
+
+## [2026-07-24] – Landing Nav Redesign (shared desktop + mobile)
+
+Reworks the landing navigation into one deliberate cluster, used identically
+on desktop and mobile (the old split — a desktop radial plus a separate
+mobile reflow with `display:contents` + `order` — is gone).
+
+### Changed
+- **Tiff on top, buttons grouped beneath her**, all labels ALL CAPS.
+- **WHERE I LEFT OFF** stays the hero: full cluster width, ~38% taller than
+  the other buttons.
+- **LAST COMPLETED** (left arrow at the left end) and **NEXT UNFINISHED**
+  (right arrow at the right end) sit on one row directly beneath it, pinned
+  to the outer edges.
+- **RANDOM SCENE** centered below, matched to the half-button size.
+- **SYNC is now a circle** floating in the empty square between the two half
+  buttons — the circular-arrow icon fills the disc at low opacity with the
+  SYNC label over it. It kept its `#landing-sync-btn` id and
+  `fetchLatestFromCanon()` handler, so viewer-role gating and every call
+  site still work untouched; the sync timestamp moved just below the cluster.
+- Removed the obsolete mobile landing reflow CSS and the `#landing-sync-row`
+  wrapper.
+
+### Verification notes
+Measured at 1440×900 and 440×956: GIF above the cluster, WHERE I LEFT OFF
+352px wide / 66px tall, the two halves flanking a perfectly round 56px
+circle centered on the cluster axis, RANDOM SCENE matched to the halves,
+scene still opens from WHERE I LEFT OFF, editor still 14px on desktop, 126px
+desktop margins intact, no horizontal scroll, no console errors, 0 sub-12px
+text and 0 contrast failures in the landing.
+
+**Open tradeoff, flagged not settled:** the half buttons come out ~39% of
+WHERE I LEFT OFF, not the requested 50%. Exact-half + a visible central gap
++ a real circle can't all three hold in one row (two 50% halves leave zero
+gap, so the circle would have to overlap them rather than sit in an empty
+square). Kept the clean empty circle; the halves can be pushed wider if the
+circle is allowed to shrink or overlap — Aaron's call.
+
+## [2026-07-24] – Mobile Revision After First Device Review
+
+Aaron reviewed the mobile build on the phone ("everything appears to function
+fine, but we need to make adjustments") and gave ten notes. All ten are in.
+
+### Changed
+- **Two control tiers, both in `rem`.** `--tap` (2.75rem) for things touched
+  while writing — bottom nav, editor toolbar, scene actions, landing nav.
+  `--tap-sm` (1.875rem) for set-once chrome — header, panel headers, close
+  buttons, sync, review markers. Because both are `rem`, lowering the UI text
+  scale now genuinely **shrinks the buttons**, not just their labels; the
+  scale range gained a downward half (**75–175%**, was 100–175%).
+- **Header roughly halved**: logo mark 32px → 16px, header row 56px → ~34px.
+- **Text buttons became icons on mobile** (Save Draft, Draft Log, Sammy,
+  Proofreader, New, Save, Rename, Sync). Desktop keeps every word — the
+  labels are wrapped in `.btn-text`, hidden only under `body.mobile-layout` —
+  and each button carries an `aria-label` so nothing is lost to screen
+  readers.
+- **Nickname editing removed** entirely (button, handler, and the now-dead
+  reference in `refreshAccountButton` that would have thrown without it).
+- **The sync-first gate is gone.** `#landing-empty` was deleted; the landing
+  is now the only front door, with Sync and its own timestamp moved to the
+  bottom of it. "Stats & Progress" dropped from the landing nav, since Stats
+  already sits in the header.
+- **Stat teaser is now a thought bubble above Tiff's head** — CSS, not art,
+  so the text reflows at any length and any UI scale rather than clipping
+  inside fixed-size bitmap.
+- **Bottom nav**: Focus moved to the left corner, ~36% larger, with the bar
+  bulging up around it. Whichever view is open stays raised and gold until
+  it closes — driven by what is actually open, so closing a sheet from its
+  own X also drops the highlight.
+- **Nothing covers the whole screen any more.** Sheets are bottom-anchored
+  at 66dvh, leaving ~263px of the scene visible above them ("makes me feel
+  like I've forgotten what I was working on"). Outline and Library are now
+  **50% width** with a tap-to-dismiss scrim over the exposed half.
+- **Outline condensed** for the narrower panel: "Act 1" → "A1", "Chapter 2"
+  → "Ch2", and status words → distinct icons (check / exclamation / pen —
+  still a shape per state, never colour alone), with padding stripped
+  throughout. **Library** trimmed the same way, separators kept, and the
+  review marker is now a smaller `fa-circle-exclamation` icon rather than a
+  text "!".
+- **Six guidance tabs split into two rails of three**, one per side, with
+  the editor between them. Drawers open beside whichever rail they belong to.
+- **Notepad and Draft Pad list headers** ("Your Notes", "Drafts") hidden on
+  mobile, along with the outline hint text and both panel sync timestamps
+  (the landing carries the timestamp now).
+
+### Verification notes
+Re-audited at 440×956 after every change: **0** text under 12px, **0**
+measured WCAG AA contrast failures, **0** primary controls under 44px, **0**
+sibling overlaps, no horizontal scroll, no console errors. Sheets confirmed
+at 631px tall with 263px of scene still visible; both panels measured at
+exactly 220px (50%); rails confirmed 3-and-3 with the editor between them.
+Desktop re-measured and unchanged: 56px header, 32px logo, 126px margins,
+side-by-side guidance columns, 320px panels, floating 480×380 Notepad, full
+"Act 1"/"Review" wording, 14px editor, original red review pill.
+
+**Still not verified:** nothing has run on real iOS Safari. The `:has()`
+selector driving the panel scrim needs Safari 15.4+ (fine on her iOS 18
+device, but unconfirmed on hardware), and Add to Home Screen remains
+untested on a real phone.
+
+## [2026-07-24] – Mobile Support: Touch Layout, Guidance Rail, Accessibility Pass
+
+The tool's first real mobile experience, built for Erica's iPhone 16 Pro Max
+(iOS Safari). This is an **interaction-model change for touch devices, not a
+responsive CSS pass** — the desktop layout at ≥1280px with a mouse is
+untouched. Everything new is additive and scoped behind a `body.mobile-layout`
+class, so desktop cannot inherit any of it.
+
+### Added
+- **Capability-based mobile detection** — `isMobileMode()` keys off
+  `(hover: none) and (pointer: coarse)`, deliberately **never width**. Her
+  phone is 956px wide in landscape, which a conventional 768px breakpoint
+  would have flipped into the desktop layout (draggable windows and all)
+  just by rotating. A `matchMedia` change listener re-applies or fully
+  clears the layout, so no half-applied state survives a mode change.
+- **Right-wall guidance rail** (Aaron's drawer concept, 2026-07-24) — six
+  vertical tabs in a 3×2 grid pinned to the right edge whenever a scene is
+  open, staying put while the column scrolls. Tapping a tab pops that
+  guidance card open as a drawer beside the rail; tapping again closes it.
+  Replaces the desktop float/drag model without losing any content: the
+  drawers **move** the real card node (as `floatGuidanceCard` always did),
+  so there is still exactly one copy of each card's data.
+- **Bottom navigation** — Home · Outline · Library · Notepad · Focus, all
+  ≥44px and safe-area padded. **Focus** is the mobile reading of the desktop
+  focus toggle: one tap closes every open drawer, panel and sheet. The
+  header slims to logo + account + progress/stats in exchange.
+- **All six former floating windows open as full-screen sheets**
+  (Notepad, Draft Pad, Changelog, Proofreader, Send to Sammy, Stats),
+  pinned between the header and the bottom nav, strictly one at a time —
+  opening any sheet or panel closes the others via
+  `mobileCloseEverything()`.
+- **Vertical landing nav** — the radial arrangement re-flows into one
+  centred column (GIF, then Where I Left Off, Next Unfinished, Last
+  Completed, Random Unfinished, Stats), each 320×48 with 14px spacing.
+  Nothing sits side-by-side at any phone size, including landscape.
+- **Tap-to-reveal review reasons** — Sammy's `needsReviewReason` was
+  reachable only by hovering a `title=` tooltip, which does not exist on
+  touch, so on mobile that editorial information was completely
+  unreachable. The `!` markers (both per-entry and per-category) are now
+  44×44 bordered tap targets that toggle the reason inline. Tapping the
+  category marker no longer also collapses the category.
+- **`setMobilePreview(true/false)`** — a console/`?forceMobile=1` hook for
+  exercising the mobile layout in a desktop browser, since the mobile media
+  query cannot otherwise be triggered there.
+- **Global UI text size** (`Text` in the bottom nav) — a slider plus large
+  −/+ buttons, 100–175% in 5% steps, with a live preview and a reset. This
+  is deliberately **separate from the editor-only zoom control**: it scales
+  the root font size, so labels, buttons, panels and sheets all grow
+  together rather than only the draft text. Stored per device (a phone and
+  a laptop want different answers) and never synced. Applied as a
+  percentage rather than a px value, so it multiplies the browser's own
+  default text size instead of overriding it.
+- **Add to Home Screen** — `apple-mobile-web-app-capable`, an app title,
+  `theme-color`, a generated `assets/app-icon-{180,192,512}.png` (gold
+  `#D4AF37` ground with dark `#3D2B1F` "BT", existing palette only), and a
+  `manifest.webmanifest` so Android Chrome behaves too. Status bar style is
+  `black`, **not** `black-translucent`, because translucent would put
+  content under the status bar and the viewport meta deliberately does not
+  use `viewport-fit=cover`. Saved to the home screen the tool launches
+  standalone: no Safari chrome, and ~100px more vertical room.
+- **Tap-to-expand for long scene text** — the scene summary and review note
+  clamp to 3 and 2 lines with a "Show more"/"Show less" control (which
+  hides itself when the text is short enough not to need it). Without this
+  the editor started 948px down — past a full screen, meaning a scroll
+  before every spontaneous sentence. Now 752px, with the formatting toolbar
+  at 581px. No content is removed; the full text is one tap away.
+
+### Changed
+- **Aggressive autosave on mobile** — also fires on editor `blur`,
+  `visibilitychange` (only when actually hidden), and `pagehide`.
+  Backgrounding Safari mid-sentence is normal on a phone, and iOS suspends
+  background tabs aggressively. Desktop autosave triggers are unchanged.
+- **Drag/resize wiring is now lazy and desktop-only.** The twelve
+  `make*Draggable`/`make*Resizable` calls moved out of `init()` into
+  `ensureDesktopWindowWiring()`, which returns immediately in mobile mode —
+  so a touch device never attaches a single mouse handler (iOS synthesises
+  mouse events from taps, so "attached but unused" would not have been
+  inert). Verified: on a mobile cold boot the wiring flag stays false.
+- **Window geometry save/restore is skipped in mobile mode** — all six
+  `save*State`/`restore*State` pairs bail out early. A phone session
+  therefore cannot overwrite the desktop window arrangement, and a saved
+  desktop rect cannot break a full-screen sheet. The sheets override the
+  inline `left/top/width/height` with `!important` rather than clearing it,
+  so desktop geometry is preserved rather than lost.
+- **`adjustEditorZoom()` is mode-aware** — mobile runs 100–200% off a
+  17px base (the 70% floor is useless for low vision, and the mobile
+  default is readable without zooming at all). Desktop keeps 70–160% off
+  the original 14px base.
+- **Deferred to desktop on mobile**, per the "curation is a desktop task"
+  decision: library entry deletion, the Notepad's Add-to-Library button,
+  and the Changelog's All/Scene/Library/Structure filter tabs (mobile shows
+  one chronological feed). Notepad note creation and editing stay fully
+  available.
+- **Accessibility scale-up (mobile only).** Nothing below 12px anywhere;
+  editor 17px, body 16px, labels ≥14px; every touch target ≥44×44 with
+  ≥8px spacing; all opacity-dimmed gold/cream labels forced to full-opacity
+  `#D4AF37`/`#F4EDE4`. Inputs are ≥16px so iOS does not auto-zoom on focus.
+  Hover-only tooltips are removed in favour of visible `.m-label` text.
+  The viewport meta is untouched — pinch-to-zoom still works.
+- **Review pill contrast** — the existing dark red on gold measures
+  **4.34:1**, just under AA's 4.5:1. On mobile only, the pill text uses
+  `#3D2B1F`, an existing palette pairing (it is what the gold primary
+  buttons already use) measuring **6.39:1**. Desktop keeps the red. The
+  gold background plus the literal word "Review" still carry the state, so
+  no meaning rides on the text colour alone.
+- **The mobile header now wraps at any width, not just narrow ones.** Found
+  by screenshot, not by measurement: raising the UI text scale made the
+  header's contents outgrow one row on a full-width phone, and because it
+  was a fixed-height non-wrapping flex row they **collided into each other**
+  rather than overflowing — so a right-edge overflow test saw nothing wrong.
+  An overlap check (do sibling boxes actually intersect?) was added to the
+  verification pass alongside the overflow check.
+- The landing GIFs now carry `loading="lazy"` so a phone on cellular does
+  not eagerly pull art it will not show. **The existing random pick of one
+  of the three per landing render is unchanged and confirmed working** —
+  30 consecutive renders drew all three — and only the chosen GIF is ever
+  fetched, so a landing costs ~1.3MB, not 3.5MB.
+
+### Verification notes
+Tested in a real browser (Chromium, live-loaded Tailwind + Font Awesome,
+real canon fetched from GitHub — 4 scenes) at **440×956**, **956×440**,
+**375×812**, **220×478** (the geometric equivalent of Safari Page Zoom at
+200% on a 440px phone), and **1440×900** desktop. Measured, not eyeballed:
+- **Zero** text below 12px, **zero** WCAG AA contrast failures (computed
+  ratios with alpha compositing against the real effective background), and
+  **zero** touch targets under 44×44 — across all ten views (scene editor,
+  all six sheets, outline panel, library panel with categories expanded,
+  landing) at every viewport above.
+- **No horizontal page scroll** at any of the five sizes. Three real
+  overflow bugs were found and fixed this way: the header's right group
+  clipped the STATS button (body has `overflow:hidden`, so clipped meant
+  unreachable), the editor toolbar's inner groups did not wrap at high
+  zoom, and the nav's five flex buttons squeezed to 43.66px at 200% zoom.
+- **Landscape at 956px stays in mobile layout** — confirmed
+  `isMobileMode()` true, margins 0, guidance columns collapsed, nothing
+  side-by-side. Rotated both directions with a drawer open; no stale or
+  half-applied geometry, drawer stayed inside the viewport.
+- **Desktop geometry is safe**: seeded six known window rects, ran a full
+  mobile session opening and closing all six sheets, and confirmed every
+  stored rect was byte-identical afterward and that sheets ignored them.
+- **Autosave**: verified saves on blur, on `pagehide`, on
+  `visibilitychange` only when hidden (not when visible), and that manual
+  Save Draft still writes.
+- **Viewer role**: on mobile a viewer gets `role-viewer`, non-editable
+  editor and notepad, hidden sync button, zero visible `.primary-only`
+  controls, and **no server write is attempted** (confirmed by intercepting
+  `fetch`).
+- **Desktop regression**: measured 126px margins, side-by-side guidance
+  columns, 14px editor, 10.4px status badges, original red review pill,
+  visible tooltips, sticky summary/status bars, 48px status bar, 70–160%
+  zoom range, and working drag **and** resize (dispatched real mouse
+  sequences; geometry moved and persisted). Confirmed by direct
+  before/after comparison, not assumption.
+- Zero console errors throughout (only Tailwind's standard CDN advisory).
+- Diff review: the only reference to protected sync/encryption/auth code in
+  the whole change is a **call site** — `pushDraftToServer(...)` on the new
+  blur/visibilitychange trigger. No protected function definition was
+  modified.
+
+- **UI text scale** verified at 100/125/150/175%: root font tracks
+  (16/20/24/28px), the header re-measures and sheets follow it exactly
+  (94→102→114→130px), and at the 175% maximum there are still zero
+  sub-12px, zero contrast failures, zero undersized targets and no page
+  overflow. Cleared entirely on desktop (no inline root font-size).
+
+**Not verified — stated plainly:**
+- **Add to Home Screen was not tested on a real device.** The meta tags,
+  manifest and icons are in place and the icon renders correctly as a file,
+  but actually saving the tile on an iPhone, its icon appearance on the
+  home screen, and standalone launch behaviour (including how the header
+  sits under the status bar) are all unconfirmed. This is the first thing
+  to check on the phone.
+- **Nothing was tested on real iOS Safari or a real iPhone.** All testing
+  was desktop Chromium. Specifically unverified: `contenteditable` caret
+  visibility and scroll-into-view with the on-screen keyboard up
+  (historically buggy on iOS), the `visualViewport`-driven keyboard padding,
+  `env(safe-area-inset-*)` behaviour around the Dynamic Island and home
+  indicator, real Safari Page Zoom (only its geometric equivalent), actual
+  pinch-to-zoom gestures, and real touch-vs-mouse event behaviour.
+- **The `(hover: none) and (pointer: coarse)` query was never observed
+  matching**, because this environment is mouse-only. The query string was
+  confirmed to parse validly (`matchMedia().media` echoes it back rather
+  than `not all`), and all mobile behaviour was exercised through
+  `setMobilePreview()`, which drives the identical code path. But the
+  detection itself firing on her actual phone is unconfirmed.
+- Real cross-device sync round-trips were not re-tested; the sync layer was
+  not modified, only invoked on additional triggers.
+- Landscape shows the six-tab rail clamped to ~310px tall with internal
+  scrolling — reachable, but it does scroll. Not tested by a human hand.
 
 Wires the Phase 1 UI to real, shared, cross-device persistence — **with no
 backend**, using the public `big-tiff-data` repo as a JSON store (static

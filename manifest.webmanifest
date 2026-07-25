@@ -1,0 +1,15 @@
+{
+  "name": "Big Tiff StoryForge",
+  "short_name": "StoryForge",
+  "description": "Erica's writing sanctuary for the Big Tiff story.",
+  "start_url": "./writing.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#4A3328",
+  "theme_color": "#1E6B5F",
+  "icons": [
+    { "src": "assets/app-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/app-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

@@ -4,6 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Big Tiff StoryForge • Writing</title>
+
+    <!-- Add to Home Screen. On iOS these meta tags alone are what make the
+         saved tile launch standalone (no Safari chrome, more vertical room);
+         the manifest is there so Android Chrome behaves too. Status bar style
+         is "black" rather than "black-translucent" on purpose: translucent
+         would put content underneath the status bar, and the viewport meta
+         deliberately does NOT use viewport-fit=cover, so iOS keeps us inside
+         the safe area automatically. Do not add user-scalable=no or
+         maximum-scale above - pinch-to-zoom is a primary accessibility
+         affordance here and must keep working. -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="StoryForge">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#1E6B5F">
+    <link rel="apple-touch-icon" href="assets/app-icon-180.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/app-icon-192.png">
+    <link rel="manifest" href="manifest.webmanifest">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -581,6 +599,733 @@
         .library-category {
             margin-bottom: 6px;
         }
+
+        /* Thought bubble holding the rotating stat teaser, floating above
+           Tiff's head on the landing screen. Drawn in CSS rather than as an
+           image so the text reflows at any length and any UI text scale -
+           a fixed-size bitmap bubble would clip the longer stat lines. The
+           two trailing dots are pseudo-elements pointing down toward her. */
+        .thought-bubble {
+            position: relative;
+            display: inline-block;
+            max-width: 22rem;
+            margin-bottom: 1.75rem;
+            padding: 0.6rem 1rem;
+            background: #3D2B1F;
+            border: 2px solid #D4AF37;
+            border-radius: 1.25rem;
+            color: #F4EDE4;
+            font-style: italic;
+            line-height: 1.35;
+            text-align: center;
+            opacity: 0.7;   /* a quiet aside, not a strong visual element */
+        }
+
+        .thought-bubble::before,
+        .thought-bubble::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            background: #3D2B1F;
+            border: 2px solid #D4AF37;
+            border-radius: 9999px;
+        }
+
+        .thought-bubble::before {
+            width: 0.8rem;
+            height: 0.8rem;
+            bottom: -0.65rem;
+            margin-left: -1.6rem;
+        }
+
+        .thought-bubble::after {
+            width: 0.5rem;
+            height: 0.5rem;
+            bottom: -1.4rem;
+            margin-left: -2.4rem;
+        }
+
+        /* ===== Landing navigation cluster (shared: desktop + mobile) =====
+           GIF on top, then a compact button group beneath it: WHERE I LEFT
+           OFF across the top; LAST COMPLETED / NEXT UNFINISHED flanking a
+           central SYNC circle; RANDOM SCENE centered below. One layout for
+           both, per Aaron's 2026-07-24 direction (was a desktop radial +
+           separate mobile reflow). */
+        #landing-radial { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; }
+        #landing-radial.hidden { display: none !important; }
+
+        .landing-gif { display: block; width: 12rem; height: 12rem; max-width: 62vw; object-fit: contain; user-select: none; }
+
+        #landing-nav-cluster {
+            position: relative;
+            width: min(22rem, 92vw);
+            display: flex;
+            flex-direction: column;
+            gap: 1.35rem;
+        }
+
+        .landing-nav-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            gap: 0.5rem;
+            border: 1px solid rgba(212, 175, 55, 0.5);
+            background: rgba(61, 43, 31, 0.7);
+            color: #F4EDE4;
+            font-weight: 600; letter-spacing: 0.5px; line-height: 1.15;
+            border-radius: 1rem;
+            padding: 0.5rem 0.7rem;
+            min-height: 2.75rem;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+        .landing-nav-btn:hover { background: #4A3A2E; }
+        .landing-nav-btn i { color: #D4AF37; }
+
+        /* WHERE I LEFT OFF: full cluster width, ~50% taller than the rest. */
+        .landing-nav-btn.nav-primary {
+            width: 100%;
+            background: #D4AF37; color: #3D2B1F;
+            font-weight: 800; font-size: 1.05rem;
+            min-height: 4.1rem;
+            box-shadow: 0 6px 16px -6px rgba(0, 0, 0, 0.5);
+        }
+        .landing-nav-btn.nav-primary:hover { background: #E8C86B; }
+        .landing-nav-btn.nav-primary i { color: #3D2B1F; }
+
+        /* Half buttons pinned to the outer edges, leaving a square hole in
+           the centre for the SYNC circle. Arrows sit at the outer ends. */
+        .landing-half-row { position: relative; display: flex; justify-content: space-between; align-items: stretch; }
+        .nav-half { width: calc(50% - 2.4rem); font-size: 0.82rem; }
+        .nav-half-left { justify-content: flex-start; }
+        .nav-half-right { justify-content: flex-end; }
+
+        .landing-random-row { display: flex; justify-content: center; }
+        .nav-random { width: calc(50% - 2.4rem); }
+
+        /* SYNC circle floating in the empty square between the two half
+           buttons. The circular-arrow icon fills the disc; the SYNC label
+           sits over it. */
+        .landing-sync-circle {
+            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+            width: 3.5rem; height: 3.5rem;
+            border-radius: 9999px;
+            background: #3D2B1F;
+            border: 2px solid #D4AF37;
+            display: grid; place-items: center;
+            cursor: pointer; overflow: hidden;
+            box-shadow: 0 4px 12px -4px rgba(0, 0, 0, 0.6);
+            transition: background-color 0.15s ease;
+        }
+        .landing-sync-circle:hover { background: #4A3A2E; }
+        .landing-sync-circle .sync-icon {
+            position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+            font-size: 2.6rem; color: #D4AF37; opacity: 0.35;
+        }
+        .landing-sync-circle .sync-label {
+            position: relative; z-index: 1;
+            font-size: 0.75rem; font-weight: 800; letter-spacing: 0.5px;
+            color: #F4EDE4; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+        }
+
+        /* Panel entry-count: a bold number in a gold circle, no text
+           (Outline + Library headers). */
+        .count-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 1.5rem; height: 1.5rem; padding: 0 0.35rem;
+            border-radius: 9999px;
+            background: #D4AF37; color: #3D2B1F;
+            font-weight: 800; font-size: 0.8rem; line-height: 1;
+            flex-shrink: 0;
+        }
+
+        /* ==================== MOBILE LAYOUT (touch devices) ====================
+           Everything below is scoped to body.mobile-layout, which JS toggles
+           from the capability query (hover: none) and (pointer: coarse) -
+           NEVER from width, because Erica's iPhone 16 Pro Max is 956px wide
+           in landscape and would fool any width-only breakpoint into desktop
+           mode. Desktop with a mouse never gets the class, so nothing here
+           can regress the desktop layout. */
+
+        html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+        /* Mobile-only chrome stays fully hidden on desktop. */
+        #mobile-nav, .mobile-rail { display: none; }
+
+        /* .m-label was an inline text label beside icon-only controls. Per
+           Aaron's 2026-07-24 review the mobile direction is icons instead of
+           text, so these stay hidden everywhere; the controls carry
+           aria-label so assistive tech still announces them. */
+        .m-label { display: none !important; }
+        /* Button wording that collapses to just its icon on mobile. Desktop
+           keeps the words, so nothing there changes. */
+        body.mobile-layout .btn-text { display: none; }
+        /* Chrome that earns no space on a phone (list headers, hints). */
+        body.mobile-layout .m-hide { display: none !important; }
+        /* Mobile-only "Show more / Show less" control for clamped text. */
+        .m-expand { display: none; }
+
+        /* Tappable review-flag marker ("!"). On desktop this must look exactly
+           like the plain inline span it replaces (hover tooltip unchanged);
+           the mobile rules further down turn it into a real touch target that
+           toggles the review reason inline instead of relying on hover. */
+        .review-flag-btn { background: none; border: none; padding: 0; margin: 0; color: #D4AF37; font: inherit; cursor: pointer; }
+        .review-reason-inline.hidden { display: none !important; }
+
+        /* Proofreader "go to" arrow + the highlight it paints in the editor.
+           ::highlight() styles a Range without any DOM change, so the draft
+           itself is never modified (see goToProofreaderIssue). */
+        .proofreader-goto {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 2rem; height: 2rem;
+            border: 1px solid rgba(212, 175, 55, 0.6); border-radius: 8px;
+            background: none; color: #D4AF37; cursor: pointer;
+        }
+        .proofreader-goto:hover { background: rgba(212, 175, 55, 0.12); }
+        ::highlight(proofreader-target) { background-color: #D4AF37; color: #3D2B1F; }
+        body.mobile-layout .proofreader-goto { width: var(--tap); height: var(--tap); font-size: 1.05rem; }
+
+        body.mobile-layout {
+            --mobile-header-h: 56px;
+            /* Button height only. MUST stay independent of the measured nav
+               height below: the nav's buttons consume this value, so feeding
+               the measured total back into it creates a growth loop. */
+            --mobile-nav-h: 62px;
+            /* Full occupied nav height (buttons + Focus-bulge padding + safe
+               area). JS overwrites this from a real measurement; the value
+               here is just a sane fallback before that runs. */
+            --mobile-nav-measured: 76px;
+            /* Two control tiers, both in rem so they scale with the UI text
+               size in BOTH directions - scaling down genuinely shrinks the
+               buttons, it doesn't just shrink their labels.
+               --tap  = things touched while writing (nav, toolbar, Save)
+               --tap-sm = chrome she sets once and ignores (panel headers,
+                          close buttons, sync, filters) */
+            --tap: 2.75rem;      /* 44px at default scale */
+            --tap-sm: 1.875rem;  /* 30px at default scale */
+            /* The measured height already includes the nav's safe-area
+               padding, so no extra inset is added here. */
+            --mobile-nav-clear: var(--mobile-nav-measured);
+            touch-action: manipulation; /* kills iOS double-tap-zoom delay; pinch zoom still works */
+        }
+        @supports (height: 100dvh) {
+            /* h-screen's 100vh misbehaves under iOS Safari's collapsing toolbars */
+            body.mobile-layout { height: 100dvh; }
+        }
+
+        /* ---- Legibility scale-up (poor eyesight is a functional requirement).
+           Nothing below 12px; body/editor >=16px; labels >=13-14px. ---- */
+        body.mobile-layout .text-xs { font-size: 0.875rem; }
+        body.mobile-layout .text-\[10px\], body.mobile-layout .text-\[9px\] { font-size: 0.875rem; }
+        body.mobile-layout .text-sm { font-size: 1rem; }
+        body.mobile-layout .section-label { font-size: 0.875rem; }
+        body.mobile-layout .meta-pill { font-size: 0.875rem; }
+        /* Hover tooltips can't be reached on touch at all. Every one that
+           carried real information now has a visible .m-label beside its
+           control, so the tooltip itself is removed rather than left as an
+           unreachable 11px artifact. */
+        body.mobile-layout .tooltip { display: none !important; }
+        body.mobile-layout .library-text { font-size: 1rem; line-height: 1.45; }
+        body.mobile-layout .minimal-search { font-size: 1rem; } /* >=16px also prevents iOS focus auto-zoom */
+        body.mobile-layout .scene-status { font-size: 0.875rem; width: auto; min-width: 96px; padding: 3px 10px; }
+        body.mobile-layout .status-dropdown-wrapper { width: 140px; }
+        body.mobile-layout .status-dropdown-trigger { font-size: 0.875rem; min-height: 44px; }
+        body.mobile-layout .status-dropdown-option { font-size: 0.875rem; padding: 12px 10px; }
+        body.mobile-layout .status-dropdown-wrapper.open .status-dropdown-menu { max-height: 220px; }
+        body.mobile-layout .changelog-filter-tab { font-size: 0.875rem; }
+        body.mobile-layout .notepad-header h3 { font-size: 1.05rem; }
+        body.mobile-layout .guidance-float-header span { font-size: 1rem; }
+        body.mobile-layout .guidance-float-body { font-size: 1rem; }
+        body.mobile-layout .text-tool-btn { font-size: 1rem; min-height: 44px; min-width: 44px; }
+        body.mobile-layout .control-bar-item { font-size: 0.9375rem; height: auto; min-height: 44px; }
+
+        /* Dimmed gold/cream labels fail WCAG contrast on the dark browns -
+           force full opacity on mobile (same palette colors, no new hues). */
+        body.mobile-layout [class*="text-[#D4AF37]/"] { color: #D4AF37 !important; }
+        body.mobile-layout [class*="text-[#F4EDE4]/"] { color: #F4EDE4 !important; }
+
+        /* The Review pill's dark red on gold measures 4.34:1 - just under
+           AA's 4.5:1 for normal text. #3D2B1F on #D4AF37 is an existing
+           palette pairing (it's what the primary gold buttons already use)
+           and measures 6.39:1. Mobile only; desktop keeps the red. The gold
+           background plus the literal word "Review" still carry the state,
+           so no meaning rides on the text colour alone. */
+        body.mobile-layout .scene-review,
+        body.mobile-layout .status-pill-review { color: #3D2B1F; }
+
+        /* ---- Control sizing, two tiers ----
+           CHROME tier: set-once controls - header, panel headers, close
+           buttons, sync, filters. Deliberately small and dense. */
+        body.mobile-layout header button,
+        body.mobile-layout #left-panel button,
+        body.mobile-layout #right-panel button,
+        body.mobile-layout .notepad button,
+        body.mobile-layout .guidance-float-window button,
+        body.mobile-layout #login-modal button,
+        body.mobile-layout #token-setup-modal button,
+        body.mobile-layout #draft-conflict-banner button { min-height: var(--tap-sm); min-width: var(--tap-sm); }
+        body.mobile-layout .notepad-close { padding: 0 0.5rem; font-size: 1.1rem; min-width: var(--tap-sm); min-height: var(--tap-sm); }
+
+        /* PRIMARY tier: touched constantly while writing. These stay
+           comfortable even though the chrome around them shrank. */
+        body.mobile-layout #mobile-nav button,
+        body.mobile-layout .rail-tab,
+        body.mobile-layout #editor-toolbar button,
+        body.mobile-layout #scene-status-bar button,
+        body.mobile-layout .landing-nav-btn,
+        body.mobile-layout .status-dropdown-trigger,
+        body.mobile-layout .m-expand { min-height: var(--tap); min-width: var(--tap); }
+
+        body.mobile-layout input[type="text"],
+        body.mobile-layout input[type="password"],
+        body.mobile-layout .minimal-search { min-height: var(--tap); font-size: 1rem; }
+        body.mobile-layout #account-btn { min-height: 44px; }
+        body.mobile-layout #nickname-edit-btn { height: 44px; width: 44px; }
+        body.mobile-layout #account-menu button { min-height: 44px; }
+        body.mobile-layout .notepad-sidebar button,
+        body.mobile-layout .notepad-main button { min-height: 44px; }
+        body.mobile-layout #notes-list > div, body.mobile-layout #draftpad-list > div { min-height: 48px; }
+        body.mobile-layout .library-entry { padding-top: 10px; padding-bottom: 10px; }
+        body.mobile-layout .review-flag-btn { display: inline-flex; align-items: center; justify-content: center; min-width: var(--tap-sm); min-height: var(--tap-sm); border: 1px solid #D4AF37; border-radius: 9999px; font-size: 0.8rem; }
+
+        /* ---- Half-width Outline + Library: strip the breathing room ---- */
+        body.mobile-layout #dynamic-outline { font-size: 0.85rem; }
+        body.mobile-layout #left-panel .hierarchy-item { padding: 0.25rem 0.4rem; }
+        body.mobile-layout #left-panel [data-scenes-list] { padding-left: 0.5rem; }
+        body.mobile-layout #left-panel [data-scenes-list] > div { padding: 0.2rem 0.3rem; }
+        body.mobile-layout #left-panel [data-chapters-container] { padding-left: 0.6rem; }
+        body.mobile-layout .scene-status { min-width: 0; width: auto; padding: 2px 6px; font-size: 0.8rem; }
+        body.mobile-layout .library-category { margin-bottom: 2px; }
+        body.mobile-layout .library-entry { padding: 6px 8px; }
+        body.mobile-layout #right-panel .mb-3 { margin-bottom: 0.5rem; }
+
+        /* ---- Library panel, item 5 (2026-07-24) ----
+           Search field, category banners, and the category review icons all
+           share one height (the "Erica's Entries" banner). Category titles are
+           ALL CAPS and clamp to 2 lines. */
+        body.mobile-layout #right-panel { --lib-banner-h: 2.75rem; }
+        /* #right-panel prefix so this beats the id-specificity
+           "#right-panel button { min-height: --tap-sm }" rule above. */
+        body.mobile-layout #right-panel .library-category > button { padding: 0.25rem 0.6rem; min-height: var(--lib-banner-h); align-items: center; }
+        body.mobile-layout #library-search { min-height: var(--lib-banner-h); height: var(--lib-banner-h); }
+        /* Category title text: uppercase, clamped to 2 lines. Only the title
+           span clamps; the leading icon + review marker keep their row. The
+           slightly smaller size lets short labels like "Erica's Entries" stay
+           on one line in the half-width panel. */
+        body.mobile-layout .library-category .cat-title {
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2;
+            overflow: hidden;
+            line-height: 1.25;
+        }
+        /* Category review icon matches the banner height; entry markers stay
+           a compact inline size. */
+        body.mobile-layout #right-panel .library-category > button .review-flag-btn {
+            width: var(--lib-banner-h); height: var(--lib-banner-h); min-width: var(--lib-banner-h); min-height: var(--lib-banner-h);
+            font-size: 1rem;
+        }
+        body.mobile-layout .library-entry .review-flag-btn {
+            min-width: 1.75rem; min-height: 1.75rem; width: 1.75rem; height: 1.75rem; font-size: 0.85rem;
+            vertical-align: middle;
+        }
+        body.mobile-layout #proofreader-issues-list button { min-height: 44px; padding: 8px 16px; font-size: 0.875rem; }
+        body.mobile-layout #proofreader-check-btn { min-height: 44px; height: auto; }
+        body.mobile-layout #proofreader-apply-all-row button { min-height: 48px; height: auto; }
+        body.mobile-layout #sammy-export-copy-btn { min-height: 48px; height: auto; }
+        body.mobile-layout #draft-conflict-banner button { min-height: 44px; }
+        body.mobile-layout #login-modal button, body.mobile-layout #token-setup-modal button { min-height: 44px; }
+        body.mobile-layout #login-modal input, body.mobile-layout #token-setup-modal input { min-height: 44px; }
+
+        /* ---- Header: slim down; Notepad + Focus move to the bottom nav ---- */
+        body.mobile-layout header .max-w-screen-2xl { padding-left: 0.25rem; padding-right: 0.25rem; }
+        /* Buy back enough width for the header to stay on one row at the
+           default text scale; it still wraps gracefully when scaled up. */
+        body.mobile-layout #account-btn { padding-left: 0.625rem; padding-right: 0.625rem; }
+        /* Tighten the internal gaps so the full "Big Tiff" wordmark fits
+           rather than truncating to "Big". */
+        body.mobile-layout header .h-14 > div:first-child { gap: 8px; }
+        body.mobile-layout header .h-14 > div:first-child > div:first-child { gap: 6px; }
+        body.mobile-layout #focus-toggle-group,
+        body.mobile-layout #user-greeting,
+        body.mobile-layout #header-notepad-btn,
+        body.mobile-layout #header-divider,
+        body.mobile-layout #progress-pill-track,
+        body.mobile-layout #logo-storyforge { display: none !important; }
+        /* The header is a fixed-height flex row inside a body that clips
+           overflow, so anything past the viewport edge becomes unreachable
+           rather than merely ugly. Let both groups shrink and keep the row
+           on one line. */
+        /* The header must be free to wrap at ANY width, not just narrow ones:
+           raising the UI text scale makes its contents outgrow one row on a
+           full-width phone too, and a fixed-height non-wrapping flex row makes
+           them collide instead of reflow. Height is measured at runtime into
+           --mobile-header-h, so sheets and the rail follow whatever it becomes. */
+        body.mobile-layout header .h-14 { gap: 4px; height: auto; min-height: var(--tap-sm); flex-wrap: wrap; padding: 2px 0; }
+        /* Item 1 (2026-07-24): the circular mark matches the Login button's
+           height, and the "Big Tiff" wordmark matches the circle's height. */
+        body.mobile-layout header .w-8.h-8 { width: var(--tap-sm); height: var(--tap-sm); flex-shrink: 0; }
+        body.mobile-layout header .w-8.h-8 i { font-size: 0.95rem; }
+        body.mobile-layout #account-btn { height: var(--tap-sm); min-height: var(--tap-sm); }
+        body.mobile-layout header .h-8 { height: var(--tap-sm); }
+        body.mobile-layout header .h-14 > div { min-width: 0; }
+        /* Only the branding block may be truncated - clipping the group
+           itself would cut off the account button, which must stay tappable. */
+        body.mobile-layout header .h-14 > div:first-child { flex: 0 1 auto; min-width: 0; }
+        body.mobile-layout header .h-14 > div:first-child > div:first-child { min-width: 0; flex-shrink: 0; }
+        body.mobile-layout header .h-14 > div:last-child { flex: 0 0 auto; gap: 8px; }
+        body.mobile-layout #account-btn-label { max-width: 88px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        /* Wordmark sized to the circular mark's height (item 1). */
+        body.mobile-layout header .section-title { font-size: var(--tap-sm); line-height: 1; white-space: nowrap; }
+        body.mobile-layout #account-btn { flex-shrink: 0; }
+
+        /* ---- No moveable UI on touch: hide every drag/resize/float
+           affordance and every deferred-to-desktop control ---- */
+        body.mobile-layout #outline-btn,
+        body.mobile-layout #library-btn,
+        body.mobile-layout .notepad-resize-handle,
+        body.mobile-layout .guidance-float-resize-handle,
+        body.mobile-layout .guidance-card .guidance-float-btn,
+        body.mobile-layout .guidance-home-slot,
+        body.mobile-layout #changelog-filter-row,
+        body.mobile-layout #add-to-library-wrap,
+        body.mobile-layout .library-entry .primary-only { display: none !important; }
+        body.mobile-layout .notepad-header, body.mobile-layout .guidance-float-header { cursor: default; }
+
+        /* ---- Single vertical column ---- */
+        body.mobile-layout #center-column { margin-left: 0 !important; margin-right: 0 !important; }
+        body.mobile-layout #center-scroll-area { padding-bottom: calc(var(--mobile-nav-clear) + var(--kb-height, 0px) + 12px); overscroll-behavior: contain; }
+
+        /* The landing now uses one shared cluster on desktop and mobile
+           (see the "Landing navigation cluster" block above), so no
+           mobile-specific reflow is needed here - just keep the placeholder
+           padding sane on a phone. */
+        body.mobile-layout #no-scene-placeholder { padding-left: 1rem; padding-right: 1rem; min-height: 0; }
+
+        /* Scene view: summary -> status controls -> editor, with the guidance
+           rail pinned to the right wall. */
+        /* Item 8 (2026-07-24): the guidance rail is a top layer, so the editor
+           extends to the right edge with the same margin as the left; content
+           scrolls beneath the rail. */
+        body.mobile-layout #scene-content { padding-left: 0.5rem; padding-right: 0.5rem; }
+        /* Item 6: the thick gold line is now the scene summary's bottom border
+           (it used to cap the status bar, which has moved to the left arm). */
+        body.mobile-layout #scene-summary-bar { position: static; padding: 12px; border-bottom: 5px solid rgba(212, 175, 55, 0.7); }
+        /* The review box's translucent gold tint (bg-[#D4AF37]/15) lightens
+           the backdrop enough that its gold heading measured 4.19:1 - under
+           AA. A solid #3D2B1F ground (already used across the tool) takes the
+           same gold to 6.4:1, keeping the gold border as the accent. */
+        body.mobile-layout #review-note-box { padding: 12px; background-color: #3D2B1F; }
+        /* The green arm is a top layer the EDITOR scrolls beneath (item 5),
+           but the summary and review note sit right under it and would be
+           permanently unreadable. Indent just those two clear of the arm;
+           the editor itself stays full-width. */
+        /* Item 5: content sits left-aligned, just clear of the green shape
+           (~74px) with a safe margin - closer in than it was. The summary's
+           book icon is hidden because the status pill now occupies that slot
+           (item 3), so the text starts where the icon used to. */
+        body.mobile-layout.scene-open #scene-summary-bar { padding-left: 6.375rem; }
+        body.mobile-layout.scene-open #review-note-box { padding-left: 6.375rem; }
+        body.mobile-layout #scene-summary-bar > .flex > .flex-shrink-0,
+        body.mobile-layout #review-note-box > .flex > .flex-shrink-0 { display: none; }
+        body.mobile-layout #scene-summary-bar > .flex,
+        body.mobile-layout #review-note-box > .flex { gap: 0; }
+        /* The summary's uppercase header repeats the scene title, which is
+           already shown in the DRAFT label below it and in the Outline.
+           At 440px that repetition costs ~3 wrapped lines above the editor. */
+        body.mobile-layout #scene-summary-title,
+        body.mobile-layout #scene-summary-title-sep { display: none !important; }
+        /* 1.5px tracking on a 14px uppercase label wraps hard at this width. */
+        body.mobile-layout .tracking-\[1\.5px\] { letter-spacing: 0.5px; line-height: 1.3; }
+        /* The scene summary and review note are long enough to push the
+           editor a full screen down, which would mean scrolling before
+           every spontaneous sentence. Clamp them to a few lines with an
+           obvious tap-to-expand - the full text is still one tap away, so
+           nothing is lost, but the editor starts near the top. */
+        body.mobile-layout .m-clamped { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+        body.mobile-layout #guidance-summary-text.m-clamped { -webkit-line-clamp: 3; }
+        body.mobile-layout #review-note-text.m-clamped { -webkit-line-clamp: 2; }
+        /* Item 9: Show more/less is just an arrow on its own bottom line,
+           lower-left, no text label - kills a lot of empty vertical space. */
+        /* Small arrow, but the WHOLE line is the hit area - the row it sits on
+           is otherwise empty, so spanning it costs no vertical space while
+           making the target far easier to hit. */
+        body.mobile-layout .m-expand { display: flex; align-items: center; justify-content: flex-start; align-self: stretch; width: 100%; height: 2rem; min-width: 0; min-height: 2rem; margin: 0; padding: 0; background: none; border: none; color: #D4AF37; font-size: 0.95rem; text-decoration: none; }
+
+        /* ---- Item 5 (2026-07-24): the green status bar becomes a fixed
+           "control arm" pinned to the upper-left, a top layer the editor
+           scrolls beneath. The status pill sits in the green corner; a green
+           arm extends down the left edge with Save / Draft Log / Sammy as
+           square icon buttons matching the guidance rail on the right. ---- */
+        /* Item 2 (2026-07-24): the pill's green corner and the button arm are
+           ONE continuous shape with a single 2px gold outline, rather than
+           two separate green blocks. */
+        body.mobile-layout #scene-status-bar {
+            position: fixed !important;
+            top: var(--mobile-header-h) !important;
+            left: 0;
+            z-index: 40;
+            height: auto !important; min-height: 0;
+            background-color: #1E6B5F !important;
+            border: 2px solid #D4AF37 !important;
+            border-left: none !important;
+            border-radius: 0 14px 14px 0 !important;
+            /* Equal margin of green on every side of the controls, kept tight
+               so they sit close to the window edge. */
+            padding: 4px; margin: 0;
+            display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+        }
+        /* The pill is now a plain child of that single shape - no background
+           or padding of its own (item 2). */
+        body.mobile-layout #scene-status-select {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            width: auto;
+        }
+        /* The pill is exactly DOUBLE the Sammy button's width and the SAME
+           height as it (2026-07-24 correction): 2 x 44px wide, 44px tall. */
+        /* The #scene-status-bar prefix is required: the primary-tier rule
+           "body.mobile-layout #scene-status-bar button { min-height: 44px }"
+           carries an id and would otherwise out-rank a plain class rule and
+           keep the pill 44px tall. */
+        body.mobile-layout #scene-status-bar .status-dropdown-wrapper { width: calc(var(--tap) * 2); min-height: 0; height: auto; }
+        body.mobile-layout #scene-status-bar .status-dropdown-trigger {
+            width: 100%; min-width: 0;
+            min-height: var(--tap); height: var(--tap);
+            font-size: 0.8rem; line-height: 1;
+            padding: 0 18px 0 10px;
+            background-size: 9px; background-position: right 6px center;
+        }
+        /* Item 3: the morph-down options match the thinner pill. The menu is
+           inset by the wrapper's own green padding so it lines up with the
+           pill exactly instead of jutting out past it. */
+        body.mobile-layout .status-dropdown-option { font-size: 0.75rem; padding: 6px 6px; }
+        body.mobile-layout .status-dropdown-wrapper.open .status-dropdown-menu { max-height: 200px; }
+
+        /* The button stack, now inside the single merged shape (item 2). */
+        body.mobile-layout #scene-status-bar > .flex {
+            flex-direction: column; align-items: flex-start; gap: 4px;
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            width: 100%;
+        }
+        body.mobile-layout #scene-status-bar > .flex > button {
+            width: var(--tap); height: var(--tap); min-height: var(--tap);
+            padding: 0; gap: 0;
+            /* left-aligned with the pill above so every control sits the same
+               short distance from the window edge */
+            margin: 0;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 10px;
+        }
+        /* Item 4: Sammy above Save in the stack. */
+        body.mobile-layout #scene-status-bar > .flex > button[aria-label="Send to Sammy"] { order: 1; }
+        body.mobile-layout #scene-status-bar > .flex > button[aria-label="Draft Log"] { order: 2; }
+        body.mobile-layout #scene-status-bar > .flex > button[aria-label="Save Draft"] { order: 3; }
+        /* Item 4: "Auto-saved…" leaves the arm and sits semi-transparent in
+           the bottom-right corner of the writing area. pointer-events:none so
+           taps pass through to the editor beneath it. */
+        body.mobile-layout #auto-save-status {
+            position: fixed;
+            /* pulled further in so it never sits on the editor's rounded
+               border */
+            right: 1.6rem;
+            bottom: calc(var(--mobile-nav-clear) + 0.9rem);
+            z-index: 30;
+            min-height: 0; padding: 0;
+            background: none;
+            /* Light brown, deliberately hardly noticeable (Aaron, 2026-07-24).
+               !important beats the global full-opacity label rule. This is
+               decorative reassurance, not content - see the CHANGELOG note on
+               it being an intentional sub-AA exception. */
+            color: #8B6F47 !important;
+            font-size: 0.8rem;
+            pointer-events: none;
+        }
+        body.mobile-layout #scene-content .gap-3.px-1 { display: block; }
+        body.mobile-layout #scene-content .w-60 { display: none; }
+        body.mobile-layout #scene-content .h-\[496px\] { height: auto; min-height: 60vh; min-height: 60svh; }
+        /* Item 6 (2026-07-24): every editor tool on ONE line above the field.
+           It scrolls horizontally rather than wrapping, so a large text scale
+           can never push tools onto a second row. */
+        body.mobile-layout #editor-toolbar {
+            position: sticky; top: 0; z-index: 25;
+            background: #4A3A2E; border-radius: 0 0 12px 12px;
+            flex-wrap: nowrap; gap: 4px; padding: 5px 6px;
+            justify-content: flex-start;
+            overflow-x: auto; overflow-y: hidden;
+        }
+        body.mobile-layout #editor-toolbar > div { flex-wrap: nowrap; gap: 4px; min-width: 0; flex-shrink: 0; }
+        /* Measured: 44px-wide tools still fit on one line at 440px, so there
+           is no need to trade touch size for the single row. */
+        body.mobile-layout #editor-toolbar .text-tool-btn { min-width: var(--tap); padding-left: 0.4rem; padding-right: 0.4rem; }
+        body.mobile-layout #word-count { white-space: nowrap; font-size: 0.8rem; }
+        body.mobile-layout #editor-zoom-label { font-size: 0.8rem; }
+        body.mobile-layout #editor { font-size: 1.0625rem; line-height: 1.65; min-height: 55vh; min-height: 55svh; padding: 1rem; border-radius: 1rem; }
+
+        /* Guidance rail: all six tabs as one icon-only strip on the right
+           edge, touching each other (Aaron, 2026-07-24). Only as wide as an
+           icon; stays put while the column scrolls. */
+        body.mobile-layout.scene-open #mobile-guidance-rail {
+            display: flex; flex-direction: column;
+            position: fixed; right: 0; top: 50%; transform: translateY(-50%);
+            z-index: 45;
+            background: #3D2B1F;
+            border: 1px solid rgba(212, 175, 55, 0.55); border-right: none;
+            border-radius: 10px 0 0 10px;
+            /* auto (not hidden) so the six tabs stay reachable by scrolling
+               if a large UI text scale makes them outgrow a short landscape
+               viewport, rather than being silently clipped. */
+            overflow-y: auto; overflow-x: hidden;
+            max-height: calc(100dvh - var(--mobile-header-h) - var(--mobile-nav-clear) - 12px);
+        }
+        body.mobile-layout .rail-tab {
+            display: flex; align-items: center; justify-content: center;
+            /* square tabs (item 7, 2026-07-24) */
+            width: var(--tap); min-width: var(--tap);
+            height: var(--tap); min-height: var(--tap);
+            padding: 0;
+            background: transparent; border: none;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 0;
+            color: #D4AF37;
+        }
+        body.mobile-layout #mobile-guidance-rail .rail-tab:last-child { border-bottom: none; }
+        body.mobile-layout .rail-tab i { font-size: 1rem; }
+        body.mobile-layout .rail-tab.active { background: #D4AF37; color: #3D2B1F; }
+
+        /* Guidance drawer: the float-window shells reused as fixed,
+           non-draggable pop-open drawers anchored just left of the rail.
+           !important beats the shells' inline desktop geometry. */
+        body.mobile-layout .guidance-float-window { position: fixed; left: auto !important; right: 3rem !important; top: 50% !important; transform: translateY(-50%); width: min(74vw, 340px) !important; height: auto !important; max-height: calc(100dvh - var(--mobile-header-h) - var(--mobile-nav-clear) - 24px); min-width: 0; min-height: 0; z-index: 460; overscroll-behavior: contain; border-width: 2px; }
+
+        /* Item 8: the drawer's own header row (a duplicate title) is removed;
+           the ONLY internal line is the separator under the card's own
+           icon+title row. The 2px window border is the only other line. */
+        body.mobile-layout .guidance-float-header { display: none !important; }
+        body.mobile-layout .guidance-float-body { padding: 10px 12px; }
+        body.mobile-layout .guidance-float-body .guidance-card {
+            height: auto !important; font-size: 1rem; overflow: visible;
+            background: transparent; border: none; padding: 0; border-radius: 0;
+        }
+        body.mobile-layout .guidance-float-body .text-xs { font-size: 1rem; }
+        /* Separator between the title row and the text block. */
+        body.mobile-layout .guidance-float-body .guidance-card > div:first-child {
+            border-bottom: 1px solid rgba(212, 175, 55, 0.35);
+            padding-bottom: 8px; margin-bottom: 10px;
+        }
+        .m-drawer-close { display: none; background: none; border: none; color: #D4AF37; cursor: pointer; }
+        body.mobile-layout .guidance-float-body .m-drawer-close { display: inline-flex; align-items: center; justify-content: center; min-width: var(--tap-sm); min-height: var(--tap-sm); font-size: 1.15rem; }
+
+        /* ---- Former floating windows become full-screen sheets (one at a
+           time), pinned below the header and above the bottom nav.
+           !important beats the inline desktop geometry so nothing has to be
+           cleared - and the desktop geometry saved in localStorage is never
+           touched from a phone (save/restore are skipped in mobile mode). ---- */
+        /* Sheets are bottom-anchored and deliberately DO NOT reach the top:
+           a panel covering the whole screen is disorienting and loses your
+           place (Aaron, 2026-07-24). Leaving the scene visible above keeps
+           the context you were working in on screen the whole time. */
+        body.mobile-layout .notepad {
+            left: 0 !important; right: 0 !important;
+            top: auto !important;
+            bottom: var(--mobile-nav-clear) !important;
+            width: auto !important;
+            height: 66dvh !important;
+            max-height: calc(100dvh - var(--mobile-header-h) - var(--mobile-nav-clear) - 0.5rem) !important;
+            min-width: 0; min-height: 0;
+            border-radius: 16px 16px 0 0;
+            border-width: 2px 0 0 0;
+            box-shadow: 0 -8px 24px rgba(0,0,0,0.45);
+            overscroll-behavior: contain;
+        }
+        body.mobile-layout .notepad-body { flex-direction: column; }
+        body.mobile-layout .notepad-sidebar { width: 100%; max-height: 34%; border-right: none; border-bottom: 1px solid #8B6F47; }
+        body.mobile-layout .notepad-header { padding: 4px 8px; }
+        body.mobile-layout .notepad-header h3 { font-size: 0.95rem; }
+
+        /* ---- Side panels: half-width slide-ins, never full screen ---- */
+        body.mobile-layout #left-panel, body.mobile-layout #right-panel {
+            width: 70%; min-width: 12rem;
+            top: var(--mobile-header-h); bottom: var(--mobile-nav-clear);
+            z-index: 300; overscroll-behavior: contain;
+        }
+        body.mobile-layout #left-panel > div, body.mobile-layout #right-panel > div { padding: 0.5rem; }
+        /* Tap the exposed half of the page to dismiss an open panel. Driven
+           by :has() so it needs no state tracking of its own - the panel's
+           own transform class is the single source of truth. */
+        #panel-scrim { display: none; }
+        body.mobile-layout:has(#left-panel:not(.-translate-x-full)) #panel-scrim,
+        body.mobile-layout:has(#right-panel:not(.translate-x-full)) #panel-scrim {
+            display: block;
+            position: fixed;
+            top: var(--mobile-header-h); left: 0; right: 0; bottom: var(--mobile-nav-clear);
+            z-index: 290;
+            background: rgba(0, 0, 0, 0.35);
+        }
+
+        /* ---- Modals + conflict banner sized for a phone ---- */
+        body.mobile-layout #login-modal > div { width: min(92vw, 420px); }
+        body.mobile-layout #token-setup-modal > div { width: min(92vw, 460px); max-height: 85dvh; }
+        body.mobile-layout #draft-conflict-banner { top: calc(var(--mobile-header-h) + 8px); max-height: calc(100dvh - var(--mobile-header-h) - var(--mobile-nav-clear) - 16px); overflow-y: auto; }
+        body.mobile-layout #draft-conflict-banner .grid-cols-2 { grid-template-columns: 1fr; }
+
+        /* ---- Bottom navigation ---- */
+        /* padding-top reserves the space the Focus bulge rises into, so the
+           bulge lives inside the nav's own padding box and is not clipped by
+           overflow-x (which the browser forces to clip vertically too). */
+        body.mobile-layout #mobile-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 320; display: flex; align-items: flex-start; background: #2A2119; border-top: 2px solid rgba(212, 175, 55, 0.6); padding-top: 0.9rem; padding-bottom: env(safe-area-inset-bottom, 0px); overflow-x: auto; overscroll-behavior-x: contain; }
+        /* min-width holds the touch floor even at high zoom, where six equal
+           flex items would be squeezed under it; the nav scrolls instead. */
+        body.mobile-layout #mobile-nav button { flex: 1 1 0; min-width: var(--tap); min-height: var(--mobile-nav-h); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: none; border: none; color: #D4AF37; font-size: 0.8rem; transition: background-color 0.18s ease, color 0.18s ease, font-size 0.18s ease; }
+        body.mobile-layout #mobile-nav button i { font-size: 1.1rem; }
+
+        /* Focus sits in the left corner and the bar bulges up around it. */
+        body.mobile-layout #mobile-nav button[data-nav="focus"] {
+            /* flex-basis 0 on every button makes widths strictly
+               proportional to grow, so 1.3 is exactly 30% wider. */
+            flex: 1.3 1 0;
+            min-width: calc(var(--tap) * 1.1);
+            margin-top: -0.9rem;
+            padding-top: 0.75rem;
+            background: #2A2119;
+            border: 2px solid rgba(212, 175, 55, 0.6);
+            border-bottom: none;
+            border-radius: 1.1rem 1.1rem 0 0;
+        }
+        body.mobile-layout #mobile-nav button[data-nav="focus"] i { font-size: 1.45rem; }
+
+        /* Whichever view is open stays visibly raised until it is closed. */
+        body.mobile-layout #mobile-nav button.nav-active {
+            background: #D4AF37;
+            color: #3D2B1F;
+            border-radius: 0.9rem;
+            font-size: 0.9rem;
+        }
+        body.mobile-layout #mobile-nav button.nav-active i { font-size: 1.3rem; }
+        body.mobile-layout #mobile-nav button[data-nav="focus"].nav-active { border-radius: 1.1rem 1.1rem 0 0; border-color: #D4AF37; }
+
+        /* Very narrow effective widths (e.g. Safari Page Zoom at 200% on a
+           440px screen = ~220 CSS px): collapse the rail to one thinner
+           scrollable column so the editor keeps usable width. Width is used
+           only as a refinement INSIDE mobile mode, never for detection. */
+        @media (max-width: 340px) {
+            body.mobile-layout .guidance-float-window { width: min(80vw, 300px) !important; }
+            body.mobile-layout #mobile-nav button span { font-size: 0.75rem; }
+            /* At this effective width (roughly Safari Page Zoom 200% on a
+               440px phone) the header cannot hold branding AND controls on
+               one line. Drop the decorative branding and let the remaining
+               controls wrap onto a second row rather than being clipped -
+               body has overflow:hidden, so clipped here means unreachable.
+               The real header height is measured at runtime into
+               --mobile-header-h, so sheets and the rail follow it. */
+            body.mobile-layout header .section-title,
+            body.mobile-layout header .w-8.h-8 { display: none !important; }
+            body.mobile-layout header .h-14 > div { flex: 1 1 100%; justify-content: flex-start; }
+            /* The percentage read-out is still available inside the Stats
+               sheet; at this zoom the header row simply cannot carry it. */
+            body.mobile-layout #progress-pill-group { display: none !important; }
+        }
     </style>
 </head>
 <body class="antialiased h-screen flex flex-col overflow-hidden">
@@ -598,7 +1343,7 @@
                         </div>
                         <div class="flex items-baseline gap-x-1.5">
                             <span class="text-[21px] font-semibold tracking-tight section-title">Big Tiff</span>
-                            <span class="text-base text-[#D4AF37] font-medium tracking-[2px]">STORYFORGE</span>
+                            <span id="logo-storyforge" class="text-base text-[#D4AF37] font-medium tracking-[2px]">STORYFORGE</span>
                         </div>
                     </div>
                     
@@ -608,10 +1353,6 @@
                                 class="h-8 px-3.5 py-1 text-sm rounded-2xl border border-[#D4AF37]/50 hover:bg-[#D4AF37]/10 transition-colors flex items-center gap-x-2">
                             <i class="fa-solid fa-user fa-sm"></i>
                             <span id="account-btn-label" class="font-medium text-xs tracking-wider">LOGIN</span>
-                        </button>
-                        <button id="nickname-edit-btn" onclick="startNicknameEdit()" title="Edit display name"
-                                class="hidden h-7 w-7 items-center justify-center rounded-full text-[#D4AF37]/70 hover:text-[#D4AF37] hover:bg-[#4A3A2E] transition-colors">
-                            <i class="fa-solid fa-pencil text-xs"></i>
                         </button>
                         <!-- Logout menu (shown when logged in) -->
                         <div id="account-menu" class="hidden absolute top-9 left-0 z-[60] bg-[#3D2B1F] border border-[#D4AF37]/50 rounded-xl shadow-xl py-1 min-w-[160px]">
@@ -632,7 +1373,7 @@
                 <div class="flex items-center gap-x-3">
                     
                     <!-- Notepad (standalone) -->
-                    <button onclick="openNotepad()"
+                    <button id="header-notepad-btn" onclick="openNotepad()"
                             class="h-8 px-3 py-1 text-sm rounded-2xl border border-[#D4AF37]/50 hover:bg-[#4A3A2E] transition-colors flex items-center gap-x-2">
                         <i class="fa-solid fa-book"></i>
                         <span class="font-medium text-xs tracking-wider">NOTEPAD</span>
@@ -642,12 +1383,12 @@
                     <div class="flex items-center h-8 gap-x-2 bg-[#3D2B1F]/70 pl-3 pr-2.5 rounded-2xl border border-[#D4AF37]/60">
                         
                         <!-- Progress Bar -->
-                        <div class="flex items-center gap-x-2">
+                        <div id="progress-pill-group" class="flex items-center gap-x-2">
                             <div class="flex items-center gap-x-1.5">
                                 <div class="w-1.5 h-1.5 bg-[#D4AF37] rounded-full animate-pulse"></div>
                                 <span id="progress-pill-label" class="text-xs font-medium whitespace-nowrap">— %</span>
                             </div>
-                            <div class="w-16 h-1.5 bg-[#3D2B1F] rounded-full overflow-hidden border border-[#D4AF37]/30">
+                            <div id="progress-pill-track" class="w-16 h-1.5 bg-[#3D2B1F] rounded-full overflow-hidden border border-[#D4AF37]/30">
                                 <div id="progress-pill-bar" class="h-full w-0 bg-gradient-to-r from-[#D4AF37] to-[#E8C86B] rounded-full transition-all"></div>
                             </div>
                         </div>
@@ -661,7 +1402,7 @@
                     </div>
 
                     <!-- Divider -->
-                    <div class="w-px h-6 bg-[#D4AF37]/40"></div>
+                    <div id="header-divider" class="w-px h-6 bg-[#D4AF37]/40"></div>
 
                     <!-- Focus toggle: pick a mode (writing/reading), then click the
                          track to activate it. Selecting an icon only arms the mode -
@@ -722,26 +1463,26 @@
                     </button>
                 </div>
 
-                <div class="flex items-center justify-between px-1 mb-3">
-                    <span class="text-[10px] px-2 py-0.5 bg-[#D4AF37]/10 text-[#D4AF37] rounded-full">12 scenes</span>
-                    <span class="section-label text-[#D4AF37]">STORY OUTLINE</span>
+                <div class="flex items-center justify-between pl-1 pr-0 mb-3">
+                    <span id="outline-count" class="count-badge">0</span>
+                    <span class="section-label text-[#D4AF37] text-right">STORY OUTLINE</span>
                 </div>
 
-                <!-- Sync with Canon Button (subtle) + Changelog icon -->
+                <!-- Canon Sync + Changelog, matched heights -->
                 <div class="px-1 mb-3">
                     <div class="flex items-center gap-x-1.5">
                         <button id="sync-canon-btn"
                                 onclick="fetchLatestFromCanon()"
-                                class="flex-1 flex items-center justify-center gap-x-1.5 px-3 py-1 text-xs text-[#D4AF37]/80 hover:text-[#D4AF37] rounded-xl border border-[#D4AF37]/30 hover:border-[#D4AF37]/50 hover:bg-[#D4AF37]/5 transition-all">
+                                class="flex-1 h-8 flex items-center justify-center gap-x-1.5 px-3 text-xs text-[#D4AF37]/80 hover:text-[#D4AF37] rounded-xl border border-[#D4AF37]/30 hover:border-[#D4AF37]/50 hover:bg-[#D4AF37]/5 transition-all">
                             <i class="fa-solid fa-sync-alt text-xs"></i>
-                            <span class="tracking-wider">Sync Canon</span>
+                            <span class="tracking-wider">Canon Sync</span>
                         </button>
-                        <button onclick="openChangelog('scene')" title="Scene Changelog"
-                                class="h-[26px] w-[26px] flex-shrink-0 flex items-center justify-center rounded-xl border border-[#D4AF37]/30 hover:border-[#D4AF37]/50 hover:bg-[#D4AF37]/5 text-[#D4AF37]/80 hover:text-[#D4AF37] transition-all">
-                            <i class="fa-solid fa-clock-rotate-left text-xs"></i>
+                        <button onclick="openChangelog('scene')" title="Scene Changelog" aria-label="Scene Changelog"
+                                class="h-8 w-8 flex-shrink-0 flex items-center justify-center rounded-xl border border-[#D4AF37]/30 hover:border-[#D4AF37]/50 hover:bg-[#D4AF37]/5 text-[#D4AF37]/80 hover:text-[#D4AF37] transition-all">
+                            <i class="fa-solid fa-file-lines text-xs"></i>
                         </button>
                     </div>
-                    <div id="last-sync-time" class="text-[10px] text-[#D4AF37]/40 text-center mt-1"></div>
+                    <div id="last-sync-time" class="m-hide text-[10px] text-[#D4AF37]/40 text-center mt-1"></div>
                 </div>
 
                 <!-- Dynamic Outline Container -->
@@ -749,7 +1490,7 @@
                     <!-- Populated dynamically by renderDynamicOutline() after sync -->
                 </div>
 
-                <div class="px-1 mt-3 text-[10px] text-[#D4AF37]/40 text-center">
+                <div class="m-hide px-1 mt-3 text-[10px] text-[#D4AF37]/40 text-center">
                     Outline updates automatically after syncing with canon
                 </div>
 
@@ -757,71 +1498,64 @@
         </div>
 
                         <!-- CENTER -->
-        <div class="flex-1 flex flex-col min-w-0 overflow-hidden" style="margin-left: 126px; margin-right: 126px;">
+        <div id="center-column" class="flex-1 flex flex-col min-w-0 overflow-hidden" style="margin-left: 126px; margin-right: 126px;">
             <div id="center-scroll-area" class="flex-1 overflow-y-auto overflow-x-hidden">
             <div id="center-content-frame" style="width: 100%;">
             
             <!-- HTML-driven Initial State: Landing / Home screen (rendered by renderLandingScreen()) -->
             <div id="no-scene-placeholder" class="flex flex-col items-center justify-center min-h-[520px] text-center px-8 py-6">
 
-                <!-- Rotating stat teaser -->
-                <div id="landing-stat-teaser" class="text-sm text-[#D4AF37]/80 italic mb-4 min-h-[1.25rem]"></div>
-
-                <!-- When no canon is loaded yet: a calm one-tap sync -->
-                <div id="landing-empty" class="hidden max-w-md">
-                    <div class="mb-6"><i class="fa-solid fa-sitemap text-[#D4AF37] text-6xl"></i></div>
-                    <p class="text-xl text-[#D4AF37] font-medium mb-3">Let's load your story.</p>
-                    <p class="text-sm text-[#D4AF37]/70 mb-5">Tap below to sync the latest scenes and pick up where you left off.</p>
-                    <button id="landing-sync-btn" onclick="fetchLatestFromCanon()"
-                            class="px-5 py-2 text-sm bg-[#D4AF37] text-[#3D2B1F] font-bold rounded-2xl hover:bg-[#E8C86B] transition-colors">
-                        <i class="fa-solid fa-sync-alt mr-1.5"></i> Sync Canon
-                    </button>
+                <!-- Rotating stat teaser, drawn as a thought bubble floating
+                     above Tiff's head. Pure CSS (rounded body + two trailing
+                     dots) so the text reflows at any length or text scale
+                     instead of being baked into fixed-size art. -->
+                <div id="landing-bubble-wrap" class="flex justify-center px-2">
+                    <div id="landing-stat-teaser" class="thought-bubble"></div>
                 </div>
 
-                <!-- Radial navigation (shown once canon is loaded) -->
+                <!-- Landing nav. Always shown - there is no separate
+                     "sync first" gate any more; Sync lives down with the
+                     timestamp below, so the landing is the only front door. -->
                 <div id="landing-radial" class="hidden">
-                    <!-- Top: Random Unfinished -->
-                    <div class="flex justify-center mb-3">
-                        <button onclick="goToRandomUnfinishedScene()"
-                                class="landing-nav-btn px-4 py-2 rounded-2xl border border-[#D4AF37]/50 bg-[#3D2B1F]/70 hover:bg-[#4A3A2E] text-xs font-medium text-[#F4EDE4] flex items-center gap-x-2 transition-colors">
-                            <i class="fa-solid fa-shuffle text-[#D4AF37]"></i> Random Unfinished
+
+                    <!-- Tiff on top; the whole nav group sits beneath her. -->
+                    <img id="landing-tiff-gif" src="" alt="Big Tiff" loading="lazy"
+                         class="landing-gif" draggable="false">
+
+                    <div id="landing-nav-cluster">
+                        <!-- Primary: full width, tall -->
+                        <button onclick="goToWhereILeftOff()" class="landing-nav-btn nav-primary">
+                            <i class="fa-solid fa-feather-pointed"></i> WHERE I LEFT OFF
                         </button>
+
+                        <!-- Two half-width buttons flanking the SYNC circle -->
+                        <div class="landing-half-row">
+                            <button onclick="goToLastCompletedScene()" class="landing-nav-btn nav-half nav-half-left" aria-label="Last completed scene">
+                                <i class="fa-solid fa-arrow-left"></i> LAST COMPLETED
+                            </button>
+
+                            <button id="landing-sync-btn" onclick="fetchLatestFromCanon()" class="landing-sync-circle" aria-label="Sync Canon">
+                                <i class="fa-solid fa-sync-alt sync-icon"></i>
+                                <span class="sync-label">SYNC</span>
+                            </button>
+
+                            <button onclick="goToNextUnfinishedScene()" class="landing-nav-btn nav-half nav-half-right" aria-label="Next unfinished scene">
+                                NEXT UNFINISHED <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </div>
+
+                        <!-- Random, centered, same size as a half button -->
+                        <div class="landing-random-row">
+                            <button onclick="goToRandomUnfinishedScene()" class="landing-nav-btn nav-half nav-random">
+                                <i class="fa-solid fa-shuffle"></i> RANDOM SCENE
+                            </button>
+                        </div>
                     </div>
 
-                    <!-- Middle row: Left · Tiff GIF · Right -->
-                    <div class="flex items-center justify-center gap-x-5">
-                        <button onclick="goToLastCompletedScene()"
-                                class="landing-nav-btn px-4 py-2 rounded-2xl border border-[#D4AF37]/50 bg-[#3D2B1F]/70 hover:bg-[#4A3A2E] text-xs font-medium text-[#F4EDE4] flex items-center gap-x-2 transition-colors">
-                            <i class="fa-solid fa-circle-check text-[#A3E6C9]"></i> Last Completed
-                        </button>
-
-                        <img id="landing-tiff-gif" src="" alt="Big Tiff"
-                             class="w-40 h-40 md:w-52 md:h-52 object-contain flex-shrink-0 select-none" draggable="false">
-
-                        <button onclick="goToNextUnfinishedScene()"
-                                class="landing-nav-btn px-4 py-2 rounded-2xl border border-[#D4AF37]/50 bg-[#3D2B1F]/70 hover:bg-[#4A3A2E] text-xs font-medium text-[#F4EDE4] flex items-center gap-x-2 transition-colors">
-                            <i class="fa-solid fa-pen-nib text-[#E8C86B]"></i> Next Unfinished
-                        </button>
-                    </div>
-
-                    <!-- Center/main: Where I Left Off -->
-                    <div class="flex justify-center mt-4">
-                        <button onclick="goToWhereILeftOff()"
-                                class="landing-nav-btn px-7 py-3 rounded-2xl bg-[#D4AF37] text-[#3D2B1F] font-bold text-sm hover:bg-[#E8C86B] flex items-center gap-x-2 shadow-lg transition-colors">
-                            <i class="fa-solid fa-feather-pointed"></i> Where I Left Off
-                        </button>
-                    </div>
-
-                    <!-- Bottom: Stats snapshot -->
-                    <div class="flex justify-center mt-3">
-                        <button onclick="showStoryStats()"
-                                class="landing-nav-btn px-4 py-1.5 rounded-2xl text-xs font-medium text-[#D4AF37]/90 hover:text-[#D4AF37] hover:bg-[#4A3A2E]/60 flex items-center gap-x-2 transition-colors">
-                            <i class="fa-solid fa-chart-line"></i> Stats & Progress
-                        </button>
-                    </div>
-
+                    <!-- Sync status sits immediately under the Random button -->
+                    <div id="landing-sync-time" class="text-[10px] text-[#D4AF37]/60 mt-2"></div>
                     <!-- Inline message area (no-op feedback, never an alert) -->
-                    <div id="landing-nav-message" class="text-xs text-[#D4AF37]/70 mt-4 min-h-[1rem]"></div>
+                    <div id="landing-nav-message" class="text-xs text-[#D4AF37]/70 mt-1 min-h-[1rem]"></div>
                 </div>
             </div>
             
@@ -839,6 +1573,7 @@
                                 <span id="scene-summary-title"></span><span id="scene-summary-title-sep" class="hidden"> &mdash; </span>SCENE SUMMARY
                             </div>
                             <div id="guidance-summary-text" class="text-sm leading-relaxed text-[#F4EDE4]"></div>
+                            <button type="button" id="summary-expand-btn" class="m-expand" onclick="toggleMobileClamp('guidance-summary-text', this)"></button>
                         </div>
                     </div>
                 </div>
@@ -850,17 +1585,17 @@
                     <div id="scene-status-select" class="status-dropdown-wrapper control-bar-item" style="display:none;"></div>
                     <div class="flex items-center gap-x-3">
                         <div id="auto-save-status" class="control-bar-item text-[#F4EDE4]/80">Auto-saved just now</div>
-                        <button onclick="saveDraft()" class="control-bar-item bg-transparent border border-[#D4AF37]/60 hover:bg-[#D4AF37]/10 rounded-xl text-[#F4EDE4] transition-colors flex items-center gap-x-1.5">
-                            <i class="fa-solid fa-save"></i>
-                            <span>Save Draft</span>
+                        <button onclick="saveDraft()" aria-label="Save Draft" class="control-bar-item bg-transparent border border-[#D4AF37]/60 hover:bg-[#D4AF37]/10 rounded-xl text-[#F4EDE4] transition-colors flex items-center gap-x-1.5">
+                            <i class="fa-solid fa-floppy-disk"></i>
+                            <span class="btn-text">Save Draft</span>
                         </button>
-                        <button onclick="openDraftPad()" class="control-bar-item bg-transparent border border-[#D4AF37]/60 hover:bg-[#D4AF37]/10 rounded-xl text-[#F4EDE4] transition-colors flex items-center gap-x-1.5">
+                        <button onclick="openDraftPad()" aria-label="Draft Log" class="control-bar-item bg-transparent border border-[#D4AF37]/60 hover:bg-[#D4AF37]/10 rounded-xl text-[#F4EDE4] transition-colors flex items-center gap-x-1.5">
                             <i class="fa-solid fa-layer-group"></i>
-                            <span>Draft Log</span>
+                            <span class="btn-text">Draft Log</span>
                         </button>
-                        <button onclick="sendSceneToSammy()" class="control-bar-item bg-transparent border border-[#D4AF37]/60 hover:bg-[#D4AF37]/10 rounded-xl text-[#F4EDE4] transition-colors flex items-center gap-x-1.5">
+                        <button onclick="sendSceneToSammy()" aria-label="Send to Sammy" class="control-bar-item bg-transparent border border-[#D4AF37]/60 hover:bg-[#D4AF37]/10 rounded-xl text-[#F4EDE4] transition-colors flex items-center gap-x-1.5">
                             <i class="fa-solid fa-paper-plane"></i>
-                            <span>Sammy</span>
+                            <span class="btn-text">Sammy</span>
                         </button>
                     </div>
                 </div>
@@ -958,6 +1693,7 @@
                                 <div class="flex-1 min-w-0">
                                     <div class="uppercase text-[10px] tracking-[1.5px] text-[#D4AF37] font-semibold mb-1">Review Note — What Changed</div>
                                     <div id="review-note-text" class="text-sm leading-relaxed text-[#F4EDE4]"></div>
+                                    <button type="button" id="review-expand-btn" class="m-expand" onclick="toggleMobileClamp('review-note-text', this)"></button>
                                 </div>
                             </div>
                         </div>
@@ -967,23 +1703,19 @@
                                 <span id="scene-label" class="section-label text-[#D4AF37]">DRAFT</span>
                             </div>
 
-                            <div class="flex items-center justify-between mb-2 border-b border-[#D4AF37]/20 pb-2 flex-shrink-0">
+                            <div id="editor-toolbar" class="flex items-center justify-between mb-2 border-b border-[#D4AF37]/20 pb-2 flex-shrink-0">
                                 <div class="flex items-center gap-x-1">
                                     <button onclick="formatEditorText('bold')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 font-bold">B</button>
                                     <button onclick="formatEditorText('italic')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 italic">I</button>
                                     <button onclick="formatEditorText('underline')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1">U</button>
-                                    <div class="w-px h-5 bg-[#D4AF37]/30 mx-2"></div>
-                                    <button onclick="formatEditorText('insertUnorderedList')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1">
-                                        <i class="fa-solid fa-list-ul"></i>
-                                    </button>
                                 </div>
                                 <div class="flex items-center gap-x-3">
                                     <div class="text-xs text-[#D4AF37]/70">
                                         <span id="word-count">0 words</span>
                                     </div>
-                                    <button onclick="openProofreader()" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 flex items-center gap-x-1.5">
-                                        <i class="fa-solid fa-magnifying-glass"></i>
-                                        <span>Proofreader</span>
+                                    <button onclick="openProofreader()" aria-label="Proofreader" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 flex items-center justify-center gap-x-1.5">
+                                        <i class="fa-solid fa-glasses"></i>
+                                        <span class="btn-text">Proofreader</span>
                                     </button>
                                     <div class="flex items-center gap-x-1 border border-[#D4AF37]/40 rounded-xl px-1.5 py-0.5" title="Display size only — does not affect saved draft">
                                         <button onclick="adjustEditorZoom(-1)" class="text-tool-btn px-1.5 leading-none">−</button>
@@ -1105,14 +1837,14 @@
                 <div class="flex items-center justify-between px-1 mb-1">
                     <span class="section-label text-[#D4AF37]">STORY LIBRARY</span>
                     <div class="flex items-center gap-x-1.5">
-                        <span class="text-[10px] px-2 py-0.5 bg-[#D4AF37]/10 text-[#D4AF37] rounded-full">42 entries</span>
-                        <button onclick="openChangelog('library')" title="Library Changelog"
-                                class="h-[22px] w-[22px] flex-shrink-0 flex items-center justify-center rounded-lg border border-[#D4AF37]/30 hover:border-[#D4AF37]/50 hover:bg-[#D4AF37]/5 text-[#D4AF37]/80 hover:text-[#D4AF37] transition-all">
-                            <i class="fa-solid fa-clock-rotate-left text-[10px]"></i>
+                        <span id="library-count" class="count-badge">0</span>
+                        <button onclick="openChangelog('library')" title="Library Changelog" aria-label="Library Changelog"
+                                class="h-8 w-8 flex-shrink-0 flex items-center justify-center rounded-lg border border-[#D4AF37]/30 hover:border-[#D4AF37]/50 hover:bg-[#D4AF37]/5 text-[#D4AF37]/80 hover:text-[#D4AF37] transition-all">
+                            <i class="fa-solid fa-file-lines text-[10px]"></i>
                         </button>
                     </div>
                 </div>
-                <div id="library-last-sync-time" class="text-[10px] text-[#D4AF37]/40 px-1 mb-3">Not yet synced this session</div>
+                <div id="library-last-sync-time" class="m-hide text-[10px] text-[#D4AF37]/40 px-1 mb-3">Not yet synced this session</div>
 
                 <!-- Search Bar -->
                 <div class="mb-3">
@@ -1220,18 +1952,20 @@
             <!-- Sidebar -->
             <div class="notepad-sidebar p-2 text-sm flex flex-col">
                 <div class="flex justify-between items-center mb-2 px-1">
-                    <span class="text-xs font-medium text-[#D4AF37]/80">Your Notes</span>
-                    <button onclick="createNewNote()" class="primary-only text-[10px] px-2 py-0.5 bg-[#D4AF37] text-[#3D2B1F] rounded font-semibold">+ New</button>
+                    <span class="m-hide text-xs font-medium text-[#D4AF37]/80">Your Notes</span>
+                    <button onclick="createNewNote()" aria-label="New note" class="primary-only text-[10px] px-2 py-0.5 bg-[#D4AF37] text-[#3D2B1F] rounded font-semibold">
+                        <i class="fa-solid fa-plus"></i><span class="btn-text"> New</span>
+                    </button>
                 </div>
                 
                 <div id="notes-list" class="space-y-0.5 flex-1 overflow-y-auto text-xs pr-1"></div>
 
                 <div class="flex justify-between items-center pt-2 mt-auto">
-                    <button onclick="requestDeleteNote()" class="primary-only text-red-400 hover:text-red-300 px-2 py-1">
+                    <button onclick="requestDeleteNote()" aria-label="Delete note" class="primary-only text-red-400 hover:text-red-300 px-2 py-1">
                         <i class="fa-solid fa-trash fa-lg"></i>
                     </button>
 
-                    <div class="primary-only relative group">
+                    <div id="add-to-library-wrap" class="primary-only relative group">
                         <button onclick="addCurrentNoteToLibrary()" class="text-[#D4AF37] hover:text-[#E8C86B] px-2 py-1">
                             <i class="fa-solid fa-book-open fa-lg"></i>
                         </button>
@@ -1267,9 +2001,9 @@
                      class="flex-1 bg-[#4A3A2E] border border-[#D4AF37]/40 rounded-xl p-3 text-sm focus:outline-none focus:border-[#D4AF37] overflow-y-auto"></div>
                 
                 <div class="flex justify-start mt-2">
-                    <button onclick="saveCurrentNote()"
+                    <button onclick="saveCurrentNote()" aria-label="Save note"
                             class="primary-only px-5 py-1.5 text-xs bg-[#D4AF37] text-[#3D2B1F] font-bold rounded-2xl">
-                        Save
+                        <i class="fa-solid fa-floppy-disk"></i><span class="btn-text"> Save</span>
                     </button>
                 </div>
             </div>
@@ -1316,19 +2050,21 @@
             <!-- Sidebar: Current Draft (live) + list of saved snapshots -->
             <div class="notepad-sidebar p-2 text-sm flex flex-col">
                 <div class="flex justify-between items-center mb-2 px-1">
-                    <span class="text-xs font-medium text-[#D4AF37]/80">Drafts</span>
-                    <button onclick="createNewDraftSnapshot()" class="text-[10px] px-2 py-0.5 bg-[#D4AF37] text-[#3D2B1F] rounded font-semibold">+ New</button>
+                    <span class="m-hide text-xs font-medium text-[#D4AF37]/80">Drafts</span>
+                    <button onclick="createNewDraftSnapshot()" aria-label="New draft snapshot" class="text-[10px] px-2 py-0.5 bg-[#D4AF37] text-[#3D2B1F] rounded font-semibold">
+                        <i class="fa-solid fa-plus"></i><span class="btn-text"> New</span>
+                    </button>
                 </div>
 
                 <div id="draftpad-list" class="space-y-0.5 flex-1 overflow-y-auto text-xs pr-1"></div>
 
                 <div class="flex justify-between items-center pt-2 mt-auto">
-                    <button onclick="requestDeleteDraftSnapshot()" class="text-red-400 hover:text-red-300 px-2 py-1">
+                    <button onclick="requestDeleteDraftSnapshot()" aria-label="Delete snapshot" class="text-red-400 hover:text-red-300 px-2 py-1">
                         <i class="fa-solid fa-trash fa-lg"></i>
                     </button>
 
                     <div class="relative group">
-                        <button onclick="restoreDraftSnapshotToEditor()" class="text-[#D4AF37] hover:text-[#E8C86B] px-2 py-1">
+                        <button onclick="restoreDraftSnapshotToEditor()" aria-label="Load into editor" class="text-[#D4AF37] hover:text-[#E8C86B] px-2 py-1">
                             <i class="fa-solid fa-arrow-rotate-left fa-lg"></i>
                         </button>
                         <div class="tooltip">Load into Editor</div>
@@ -1348,9 +2084,9 @@
                      class="flex-1 bg-[#4A3A2E] border border-[#D4AF37]/40 rounded-xl p-3 text-sm overflow-y-auto opacity-90"></div>
 
                 <div class="flex justify-start mt-2">
-                    <button onclick="saveDraftSnapshotName()" 
+                    <button onclick="saveDraftSnapshotName()" aria-label="Rename snapshot"
                             class="px-5 py-1.5 text-xs bg-[#D4AF37] text-[#3D2B1F] font-bold rounded-2xl">
-                        Rename
+                        <i class="fa-solid fa-pen"></i><span class="btn-text"> Rename</span>
                     </button>
                 </div>
             </div>
@@ -1513,8 +2249,8 @@
             </button>
         </div>
 
-        <!-- Filter tabs -->
-        <div class="flex items-center gap-x-1 px-3 pt-2 pb-1 border-b border-[#D4AF37]/20">
+        <!-- Filter tabs (hidden on mobile - a single chronological feed there) -->
+        <div id="changelog-filter-row" class="flex items-center gap-x-1 px-3 pt-2 pb-1 border-b border-[#D4AF37]/20">
             <button onclick="setChangelogFilter('all')" id="changelog-filter-all"
                     class="changelog-filter-tab text-[10px] px-2.5 py-1 rounded-full">All</button>
             <button onclick="setChangelogFilter('scene')" id="changelog-filter-scene"
@@ -1623,6 +2359,87 @@
         <div id="sammy-export-resize-handle" class="notepad-resize-handle"></div>
     </div>
 
+    <!-- ==================== MOBILE-ONLY CHROME ==================== -->
+    <!-- Guidance rail: six tabs pinned to the right wall while a scene is
+         open (Aaron's drawer concept, 2026-07-24: 3 rows x 2 vertical bars
+         with vertical labels). Tapping a tab pops that guidance card open as
+         a drawer beside it; tapping again (or the drawer's close button)
+         puts it back. display:none on desktop - purely additive. -->
+    <!-- All six guidance tabs stacked on the right edge, icon-only, touching
+         (Aaron, 2026-07-24). Drawers open to the left, toward the editor. -->
+    <div id="mobile-guidance-rail" class="mobile-rail" aria-label="Scene guidance drawers">
+        <button type="button" class="rail-tab" data-rail-key="purpose" aria-label="Purpose" title="Purpose" onclick="mobileToggleGuidanceDrawer('purpose')"><i class="fa-solid fa-bullseye"></i></button>
+        <button type="button" class="rail-tab" data-rail-key="canon" aria-label="Key Canon to Honor" title="Key Canon to Honor" onclick="mobileToggleGuidanceDrawer('canon')"><i class="fa-solid fa-gem"></i></button>
+        <button type="button" class="rail-tab" data-rail-key="emotional" aria-label="Emotional State" title="Emotional State" onclick="mobileToggleGuidanceDrawer('emotional')"><i class="fa-solid fa-heart-pulse"></i></button>
+        <button type="button" class="rail-tab" data-rail-key="beats" aria-label="Must-Happen Beats" title="Must-Happen Beats" onclick="mobileToggleGuidanceDrawer('beats')"><i class="fa-solid fa-list-check"></i></button>
+        <button type="button" class="rail-tab" data-rail-key="setting" aria-label="Setting &amp; Tone" title="Setting &amp; Tone" onclick="mobileToggleGuidanceDrawer('setting')"><i class="fa-solid fa-mountain-sun"></i></button>
+        <button type="button" class="rail-tab" data-rail-key="success" aria-label="Success for This Scene" title="Success for This Scene" onclick="mobileToggleGuidanceDrawer('success')"><i class="fa-solid fa-trophy"></i></button>
+    </div>
+
+    <!-- Dismiss layer for open side panels (mobile only; see #panel-scrim CSS) -->
+    <div id="panel-scrim" onclick="mobileCloseEverything(null)" aria-hidden="true"></div>
+
+    <!-- Bottom navigation (mobile only): thumb-reachable, safe-area padded.
+         Focus = close every open drawer/panel/sheet, back to a calm column. -->
+    <nav id="mobile-nav" aria-label="Main navigation">
+        <button type="button" data-nav="focus" onclick="mobileNav('focus')"><i class="fa-solid fa-crosshairs"></i><span>Focus</span></button>
+        <button type="button" data-nav="home" onclick="mobileNav('home')"><i class="fa-solid fa-house"></i><span>Home</span></button>
+        <button type="button" data-nav="outline" onclick="mobileNav('outline')"><i class="fa-solid fa-sitemap"></i><span>Outline</span></button>
+        <button type="button" data-nav="library" onclick="mobileNav('library')"><i class="fa-solid fa-book-open"></i><span>Library</span></button>
+        <button type="button" data-nav="notepad" onclick="mobileNav('notepad')"><i class="fa-solid fa-book"></i><span>Notepad</span></button>
+        <button type="button" data-nav="text" onclick="mobileNav('text')"><i class="fa-solid fa-font"></i><span>Text</span></button>
+    </nav>
+
+    <!-- ==================== TEXT SIZE (mobile sheet) ====================
+         A global UI text-size preference, separate from the editor-only
+         zoom control. Scales the root font size, so every rem-based size in
+         the tool grows together instead of only the draft text. Stored per
+         device (a phone and a laptop want different sizes) and never synced. -->
+    <div id="textsize-window" class="notepad hidden">
+        <div class="notepad-header">
+            <div class="flex items-center gap-x-2">
+                <i class="fa-solid fa-font text-[#D4AF37]"></i>
+                <h3>Text Size</h3>
+            </div>
+            <button onclick="hideTextSize()" class="notepad-close" aria-label="Close text size">
+                <i class="fa-solid fa-times"></i>
+            </button>
+        </div>
+
+        <div class="notepad-body" style="flex-direction: column;">
+            <div class="p-4 overflow-y-auto flex-1 w-full">
+                <p class="text-sm text-[#F4EDE4] mb-4">Make everything in the tool bigger or smaller. This changes the whole app, not just your draft.</p>
+
+                <div class="flex items-center gap-x-3 mb-2">
+                    <button onclick="stepUiScale(-1)" aria-label="Smaller text"
+                            class="flex-shrink-0 rounded-2xl border border-[#D4AF37] text-[#D4AF37] font-bold"
+                            style="min-width:56px;min-height:56px;font-size:1.5rem;">&minus;</button>
+                    <input id="ui-scale-slider" type="range" min="75" max="175" step="5" value="100"
+                           oninput="setUiScale(this.value)" aria-label="Text size"
+                           class="flex-1" style="min-height:44px;accent-color:#D4AF37;">
+                    <button onclick="stepUiScale(1)" aria-label="Bigger text"
+                            class="flex-shrink-0 rounded-2xl border border-[#D4AF37] text-[#D4AF37] font-bold"
+                            style="min-width:56px;min-height:56px;font-size:1.5rem;">+</button>
+                </div>
+
+                <div class="text-center mb-4">
+                    <span id="ui-scale-readout" class="text-[#D4AF37] font-bold" style="font-size:1.35rem;">100%</span>
+                </div>
+
+                <div class="bg-[#4A3A2E] border border-[#D4AF37]/50 rounded-2xl p-3 mb-4">
+                    <div class="section-label text-[#D4AF37] mb-1">Preview</div>
+                    <p class="text-sm text-[#F4EDE4]">Tiff steadied the wobbling plate before it could fall.</p>
+                </div>
+
+                <button onclick="setUiScale(100)"
+                        class="w-full rounded-2xl border border-[#D4AF37] text-[#D4AF37]"
+                        style="min-height:48px;">Reset to 100%</button>
+
+                <p class="text-sm text-[#D4AF37] mt-4">You can still pinch with two fingers to zoom in on anything &mdash; that keeps working as normal.</p>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ==================== PANEL + BUTTON VISIBILITY ====================
         function hideSideButton(id) {
@@ -1649,8 +2466,13 @@
                     console.error("[Debug] Left panel element not found!");
                     return;
                 }
+                // Mobile: about to open -> close everything else first.
+                if (isMobileMode() && panel.classList.contains('-translate-x-full')) {
+                    mobileCloseEverything('left-panel');
+                }
                 panel.classList.toggle('-translate-x-full');
                 const isNowOpen = !panel.classList.contains('-translate-x-full');
+                if (typeof updateNavActiveState === 'function') updateNavActiveState();
                 console.log("[Debug] Left panel is now:", isNowOpen ? "OPEN" : "CLOSED");
             } catch (err) {
                 console.error("[Debug] Error in toggleLeftPanel():", err);
@@ -1665,8 +2487,13 @@
                     console.error("[Debug] Right panel element not found!");
                     return;
                 }
+                // Mobile: about to open -> close everything else first.
+                if (isMobileMode() && panel.classList.contains('translate-x-full')) {
+                    mobileCloseEverything('right-panel');
+                }
                 panel.classList.toggle('translate-x-full');
                 const isNowOpen = !panel.classList.contains('translate-x-full');
+                if (typeof updateNavActiveState === 'function') updateNavActiveState();
                 console.log("[Debug] Right panel is now:", isNowOpen ? "OPEN" : "CLOSED");
             } catch (err) {
                 console.error("[Debug] Error in toggleRightPanel():", err);
@@ -1959,6 +2786,9 @@
 
             renderEricaEntriesInLibrary();
             updateLibraryLastSyncDisplay();
+
+            const countEl = document.getElementById('library-count');
+            if (countEl) countEl.textContent = container.querySelectorAll('.library-entry').length;
         }
 
         function updateLibraryLastSyncDisplay() {
@@ -1972,6 +2802,29 @@
             }
         }
 
+        // ---- Library review-marker dismissal ----
+        // Item 6 (2026-07-24): tapping an entry's review icon shows the
+        // reason; the next tap elsewhere clears that icon for good. Dismissed
+        // entry ids are remembered locally so the marker doesn't return on
+        // re-render, and a genuinely new reason from Sammy un-dismisses it
+        // (handled in reconcileLibraryStatuses).
+        const LIBRARY_REVIEW_DISMISSED_KEY = 'bigtiff-library-review-dismissed';
+        function loadDismissedReviews() {
+            try { return new Set(JSON.parse(localStorage.getItem(LIBRARY_REVIEW_DISMISSED_KEY) || '[]')); }
+            catch { return new Set(); }
+        }
+        function isReviewDismissed(id) { return !!id && loadDismissedReviews().has(id); }
+        function dismissReview(id) {
+            if (!id) return;
+            const s = loadDismissedReviews();
+            if (!s.has(id)) { s.add(id); localStorage.setItem(LIBRARY_REVIEW_DISMISSED_KEY, JSON.stringify([...s])); }
+        }
+        function undismissReview(id) {
+            if (!id) return;
+            const s = loadDismissedReviews();
+            if (s.delete(id)) localStorage.setItem(LIBRARY_REVIEW_DISMISSED_KEY, JSON.stringify([...s]));
+        }
+
         function createCategorySection(categoryName, entries, isCustom) {
             const section = document.createElement('div');
             section.className = `library-category border border-[#D4AF37]/30 rounded-2xl overflow-hidden mb-1`;
@@ -1980,19 +2833,24 @@
             // Collect which entries in this category are currently flagged for
             // review by Sammy, so the category header can show a marker without
             // requiring the user to expand it first to notice anything changed.
-            const flaggedEntries = (entries || []).filter(e => e.status === 'review' && !!e.needsReviewReason);
+            const flaggedEntries = (entries || []).filter(e => e.status === 'review' && !!e.needsReviewReason && !isReviewDismissed(e.id));
+            // The marker is a span (it lives inside the header button) that
+            // keeps the hover tooltip on desktop, and on mobile becomes a tap
+            // target revealing the same info inline, since hover doesn't exist
+            // on touch. It stays at the START of the category title.
+            const flaggedTitles = flaggedEntries.map(e => e.title).join(', ');
             const categoryMarker = flaggedEntries.length > 0
-                ? `<span class="text-[#D4AF37]" title="Updated: ${flaggedEntries.map(e => e.title).join(', ').replace(/"/g, '&quot;')}">!</span> `
+                ? `<span class="review-flag-btn" role="button" tabindex="0" aria-label="Updated entries" title="Updated: ${flaggedTitles.replace(/"/g, '&quot;')}" onclick="toggleReviewReason(this, event)"><i class="fa-solid fa-circle-exclamation"></i></span> `
                 : '';
 
             const header = document.createElement('button');
             header.className = `w-full flex justify-between items-center px-4 py-2 bg-[#4A3A2E] hover:bg-[#3D2B1F] text-left`;
             header.innerHTML = `
-                <span class="font-semibold flex items-center gap-x-2">
-                    <i class="fa-solid ${isCustom ? 'fa-user-edit' : 'fa-book'}"></i> 
-                    ${categoryMarker}${categoryName}
+                <span class="font-semibold flex items-center gap-x-2 min-w-0">
+                    <i class="fa-solid ${isCustom ? 'fa-user-edit' : 'fa-book'} flex-shrink-0"></i>
+                    ${categoryMarker}<span class="cat-title">${categoryName}</span>
                 </span>
-                <i class="chevron fa-solid fa-chevron-down"></i>
+                <i class="chevron fa-solid fa-chevron-down flex-shrink-0"></i>
             `;
 
             const content = document.createElement('div');
@@ -2016,6 +2874,16 @@
             };
 
             section.appendChild(header);
+
+            // Touch-reachable equivalent of the category marker's hover
+            // tooltip: toggled by tapping the "!" above (mobile only).
+            if (flaggedEntries.length > 0) {
+                const reasonBar = document.createElement('div');
+                reasonBar.className = 'review-reason-inline hidden px-4 py-2 text-sm text-[#D4AF37] bg-[#3D2B1F] border-t border-[#D4AF37]/30';
+                reasonBar.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1.5"></i>Updated: ${flaggedTitles}`;
+                section.appendChild(reasonBar);
+            }
+
             section.appendChild(content);
 
             return section;
@@ -2026,21 +2894,26 @@
             div.className = `library-entry px-3 py-2 text-sm group border-b border-[#D4AF37]/10 last:border-b-0`;
             div.dataset.title = entry.title.toLowerCase();
             div.dataset.content = (entry.content || '').toLowerCase();
+            div.dataset.entryId = entry.id || '';
 
             // Mark entries Sammy has currently flagged for review - same signal
-            // driving the Library changelog, so this matches what's actually
-            // "new/changed and not yet looked at" rather than every entry that
-            // happened to be present in the last sync.
-            const isFlagged = entry.status === 'review' && !!entry.needsReviewReason;
-            const titleDisplay = isFlagged
-                ? `<span class="text-[#D4AF37]" title="${(entry.needsReviewReason || '').replace(/"/g, '&quot;')}">!</span> ${entry.title}`
-                : entry.title;
+            // driving the Library changelog. Dismissed entries (the user has
+            // seen the reason and clicked away) drop the marker.
+            const isFlagged = entry.status === 'review' && !!entry.needsReviewReason && !isReviewDismissed(entry.id);
+            // Desktop keeps the hover tooltip; on mobile the icon is a tap
+            // target that reveals Sammy's review reason inline. Per item 6
+            // (2026-07-24) the entry marker sits at the END of the title.
+            const marker = isFlagged
+                ? ` <span class="review-flag-btn" role="button" tabindex="0" aria-label="Why this changed" title="${(entry.needsReviewReason || '').replace(/"/g, '&quot;')}" onclick="toggleReviewReason(this, event)"><i class="fa-solid fa-circle-exclamation"></i></span>`
+                : '';
+            const titleDisplay = `${entry.title}${marker}`;
 
             let html = `
                 <div class="flex justify-between items-start gap-2">
                     <div class="flex-1 min-w-0">
                         <div class="font-medium">${titleDisplay}</div>
                         ${entry.content ? `<div class="text-[#E8D9C0] mt-0.5 text-xs break-words">${entry.content}</div>` : ''}
+                        ${isFlagged ? `<div class="review-reason-inline hidden text-sm text-[#D4AF37] mt-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i>${entry.needsReviewReason || ''}</div>` : ''}
                     </div>
             `;
 
@@ -2132,6 +3005,9 @@
         }
 
         function saveNotepadState() {
+            // Mobile sheets have no geometry of their own - never let a phone
+            // session overwrite the saved desktop window arrangement.
+            if (isMobileMode()) return;
             const notepad = document.getElementById('notepad-window');
             if (!notepad) return;
 
@@ -2145,6 +3021,8 @@
         }
 
         function restoreNotepadState() {
+            // Saved desktop rects would break the full-screen mobile sheet.
+            if (isMobileMode()) return;
             const notepad = document.getElementById('notepad-window');
             const saved = localStorage.getItem(NOTEPAD_STORAGE_KEY);
             
@@ -2523,6 +3401,7 @@
         }
 
         function openNotepad() {
+            if (isMobileMode()) mobileCloseEverything('notepad-window');
             const notepad = document.getElementById('notepad-window');
             notepad.classList.remove('hidden');
             notepad.style.display = 'flex';
@@ -2553,6 +3432,7 @@
             
             document.getElementById('delete-confirm-modal').classList.remove('flex');
             document.getElementById('delete-confirm-modal').classList.add('hidden');
+            if (typeof updateNavActiveState === 'function') updateNavActiveState();
         }
 
         // ==================== DRAFT PAD ====================
@@ -2763,6 +3643,7 @@
                 alert('Select a scene first to view its drafts.');
                 return;
             }
+            if (isMobileMode()) mobileCloseEverything('draftpad-window');
             const draftpad = document.getElementById('draftpad-window');
             draftpad.classList.remove('hidden');
             draftpad.style.display = 'flex';
@@ -2851,6 +3732,7 @@
         const DRAFTPAD_STATE_KEY = 'draftpad-state';
 
         function saveDraftPadState() {
+            if (isMobileMode()) return;
             const draftpad = document.getElementById('draftpad-window');
             if (!draftpad) return;
             const state = {
@@ -2863,6 +3745,7 @@
         }
 
         function restoreDraftPadState() {
+            if (isMobileMode()) return;
             const draftpad = document.getElementById('draftpad-window');
             if (!draftpad) return;
             try {
@@ -2977,6 +3860,12 @@
         }
 
         function openChangelog(filter) {
+            if (isMobileMode()) {
+                mobileCloseEverything('changelog-window');
+                // Mobile shows one chronological feed - the filter tabs are
+                // hidden there, so always land on 'all'.
+                filter = 'all';
+            }
             const win = document.getElementById('changelog-window');
             win.classList.remove('hidden');
             win.style.display = 'flex';
@@ -3052,6 +3941,7 @@
         }
 
         function saveChangelogState() {
+            if (isMobileMode()) return;
             const win = document.getElementById('changelog-window');
             if (!win) return;
             localStorage.setItem(CHANGELOG_STATE_KEY, JSON.stringify({
@@ -3061,6 +3951,7 @@
         }
 
         function restoreChangelogState() {
+            if (isMobileMode()) return;
             const win = document.getElementById('changelog-window');
             if (!win) return;
             try {
@@ -3130,13 +4021,18 @@
         let editorZoomPercent = 100;
         function adjustEditorZoom(direction) {
             const step = 10;
-            const min = 70;
-            const max = 160;
+            // Mobile: 17px base at 100%, and never below 100% - a shrunken
+            // editor is useless for low vision; ceiling raised to 200%.
+            // Desktop range/base unchanged.
+            const mobile = isMobileMode();
+            const min = mobile ? 100 : 70;
+            const max = mobile ? 200 : 160;
+            const base = mobile ? 1.0625 : 0.875; // rem at 100%
             editorZoomPercent = Math.min(max, Math.max(min, editorZoomPercent + direction * step));
 
             const editor = document.getElementById('editor');
             const label = document.getElementById('editor-zoom-label');
-            if (editor) editor.style.fontSize = (editorZoomPercent / 100 * 0.875) + 'rem'; // base text-sm (0.875rem) * zoom
+            if (editor) editor.style.fontSize = (editorZoomPercent / 100 * base) + 'rem';
             if (label) label.textContent = editorZoomPercent + '%';
         }
 
@@ -3208,6 +4104,7 @@
         let lastProofreaderCheckedText = ''; // exact plain text the current issues' offsets are valid against
 
         function openProofreader() {
+            if (isMobileMode()) mobileCloseEverything('proofreader-window');
             const win = document.getElementById('proofreader-window');
             win.classList.remove('hidden');
             win.style.display = 'flex';
@@ -3326,9 +4223,17 @@
                     : '';
 
                 card.innerHTML = `
-                    <div class="text-[10px] uppercase tracking-wide text-[#D4AF37]/60 mb-1">${issue.category}</div>
-                    <div class="text-[#F4EDE4]">"${issue.original}"</div>
-                    <div class="text-[#D4AF37]/70 text-xs mt-1">${issue.shortMessage}</div>
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0 flex-1">
+                            <div class="text-[10px] uppercase tracking-wide text-[#D4AF37]/60 mb-1">${issue.category}</div>
+                            <div class="text-[#F4EDE4]">"${issue.original}"</div>
+                            <div class="text-[#D4AF37]/70 text-xs mt-1">${issue.shortMessage}</div>
+                        </div>
+                        <button onclick="goToProofreaderIssue(${idx})" class="proofreader-goto flex-shrink-0"
+                                aria-label="Go to this text in the draft" title="Go to this text in the draft">
+                            <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                        </button>
+                    </div>
                     ${suggestionHtml}
                 `;
                 list.appendChild(card);
@@ -3338,6 +4243,113 @@
             const applyAllRow = document.getElementById('proofreader-apply-all-row');
             const hasAnySuggestion = lastProofreaderIssues.some(i => !!i.suggestion);
             if (applyAllRow) applyAllRow.classList.toggle('hidden', !hasAnySuggestion);
+        }
+
+        /**
+         * "Go to" an issue: closes the Proofreader and reveals the offending
+         * text in the editor, highlighted.
+         *
+         * DRAFT SAFETY: this never mutates editor content. Wrapping the match
+         * in a <span> would land inside editor.innerHTML and autosave would
+         * then persist the highlight into Erica's draft. So it uses the CSS
+         * Custom Highlight API where available (paints over a Range, no DOM
+         * change) and falls back to a plain text selection - both are purely
+         * visual.
+         */
+        function findRangeForIssue(editor, issue) {
+            // Collect text nodes and the running offset of each, so a plain-text
+            // index can be mapped back to a DOM position.
+            const nodes = [];
+            let total = '';
+            const walk = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+            let n;
+            while ((n = walk.nextNode())) {
+                nodes.push({ node: n, start: total.length });
+                total += n.textContent;
+            }
+            if (!nodes.length || !issue.original) return null;
+
+            // getEditorPlainText() injects newlines for block boundaries, so the
+            // issue offset won't line up exactly with this concatenation. Take
+            // the occurrence nearest the expected offset instead of the first.
+            const positions = [];
+            let from = 0, at;
+            while ((at = total.indexOf(issue.original, from)) !== -1) {
+                positions.push(at);
+                from = at + 1;
+            }
+            if (!positions.length) return null;
+            const target = positions.reduce((best, p) =>
+                Math.abs(p - issue.offset) < Math.abs(best - issue.offset) ? p : best, positions[0]);
+
+            const end = target + issue.original.length;
+            const locate = (idx) => {
+                for (let i = nodes.length - 1; i >= 0; i--) {
+                    if (nodes[i].start <= idx) return { node: nodes[i].node, offset: idx - nodes[i].start };
+                }
+                return { node: nodes[0].node, offset: 0 };
+            };
+            const s = locate(target), e = locate(end);
+            const range = document.createRange();
+            try {
+                range.setStart(s.node, Math.min(s.offset, s.node.textContent.length));
+                range.setEnd(e.node, Math.min(e.offset, e.node.textContent.length));
+            } catch (err) { return null; }
+            return range;
+        }
+
+        function goToProofreaderIssue(idx) {
+            const issue = lastProofreaderIssues[idx];
+            if (!issue) return;
+            const editor = document.getElementById('editor');
+            if (!editor) return;
+
+            hideProofreader();
+
+            const reveal = () => {
+                const range = findRangeForIssue(editor, issue);
+                if (!range) {
+                    // Nothing matched (draft edited since the check) - say so
+                    // rather than silently doing nothing.
+                    const status = document.getElementById('auto-save-status');
+                    if (status) {
+                        const prev = status.textContent;
+                        status.textContent = "Couldn't find that text";
+                        setTimeout(() => { status.textContent = prev; }, 2200);
+                    }
+                    return;
+                }
+
+                // Scroll the match into view within the editor's scroll parent.
+                const rect = range.getBoundingClientRect();
+                const scroller = document.getElementById('center-scroll-area') || document.scrollingElement;
+                if (rect.height || rect.width) {
+                    const sRect = scroller.getBoundingClientRect();
+                    scroller.scrollTop += (rect.top - sRect.top) - (sRect.height / 3);
+                }
+
+                // Highlight without touching the DOM.
+                let highlighted = false;
+                try {
+                    if (window.CSS && CSS.highlights && typeof Highlight === 'function') {
+                        CSS.highlights.set('proofreader-target', new Highlight(range));
+                        clearTimeout(goToProofreaderIssue._t);
+                        goToProofreaderIssue._t = setTimeout(() => {
+                            try { CSS.highlights.delete('proofreader-target'); } catch (e) {}
+                        }, 5000);
+                        highlighted = true;
+                    }
+                } catch (e) { /* fall through to selection */ }
+
+                if (!highlighted) {
+                    const sel = window.getSelection();
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }
+            };
+
+            // Let the Proofreader finish closing so layout is settled first.
+            requestAnimationFrame(() => setTimeout(reveal, 60));
         }
 
         /**
@@ -3508,6 +4520,7 @@
         }
 
         function saveProofreaderState() {
+            if (isMobileMode()) return;
             const win = document.getElementById('proofreader-window');
             if (!win) return;
             localStorage.setItem(PROOFREADER_STATE_KEY, JSON.stringify({
@@ -3517,6 +4530,7 @@
         }
 
         function restoreProofreaderState() {
+            if (isMobileMode()) return;
             const win = document.getElementById('proofreader-window');
             if (!win) return;
             try {
@@ -3588,6 +4602,8 @@
                 alert('Select a scene first.');
                 return;
             }
+
+            if (isMobileMode()) mobileCloseEverything('sammy-export-window');
 
             const textarea = document.getElementById('sammy-export-text');
             textarea.value = buildSammyExportText();
@@ -3672,6 +4688,7 @@
         }
 
         function saveSammyExportState() {
+            if (isMobileMode()) return;
             const win = document.getElementById('sammy-export-window');
             if (!win) return;
             localStorage.setItem(SAMMY_EXPORT_STATE_KEY, JSON.stringify({
@@ -3681,6 +4698,7 @@
         }
 
         function restoreSammyExportState() {
+            if (isMobileMode()) return;
             const win = document.getElementById('sammy-export-window');
             if (!win) return;
             try {
@@ -3702,6 +4720,10 @@
 
         // ==================== INITIALIZATION ====================
         function init() {
+            // Mobile/touch layout mode first, so everything below renders
+            // into the correct layout (see MOBILE MODE section).
+            initMobileMode();
+
             // Initialize main editor
             const editor = document.getElementById('editor');
 
@@ -3721,31 +4743,13 @@
 
             renderLibrary();
 
-            // Notepad setup (single initialization)
-            makeNotepadDraggable();
-            makeNotepadResizable();
+            // Drag/resize wiring for all six floating windows - desktop only
+            // (single initialization; skipped entirely on touch devices, where
+            // the same windows open as fixed sheets instead).
+            ensureDesktopWindowWiring();
+
             setupNotepadBorderBehavior();
             setupKeyboardShortcuts();
-
-            // Draft Pad setup (single initialization)
-            makeDraftPadDraggable();
-            makeDraftPadResizable();
-
-            // Changelog setup (single initialization)
-            makeChangelogDraggable();
-            makeChangelogResizable();
-
-            // Proofreader setup (single initialization)
-            makeProofreaderDraggable();
-            makeProofreaderResizable();
-
-            // Send to Sammy window setup (single initialization)
-            makeSammyExportDraggable();
-            makeSammyExportResizable();
-
-            // Stats window setup (single initialization)
-            makeStatsWindowDraggable();
-            makeStatsWindowResizable();
 
             // Floating guidance cards never persist across a reload/session -
             // ensure a clean slate every time the tool initializes.
@@ -3876,7 +4880,7 @@
             } finally {
                 if (syncBtn) {
                     syncBtn.disabled = false;
-                    syncBtn.innerHTML = `<i class="fa-solid fa-sync-alt mr-2"></i> Sync with Canon`;
+                    syncBtn.innerHTML = `<i class="fa-solid fa-sync-alt text-xs"></i> <span class="tracking-wider">Canon Sync</span>`;
                 }
             }
         }
@@ -3970,6 +4974,9 @@
                                 sceneTitle: entry.title,
                                 reason: entry.needsReviewReason
                             });
+                            // A genuinely new reason re-surfaces a marker the
+                            // user had previously dismissed (item 6).
+                            if (typeof undismissReview === 'function') undismissReview(entry.id);
                         }
                         saveLibraryEntryStatus(entry.id, 'review', entry.needsReviewReason);
                         return;
@@ -4053,6 +5060,7 @@
 
             const timeStr = lastSyncTimestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             el.innerHTML = `Last synced ${timeStr}`;
+            updateLandingSyncTime();
         }
 
         /**
@@ -4316,7 +5324,7 @@
         function renderDynamicOutline() {
             const container = document.getElementById('dynamic-outline');
             if (!container || !currentCanonData || !currentCanonData.scenes) {
-                if (container) container.innerHTML = `<div class="px-3 py-2 text-xs text-[#D4AF37]/50">No canon data loaded yet. Click "Sync with Canon".</div>`;
+                if (container) container.innerHTML = `<div class="px-3 py-2 text-xs text-[#D4AF37]/50">No canon data loaded yet. Tap "Canon Sync".</div>`;
                 return;
             }
 
@@ -4342,9 +5350,9 @@
             container.innerHTML = '';
 
             // Update scene count badge
-            const countBadge = document.querySelector('#left-panel .bg-\\[\\#D4AF37\\]\\/10');
+            const countBadge = document.getElementById('outline-count');
             if (countBadge) {
-                countBadge.textContent = `${scenes.length} scenes`;
+                countBadge.textContent = scenes.length;
             }
 
             // Group scenes: acts → chapters
@@ -4367,6 +5375,10 @@
                 // Act header (collapsible)
                 const actHeader = document.createElement('div');
                 actHeader.className = `hierarchy-item flex items-center justify-between px-3 py-2 rounded-xl cursor-pointer`;
+                // Full labels on both desktop and mobile - "Act 1", "Chapter 0"
+                // (Aaron, 2026-07-24: proper labels, not abbreviations). Only
+                // the per-scene status still collapses to an icon on mobile.
+                const shortLabels = typeof isMobileMode === 'function' && isMobileMode();
                 actHeader.innerHTML = `
                     <div class="flex items-center gap-x-2">
                         <i class="fa-solid fa-folder text-[#D4AF37]"></i>
@@ -4439,12 +5451,20 @@
 
                             const statusClass = scene.status === 'complete' ? 'scene-complete' :
                                                 scene.status === 'review'   ? 'scene-review' : 'scene-unfinished';
-                            const statusLabel = scene.status === 'complete' ? 'Complete' :
-                                                scene.status === 'review'   ? 'Review'   : 'Unfinished';
+                            const statusWord = scene.status === 'complete' ? 'Complete' :
+                                               scene.status === 'review'   ? 'Review'   : 'Unfinished';
+                            // Icon instead of the word on mobile - still a
+                            // distinct shape per state, so status is never
+                            // carried by colour alone.
+                            const statusIcon = scene.status === 'complete' ? 'fa-circle-check' :
+                                               scene.status === 'review'   ? 'fa-circle-exclamation' : 'fa-pen';
+                            const statusLabel = shortLabels
+                                ? `<i class="fa-solid ${statusIcon}"></i>`
+                                : statusWord;
 
                             sceneEl.innerHTML = `
                                 <span class="flex-1 min-w-0 leading-tight">${shortenSceneTitleForOutline(scene.title)}</span>
-                                <span class="scene-status ${statusClass}" style="flex-shrink:0; align-self:flex-start;">${statusLabel}</span>
+                                <span class="scene-status ${statusClass}" title="${statusWord}" aria-label="${statusWord}" style="flex-shrink:0; align-self:flex-start;">${statusLabel}</span>
                             `;
 
                             // Future: clicking a scene will load it into the editor + prompt
@@ -4528,6 +5548,9 @@
         const guidanceFloatInitialized = new Set();
 
         function floatGuidanceCard(key) {
+            // Touch devices never float cards - route to the drawer instead
+            // (safety net; the float buttons are hidden on mobile anyway).
+            if (isMobileMode()) { mobileToggleGuidanceDrawer(key); return; }
             const card = document.getElementById(`guidance-card-${key}`);
             const homeSlot = document.getElementById(`guidance-home-${key}`);
             const floatWindow = document.getElementById(`guidance-float-${key}`);
@@ -4583,6 +5606,14 @@
             homeSlot.classList.add('hidden');
             floatWindow.classList.add('hidden');
             floatWindow.style.display = 'none';
+
+            // If this card was open as a mobile drawer, its rail tab must
+            // stop showing as active (also covers the drawer's own close
+            // button, which calls this function directly).
+            if (typeof mobileOpenDrawerKey !== 'undefined' && mobileOpenDrawerKey === key) {
+                mobileOpenDrawerKey = null;
+                updateRailActiveState();
+            }
         }
 
         /**
@@ -4706,6 +5737,16 @@
             localStorage.setItem('last-selected-scene-id', scene.id);
             if (typeof pushStateToServer === 'function') pushStateToServer();
 
+            // Mobile: a scene pick means "take me to the editor" - close the
+            // outline (or whatever else is open), show the guidance rail, and
+            // start at the top of the scene.
+            document.body.classList.add('scene-open');
+            if (isMobileMode()) {
+                mobileCloseEverything(null);
+                const scroller = document.getElementById('center-scroll-area');
+                if (scroller) scroller.scrollTop = 0;
+            }
+
             const placeholder = document.getElementById('no-scene-placeholder');
             const sceneContent = document.getElementById('scene-content');
             if (placeholder) placeholder.style.display = 'none';
@@ -4734,6 +5775,7 @@
             // Recalculate after the DOM updates with this scene's (possibly
             // multi-line) summary text, so the status bar sits flush beneath it.
             requestAnimationFrame(syncControlBarStickyOffset);
+            requestAnimationFrame(refreshMobileClamps);
 
             console.log("%c[Scene] Loaded into writing area with guidance:", "color:#8B6F47", scene.id, scene.title);
         }
@@ -4792,20 +5834,15 @@
 
         function refreshAccountButton() {
             const label = document.getElementById('account-btn-label');
-            const pencil = document.getElementById('nickname-edit-btn');
             const menu = document.getElementById('account-menu');
             if (!label) return;
             const cloud = document.getElementById('account-menu-cloud');
             if (currentUser) {
                 label.textContent = getNickname();
-                pencil.classList.remove('hidden');
-                pencil.classList.add('flex');
                 if (cloud) cloud.classList.toggle('hidden', currentUserRole !== 'primary');
                 if (cloud && currentUserRole === 'primary') cloud.classList.add('flex');
             } else {
                 label.textContent = 'LOGIN';
-                pencil.classList.add('hidden');
-                pencil.classList.remove('flex');
                 if (menu) menu.classList.add('hidden');
             }
         }
@@ -4824,16 +5861,6 @@
             document.getElementById('account-menu').classList.add('hidden');
             refreshAccountButton();
             applyRoleGating();
-            renderGreeting();
-        }
-
-        function startNicknameEdit() {
-            if (!currentUser) return;
-            const next = prompt('Display name (nickname only - your username stays the same):', getNickname());
-            if (next === null) return;
-            const trimmed = next.trim();
-            localStorage.setItem(nicknameKey(currentUser), trimmed || currentUser);
-            refreshAccountButton();
             renderGreeting();
         }
 
@@ -4938,6 +5965,7 @@
 
         // ---- Stats window (mirrors Draft Pad's window pattern) ----
         function showStoryStats() {
+            if (isMobileMode()) mobileCloseEverything('stats-window');
             const win = document.getElementById('stats-window');
             win.classList.remove('hidden');
             win.style.display = 'flex';
@@ -5012,6 +6040,7 @@
         }
         const STATS_STATE_KEY = 'stats-window-state';
         function saveStatsWindowState() {
+            if (isMobileMode()) return;
             const win = document.getElementById('stats-window');
             if (!win) return;
             localStorage.setItem(STATS_STATE_KEY, JSON.stringify({
@@ -5019,6 +6048,7 @@
             }));
         }
         function restoreStatsWindowState() {
+            if (isMobileMode()) return;
             const win = document.getElementById('stats-window');
             if (!win) return;
             try {
@@ -5050,35 +6080,49 @@
             if (!el) return;
             const s = getStatsData();
             const pick = STAT_TEASERS[Math.floor(Math.random() * STAT_TEASERS.length)];
-            el.textContent = pick(s);
+            const text = pick(s);
+            el.textContent = text;
+            // An empty bubble would just be a stray outline above her head.
+            const wrap = document.getElementById('landing-bubble-wrap');
+            if (wrap) wrap.style.display = text ? '' : 'none';
         }
 
+        /**
+         * The landing screen is now the only front door - there is no
+         * separate "sync first" gate ahead of it. Sync moved down beside its
+         * own timestamp, so an unsynced state just shows the nav with nothing
+         * to navigate to yet rather than a whole extra screen to get past.
+         */
         function renderLandingScreen() {
-            const empty = document.getElementById('landing-empty');
             const radial = document.getElementById('landing-radial');
             const gif = document.getElementById('landing-tiff-gif');
             const msg = document.getElementById('landing-nav-message');
             if (msg) msg.textContent = '';
             renderStatTeaser();
-            const hasCanon = !!(currentCanonData && currentCanonData.scenes && currentCanonData.scenes.length);
-            if (hasCanon) {
-                empty.classList.add('hidden');
-                radial.classList.remove('hidden');
-                if (gif) gif.src = TIFF_GIFS[Math.floor(Math.random() * TIFF_GIFS.length)];
-            } else {
-                radial.classList.add('hidden');
-                empty.classList.remove('hidden');
-            }
+            if (radial) radial.classList.remove('hidden');
+            // One of the three Tiff GIFs, re-picked on every landing render.
+            if (gif) gif.src = TIFF_GIFS[Math.floor(Math.random() * TIFF_GIFS.length)];
+            updateLandingSyncTime();
+        }
+
+        function updateLandingSyncTime() {
+            const el = document.getElementById('landing-sync-time');
+            if (!el) return;
+            el.textContent = lastSyncTimestamp
+                ? 'Synced ' + lastSyncTimestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                : 'Not synced yet';
         }
 
         function goHome() {
             currentScene = null;
+            document.body.classList.remove('scene-open'); // hides the mobile guidance rail
             closeAllFloatingWindows();
             const placeholder = document.getElementById('no-scene-placeholder');
             const sceneContent = document.getElementById('scene-content');
             if (sceneContent) sceneContent.classList.add('hidden');
             if (placeholder) placeholder.style.display = 'flex';
             renderLandingScreen();
+            if (typeof updateNavActiveState === 'function') updateNavActiveState();
         }
 
         function landingNavMessage(text) {
@@ -5573,6 +6617,474 @@
 
         // Expose for debugging / future use
         window.fetchLatestFromCanon = fetchLatestFromCanon;
+
+        // =====================================================
+        // MOBILE MODE (touch layout)
+        // =====================================================
+        // Detection is capability-based (hover/pointer), NEVER width-based:
+        // Erica's iPhone 16 Pro Max is 956px wide in landscape, which would
+        // fool any width breakpoint into desktop layout just by rotating.
+        // ?forceMobile=1 exists so the mobile layout can be exercised in a
+        // desktop browser during testing.
+        const MOBILE_MEDIA_QUERY = window.matchMedia('(hover: none) and (pointer: coarse)');
+
+        // Testing override. Set via ?forceMobile=1, or at runtime from the
+        // console with setMobilePreview(true/false) - some preview/test
+        // harnesses strip query strings, and this project's convention is
+        // that layout work must be verifiable in a real browser.
+        const FORCE_MOBILE_KEY = 'bigtiff-force-mobile-preview';
+        let forceMobileOverride = (() => {
+            try {
+                if (new URLSearchParams(location.search).get('forceMobile') === '1') return true;
+                return sessionStorage.getItem(FORCE_MOBILE_KEY) === '1';
+            } catch (e) { return false; }
+        })();
+
+        function isMobileMode() {
+            return forceMobileOverride || MOBILE_MEDIA_QUERY.matches;
+        }
+
+        function setMobilePreview(on) {
+            forceMobileOverride = !!on;
+            // Survives a reload (same tab only), so the mobile layout can be
+            // cold-booted for testing exactly as a real phone boots it.
+            try {
+                if (on) sessionStorage.setItem(FORCE_MOBILE_KEY, '1');
+                else sessionStorage.removeItem(FORCE_MOBILE_KEY);
+            } catch (e) { /* private mode - runtime toggle still works */ }
+            handleMobileModeChange();
+            return isMobileMode();
+        }
+        window.setMobilePreview = setMobilePreview;
+
+        function applyMobileLayoutClass() {
+            document.body.classList.toggle('mobile-layout', isMobileMode());
+            applyUiScale();          // no-op / cleared when not mobile
+            syncMobileHeaderHeight();
+        }
+
+        /**
+         * The header's real height changes when it wraps (which it does at
+         * high Safari Page Zoom levels). Sheets, side panels and the
+         * guidance rail all anchor to --mobile-header-h, so measure it
+         * rather than hard-coding a value that would be wrong when zoomed.
+         */
+        function syncMobileHeaderHeight() {
+            const header = document.querySelector('header');
+            if (!header) return;
+            if (!isMobileMode()) {
+                document.body.style.removeProperty('--mobile-header-h');
+                document.body.style.removeProperty('--mobile-nav-measured');
+                return;
+            }
+            const h = Math.round(header.getBoundingClientRect().height);
+            if (h > 0) document.body.style.setProperty('--mobile-header-h', h + 'px');
+            // The nav is taller than its buttons: it reserves padding for the
+            // Focus bulge, and that padding is rem-based so it grows with the
+            // UI text scale. Measure it rather than assuming, or bottom-anchored
+            // things (sheets, the auto-save chip) end up underneath it.
+            const nav = document.getElementById('mobile-nav');
+            if (nav) {
+                const nh = Math.round(nav.getBoundingClientRect().height);
+                if (nh > 0) document.body.style.setProperty('--mobile-nav-measured', nh + 'px');
+            }
+        }
+        window.addEventListener('resize', syncMobileHeaderHeight);
+        window.addEventListener('orientationchange', () => setTimeout(syncMobileHeaderHeight, 120));
+
+        // Desktop drag/resize wiring happens lazily and exactly once, and
+        // only outside mobile mode - so no touch device ever gets drag
+        // handlers attached (iOS synthesizes mouse events from taps, so
+        // "attached but unused" would not actually be inert there).
+        let desktopWindowsWired = false;
+        function ensureDesktopWindowWiring() {
+            if (desktopWindowsWired || isMobileMode()) return;
+            desktopWindowsWired = true;
+            makeNotepadDraggable();
+            makeNotepadResizable();
+            makeDraftPadDraggable();
+            makeDraftPadResizable();
+            makeChangelogDraggable();
+            makeChangelogResizable();
+            makeProofreaderDraggable();
+            makeProofreaderResizable();
+            makeSammyExportDraggable();
+            makeSammyExportResizable();
+            makeStatsWindowDraggable();
+            makeStatsWindowResizable();
+        }
+
+        function handleMobileModeChange() {
+            applyMobileLayoutClass();
+            if (isMobileMode()) {
+                // Entering mobile: nothing may stay floating or half-applied.
+                mobileCloseEverything(null);
+            } else {
+                ensureDesktopWindowWiring();
+            }
+            refreshMobileClamps();
+        }
+        try { MOBILE_MEDIA_QUERY.addEventListener('change', handleMobileModeChange); }
+        catch (e) { if (MOBILE_MEDIA_QUERY.addListener) MOBILE_MEDIA_QUERY.addListener(handleMobileModeChange); }
+
+        /**
+         * Mobile is strictly one-thing-at-a-time: opening any sheet, panel,
+         * or guidance drawer closes all the others first. exceptId names the
+         * one thing allowed to stay (or about to open).
+         */
+        function mobileCloseEverything(exceptId) {
+            if (!isMobileMode()) return;
+            const sheets = {
+                'notepad-window': hideNotepad,
+                'draftpad-window': hideDraftPad,
+                'changelog-window': hideChangelog,
+                'proofreader-window': hideProofreader,
+                'sammy-export-window': hideSammyExport,
+                'stats-window': hideStatsWindow,
+                'textsize-window': hideTextSize
+            };
+            Object.keys(sheets).forEach(id => { if (id !== exceptId) sheets[id](); });
+            const left = document.getElementById('left-panel');
+            const right = document.getElementById('right-panel');
+            if (left && exceptId !== 'left-panel') left.classList.add('-translate-x-full');
+            if (right && exceptId !== 'right-panel') right.classList.add('translate-x-full');
+            if (exceptId !== 'guidance-drawer') mobileCloseGuidanceDrawer();
+            updateNavActiveState();
+        }
+
+        /**
+         * Keeps the bottom nav's raised/highlighted item matching whatever is
+         * actually open, rather than whatever was last tapped - so closing a
+         * view from its own X button also drops the nav highlight.
+         */
+        function updateNavActiveState() {
+            if (!isMobileMode()) return;
+            const visible = id => {
+                const el = document.getElementById(id);
+                return !!el && getComputedStyle(el).display !== 'none';
+            };
+            const left = document.getElementById('left-panel');
+            const right = document.getElementById('right-panel');
+            const state = {
+                outline: left && !left.classList.contains('-translate-x-full'),
+                library: right && !right.classList.contains('translate-x-full'),
+                notepad: visible('notepad-window'),
+                text: visible('textsize-window'),
+                home: !currentScene,
+                focus: false
+            };
+            document.querySelectorAll('#mobile-nav button[data-nav]').forEach(btn => {
+                btn.classList.toggle('nav-active', !!state[btn.dataset.nav]);
+                if (state[btn.dataset.nav]) btn.setAttribute('aria-current', 'true');
+                else btn.removeAttribute('aria-current');
+            });
+        }
+
+        // ---- Guidance drawers (reuse the float-window shells + the
+        //      move-the-real-node pattern; nothing is duplicated) ----
+        // All six tabs live on the right edge now; every drawer opens to the
+        // left, toward the editor.
+        let mobileOpenDrawerKey = null;
+
+        /**
+         * Item 8 (2026-07-24): the drawer's own header row is hidden on mobile
+         * (it just duplicated the card's title). Instead we put a single close
+         * button inline with the card's own icon+title row. Injected once per
+         * card and idempotent; it stays hidden on desktop via CSS.
+         */
+        function ensureDrawerCloseButton(card, key) {
+            const headerRow = card.querySelector(':scope > div');
+            if (!headerRow || headerRow.querySelector('.m-drawer-close')) return;
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'm-drawer-close';
+            btn.setAttribute('aria-label', 'Close');
+            btn.title = 'Close';
+            btn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+            btn.onclick = () => snapGuidanceCardHome(key);
+            headerRow.appendChild(btn);
+        }
+
+        function mobileToggleGuidanceDrawer(key) {
+            if (!isMobileMode()) return;
+            if (mobileOpenDrawerKey === key) { mobileCloseGuidanceDrawer(); return; }
+            mobileCloseEverything('guidance-drawer');
+            mobileCloseGuidanceDrawer();
+            const card = document.getElementById(`guidance-card-${key}`);
+            const floatWindow = document.getElementById(`guidance-float-${key}`);
+            if (!card || !floatWindow) return;
+            // A drawer always shows full content - undo any minimized state.
+            if (guidanceMinimized.has(key)) toggleGuidanceCardMinimize(key);
+            ensureDrawerCloseButton(card, key);
+            floatWindow.querySelector('[data-float-body]').appendChild(card);
+            floatWindow.classList.remove('hidden');
+            floatWindow.style.display = 'flex';
+            mobileOpenDrawerKey = key;
+            updateRailActiveState();
+        }
+
+        function mobileCloseGuidanceDrawer() {
+            if (mobileOpenDrawerKey) snapGuidanceCardHome(mobileOpenDrawerKey);
+            mobileOpenDrawerKey = null;
+            updateRailActiveState();
+        }
+
+        function updateRailActiveState() {
+            document.querySelectorAll('.mobile-rail .rail-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.railKey === mobileOpenDrawerKey);
+            });
+        }
+
+        // ---- Bottom navigation ----
+        function mobileNav(what) {
+            const left = document.getElementById('left-panel');
+            const right = document.getElementById('right-panel');
+            switch (what) {
+                case 'home':
+                    mobileCloseEverything(null);
+                    goHome();
+                    break;
+                case 'outline': {
+                    const wasOpen = !left.classList.contains('-translate-x-full');
+                    mobileCloseEverything(null);
+                    if (!wasOpen) left.classList.remove('-translate-x-full');
+                    break;
+                }
+                case 'library': {
+                    const wasOpen = !right.classList.contains('translate-x-full');
+                    mobileCloseEverything(null);
+                    if (!wasOpen) right.classList.remove('translate-x-full');
+                    break;
+                }
+                case 'notepad': {
+                    const np = document.getElementById('notepad-window');
+                    const wasOpen = np.classList.contains('active') && np.style.display !== 'none';
+                    mobileCloseEverything(null);
+                    if (!wasOpen) openNotepad();
+                    break;
+                }
+                case 'text': {
+                    const ts = document.getElementById('textsize-window');
+                    const wasOpen = ts.classList.contains('active') && ts.style.display !== 'none';
+                    mobileCloseEverything(null);
+                    if (!wasOpen) openTextSize();
+                    break;
+                }
+                case 'focus':
+                    // One calm action: close every drawer, panel and sheet.
+                    mobileCloseEverything(null);
+                    break;
+            }
+            updateNavActiveState();
+        }
+
+        /**
+         * Tap-to-reveal for review-flag "!" markers - hover tooltips don't
+         * exist on touch, and the review reason is real editorial info.
+         * Desktop is untouched: this returns immediately there, keeping the
+         * original hover-tooltip behavior (and category-header click-through)
+         * exactly as before.
+         */
+        function toggleReviewReason(el, ev) {
+            if (!isMobileMode()) return;
+            ev.stopPropagation();
+            ev.preventDefault();
+            const host = el.closest('.library-entry, .library-category');
+            if (!host) return;
+            const reason = host.querySelector('.review-reason-inline');
+            if (reason) reason.classList.toggle('hidden');
+
+            // Item 6: for an ENTRY marker, once the reason is showing, the next
+            // click anywhere else clears the marker from that entry for good.
+            const entryId = host.classList.contains('library-entry') ? host.dataset.entryId : null;
+            if (entryId && reason && !reason.classList.contains('hidden')) {
+                armReviewClear(host, entryId, el);
+            }
+        }
+
+        function armReviewClear(entryEl, entryId, markerEl) {
+            const handler = (e) => {
+                // Re-tapping the marker or its reason toggles, doesn't clear.
+                if (markerEl.contains(e.target)) return;
+                const reason = entryEl.querySelector('.review-reason-inline');
+                if (reason && reason.contains(e.target)) return;
+                document.removeEventListener('click', handler, true);
+                dismissReview(entryId);
+                const m = entryEl.querySelector('.review-flag-btn');
+                if (m) m.remove();
+                if (reason) reason.remove();
+                // If the category has no flagged entries left, drop its marker too.
+                const section = entryEl.closest('.library-category');
+                if (section && section.querySelectorAll('.library-category-content .review-flag-btn').length === 0) {
+                    const catMarker = section.querySelector('button .review-flag-btn');
+                    if (catMarker) catMarker.remove();
+                    const catReason = section.querySelector(':scope > .review-reason-inline');
+                    if (catReason) catReason.remove();
+                }
+            };
+            // Defer so THIS click (the one that opened the reason) doesn't fire it.
+            setTimeout(() => document.addEventListener('click', handler, true), 0);
+        }
+
+        // ---- Global UI text size (mobile) ----
+        // Distinct from adjustEditorZoom(), which only scales draft text in
+        // the editor. This scales the ROOT font size, so every rem-based
+        // size in the tool grows together - labels, buttons, panels, sheets.
+        // Set as a percentage (not a px value) so it multiplies the browser's
+        // own default text size rather than overriding it, and stored per
+        // device because a phone and a laptop want different answers.
+        const UI_SCALE_KEY = 'bigtiff-ui-scale';
+        // Goes below 100 on purpose: control sizes are rem-based, so scaling
+        // down genuinely shrinks the buttons, not just their labels.
+        const UI_SCALE_MIN = 75, UI_SCALE_MAX = 175, UI_SCALE_STEP = 5;
+
+        function getUiScale() {
+            const v = parseInt(localStorage.getItem(UI_SCALE_KEY), 10);
+            return (isFinite(v) && v >= UI_SCALE_MIN && v <= UI_SCALE_MAX) ? v : 100;
+        }
+
+        function applyUiScale() {
+            const root = document.documentElement;
+            if (!isMobileMode()) { root.style.removeProperty('font-size'); return; }
+            const pct = getUiScale();
+            // 100% is the browser default - don't pin a value at all there.
+            if (pct === 100) root.style.removeProperty('font-size');
+            else root.style.fontSize = pct + '%';
+            const slider = document.getElementById('ui-scale-slider');
+            const readout = document.getElementById('ui-scale-readout');
+            if (slider) slider.value = pct;
+            if (readout) readout.textContent = pct + '%';
+        }
+
+        function setUiScale(pct) {
+            const v = Math.min(UI_SCALE_MAX, Math.max(UI_SCALE_MIN, parseInt(pct, 10) || 100));
+            localStorage.setItem(UI_SCALE_KEY, String(v));
+            applyUiScale();
+            // Both of these measure real geometry, which just changed.
+            syncMobileHeaderHeight();
+            refreshMobileClamps();
+        }
+
+        function stepUiScale(direction) {
+            setUiScale(getUiScale() + direction * UI_SCALE_STEP);
+        }
+
+        function openTextSize() {
+            mobileCloseEverything('textsize-window');
+            const win = document.getElementById('textsize-window');
+            win.classList.remove('hidden');
+            win.style.display = 'flex';
+            win.classList.add('active');
+            applyUiScale();
+        }
+
+        function hideTextSize() {
+            const win = document.getElementById('textsize-window');
+            if (!win) return;
+            win.style.display = 'none';
+            win.classList.remove('active');
+            updateNavActiveState();
+        }
+
+        /**
+         * Tap-to-expand for the long scene-summary / review-note text on
+         * mobile. Nothing is hidden permanently - this only decides whether
+         * the block starts clamped, so the editor isn't pushed off-screen.
+         * The button only exists on mobile (.m-expand is display:none on
+         * desktop), so desktop text is never clamped.
+         */
+        function toggleMobileClamp(textId, btn) {
+            const el = document.getElementById(textId);
+            if (!el) return;
+            const clamped = el.classList.toggle('m-clamped');
+            // Item 9: bare arrow, no text label.
+            btn.innerHTML = clamped
+                ? '<i class="fa-solid fa-chevron-down"></i>'
+                : '<i class="fa-solid fa-chevron-up"></i>';
+            btn.setAttribute('aria-label', clamped ? 'Show more' : 'Show less');
+        }
+
+        /**
+         * Re-applies the clamped starting state each time a scene loads,
+         * and hides the toggle entirely when the text is short enough not
+         * to need one (no dead control for a two-line summary).
+         */
+        function refreshMobileClamps() {
+            [['guidance-summary-text', 'summary-expand-btn', 3],
+             ['review-note-text', 'review-expand-btn', 2]].forEach(([textId, btnId, lines]) => {
+                const el = document.getElementById(textId);
+                const btn = document.getElementById(btnId);
+                if (!el || !btn) return;
+                if (!isMobileMode()) { el.classList.remove('m-clamped'); return; }
+                el.classList.remove('m-clamped');
+                const lineH = parseFloat(getComputedStyle(el).lineHeight) || 24;
+                const needsClamp = el.scrollHeight > lineH * lines + 4;
+                btn.style.display = needsClamp ? '' : 'none';
+                if (needsClamp) {
+                    el.classList.add('m-clamped');
+                    btn.innerHTML = '<i class="fa-solid fa-chevron-down"></i>';
+                    btn.setAttribute('aria-label', 'Show more');
+                }
+            });
+        }
+
+        // ---- Aggressive autosave + keyboard handling ----
+        // Backgrounding Safari mid-sentence is normal on a phone; iOS also
+        // aggressively suspends background tabs. Save + push immediately on
+        // blur / hide / pagehide (mobile only, so desktop behavior is
+        // unchanged).
+        function mobileImmediateSave() {
+            if (!isMobileMode() || !currentScene) return;
+            const editor = document.getElementById('editor');
+            if (!editor) return;
+            localStorage.setItem(currentDraftStorageKey(currentScene.id), editor.innerHTML);
+            pushDraftToServer(currentScene.id, editor.innerHTML, true);
+        }
+
+        function initMobileMode() {
+            applyMobileLayoutClass();
+            // Header height can change after webfonts/icons finish loading.
+            if (typeof ResizeObserver === 'function') {
+                const header = document.querySelector('header');
+                if (header) new ResizeObserver(syncMobileHeaderHeight).observe(header);
+            }
+            if (isMobileMode()) {
+                // Desktop opens with the outline panel visible; mobile starts
+                // with the calm landing column instead.
+                const left = document.getElementById('left-panel');
+                if (left) left.classList.add('-translate-x-full');
+            }
+            const editor = document.getElementById('editor');
+            if (editor) {
+                editor.addEventListener('blur', mobileImmediateSave);
+                editor.addEventListener('focus', () => {
+                    if (!isMobileMode()) return;
+                    // Give the on-screen keyboard time to settle, then bring
+                    // the toolbar + caret area back into view.
+                    setTimeout(() => {
+                        const tb = document.getElementById('editor-toolbar');
+                        if (tb) tb.scrollIntoView({ block: 'start' });
+                    }, 350);
+                });
+            }
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'hidden') mobileImmediateSave();
+            });
+            window.addEventListener('pagehide', mobileImmediateSave);
+            // Keep typed text above the on-screen keyboard: track how much of
+            // the layout viewport the keyboard covers and pad the scroll area
+            // by that amount (see --kb-height use in the mobile CSS).
+            if (window.visualViewport) {
+                const vv = window.visualViewport;
+                const onVV = () => {
+                    if (!isMobileMode()) return;
+                    const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+                    document.documentElement.style.setProperty('--kb-height', kb + 'px');
+                };
+                vv.addEventListener('resize', onVV);
+                vv.addEventListener('scroll', onVV);
+            }
+        }
 
         window.onload = init;
     </script>
