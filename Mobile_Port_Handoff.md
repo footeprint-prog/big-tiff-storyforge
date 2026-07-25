@@ -2,8 +2,14 @@
 
 ## For: whoever picks up mobile work next (agent or human)
 ## From: Claude session, 2026-07-24 – 2026-07-25, at Aaron's direction
-## Branch: `claude/mobile-port` (7 commits ahead of `main`, clean working tree)
-## Live preview: https://footeprint-prog.github.io/big-tiff-storyforge/writing.html
+## Status: **merged to main AND promoted to the live site.** Aaron is
+##         actively testing on Erica's real iPhone right now — this doc
+##         has not yet been updated with device-test findings, so treat
+##         it as "should be right" rather than "confirmed right on device."
+## Dev branch: `claude/mobile-port` — merged via PR #4, kept around, not deleted
+## Dev repo main: https://github.com/footeprint-prog/big-tiff-storyforge (has it)
+## Live preview (dev repo Pages): https://footeprint-prog.github.io/big-tiff-storyforge/writing.html
+## **Real live site: https://bigtiffsworld.com/app/ — HAS THE MOBILE BUILD.**
 
 ---
 
@@ -21,6 +27,11 @@
    those before assuming something is a bug.
 4. `CHECKLIST.md` — the "Mobile version of the tool" item is now marked
    done, with a pointer back to this caveat.
+5. **Check whether Aaron has reported real-device findings since this doc
+   was last touched.** If he has, those findings supersede the "not
+   verified" section below — update it rather than trusting this file
+   blindly. If you can't tell, ask rather than assume the device pass went
+   cleanly.
 
 Do not re-derive anything below; it cost real back-and-forth with Aaron to
 establish.
@@ -53,15 +64,39 @@ screenshot alone (though screenshots caught two real bugs numeric checks
 missed — see CHANGELOG "Scene View Redesign" and "Landing Nav Redesign"
 entries for what those were and why the audit script was blind to them).
 
-## The one deployment fact you need
+## Deployment facts — three separate places, keep them straight
 
-`https://footeprint-prog.github.io/big-tiff-storyforge/` is **GitHub
-Pages turned on for this dev repo**, pointed at this branch — separate
-from and not touching the real live site (`bigtiffsworld.com`, a different
-repo, `big_tiff_launchpage`, still on `main`/desktop-only, confirmed
-untouched). It rebuilds within ~1 minute of every push to this branch.
-**Promotion to the real site is still a deliberate separate manual step**
-per the original brief — do not do it without being asked.
+| Where | Repo | What's there |
+|---|---|---|
+| Dev repo Pages preview | `big-tiff-storyforge`, branch `claude/mobile-port` (Pages config) | Mobile build, rebuilds ~1 min after any push to that branch |
+| Dev repo `main` | `big-tiff-storyforge` | Mobile build, merged via PR #4 on 2026-07-25 |
+| **Real live site** | `big_tiff_launchpage`, branch `main`, custom domain `bigtiffsworld.com` via Porkbun DNS (no Cloudflare in the path) | **Promoted 2026-07-25** — `app/index.html` now IS the mobile build |
+
+**The promotion already happened.** `big_tiff_launchpage` is cloned locally
+as a sibling of this repo (`../big_tiff_launchpage`). The promotion was a
+direct file copy — `writing.html` → `app/index.html`, plus the three new
+`app-icon-*.png` and `manifest.webmanifest` into `app/` — verified
+byte-identical to the dev-repo source before committing (size match + PNG
+signature check on the icons), then pushed straight to that repo's `main`
+(commit `7c3a047`), and confirmed live via direct requests to
+`bigtiffsworld.com` (not just the Pages API) plus a real-browser load with
+zero console errors.
+
+**One non-obvious fix required at promotion time, worth knowing if you ever
+re-promote:** `manifest.webmanifest`'s `start_url` is `./writing.html` in
+the dev repo (correct there) but had to become `./index.html` for the live
+site, since that's the file's actual name there. If you copy files over
+naively without this fix, Add to Home Screen will launch to a 404. Check
+`app/manifest.webmanifest`'s `start_url` after any future re-promotion.
+
+**If you need to promote again** (e.g. after further mobile fixes land):
+repeat the same byte-identical-copy pattern from `big-tiff-storyforge@main`
+into `big_tiff_launchpage/app/`, re-apply the `start_url` fix, and verify
+against the live domain directly afterward — don't trust the Pages API
+alone, GitHub's raw-content CDN can serve a stale cached copy for a bit
+even after a real deploy completes (happened once during this promotion;
+`git show <ref>:path` avoids it, `curl raw.githubusercontent.com` doesn't
+always).
 
 ---
 
@@ -148,10 +183,14 @@ future visual change; don't eyeball contrast.
 
 ## What is NOT verified — say this plainly to Aaron/Erica, don't let it get lost
 
-**Nothing in this entire branch has been tested on real iOS Safari or a
-real iPhone.** Every round was verified in desktop Chromium at the target
-viewport sizes via `setMobilePreview()`. Specifically unconfirmed on real
-hardware:
+**Status as of 2026-07-25: Aaron is testing on Erica's real iPhone right
+now, on the live site (`bigtiffsworld.com/app/`), which does have the
+mobile build.** This doc has not yet been updated with what he finds — if
+you're reading this after that testing session, look for a newer
+CHANGELOG entry or ask before trusting the list below. Everything under
+this heading was true *going into* that test pass, verified only in
+desktop Chromium at target viewport sizes via `setMobilePreview()` — none
+of it had been confirmed on real hardware as of the promotion:
 - Whether `(hover: none) and (pointer: coarse)` actually fires as expected
   on her iPhone (the query was confirmed to *parse* validly; it was never
   observed *matching*, since this dev environment is mouse-only).
@@ -170,18 +209,27 @@ hardware:
 - Real touch gesture behavior generally (taps were simulated as click
   events, not real touch event sequences).
 
-**This should be the next priority**: get it in front of Erica on the
-actual device and report back what breaks. Everything above is a plausible
-place for iOS-specific surprises even though the logic and layout are
-verified correct in a standards-compliant browser.
+Aaron was pointed at these specific things to check: Add to Home Screen +
+standalone launch, caret/keyboard behavior while typing, rotation with a
+scene open, Dynamic Island / home indicator clearance, the Proofreader
+go-to arrow, and pinch-to-zoom. Everything above is a plausible place for
+iOS-specific surprises even though the logic and layout are verified
+correct in a standards-compliant browser.
 
 ---
 
 ## Suggested next steps
 
-1. Real-device pass on Erica's iPhone 16 Pro Max — portrait, landscape,
-   rotation, keyboard-up typing, Add to Home Screen.
-2. If it holds up, promotion to `bigtiffsworld.com/app` (separate repo,
-   separate manual step, ask first).
+1. **Read whatever Aaron reports back from the device pass first** —
+   don't start new mobile work without checking whether something above
+   just got confirmed broken or confirmed fine. Update this doc's "not
+   verified" list based on what he says, don't leave it stale.
+2. Fix whatever he finds. Small, isolated, screenshot-verified — same
+   discipline as every round in this branch (see CHANGELOG entries for the
+   pattern: measure, don't eyeball, and re-run the full accessibility audit
+   after any visual change).
 3. Anything flagged "not settled" in the CHANGELOG is Aaron's call, not a
    default to silently pick — surface it, don't resolve it quietly.
+4. Any further fix needs re-promoting to `bigtiffsworld.com` the same way
+   (see Deployment facts above) — it does NOT auto-deploy from the dev
+   repo, promotion is a separate manual copy every time.
