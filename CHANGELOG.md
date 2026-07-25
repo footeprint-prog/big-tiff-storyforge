@@ -2,6 +2,68 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-07-24] – Scene View Redesign: Green Control Arm (third device review)
+
+Nine notes from Aaron's third pass. The biggest is a structural change to the
+scene view: the horizontal green status bar becomes a fixed vertical control
+arm in the upper-left, with the editor scrolling beneath it.
+
+### Changed
+1. **Outline and Library panels open to 70%** of the window width (was 50%).
+2. **Status pill** is now the same height as the guidance rail buttons
+   (44px), and its morph-down options match the thinner pill — inset by the
+   green padding so the menu lines up with the pill instead of jutting past.
+3. **"Auto-saved just now"** left the status bar and now sits semi-transparent
+   in the bottom-right corner of the writing area, `pointer-events: none` so
+   taps pass through to the editor beneath.
+4. **The green status bar is now a fixed top-layer control arm** pinned under
+   the header: the status pill sits in a green corner, and a green arm runs
+   down the left edge with Save / Draft Log / Sammy stacked as 44px square
+   icon buttons matching the guidance rail opposite. Editor content scrolls
+   beneath it.
+5. **The thick gold line** is now the scene summary's bottom border (it used
+   to cap the status bar, which no longer sits there).
+6. **Guidance rail buttons are square** (44×44).
+7. **The rail is a top layer** and the editor now extends to the right edge
+   with the same margin as the left, scrolling under the tabs.
+8. **Show more/less is a bare chevron** on its own bottom line, lower-left —
+   no text label, which reclaims a lot of vertical space.
+
+### Fixed (found during verification, not reported)
+- **Nav-height feedback loop.** Measuring the nav's real height into
+  `--mobile-nav-h` fed straight back into its own buttons' `min-height`,
+  so each measurement grew the nav (62→110px) and bottom-anchored elements
+  drifted under it. Split into `--mobile-nav-h` (button height, fixed) and
+  `--mobile-nav-measured` (runtime total incl. the Focus-bulge padding and
+  safe area). Verified stable across repeated runs.
+- **Summary/review text was permanently hidden** behind the new arm. Those
+  two blocks are now indented clear of it; the editor still scrolls beneath
+  as intended.
+- **Review-note heading contrast, pre-existing:** gold on the box's
+  translucent `bg-[#D4AF37]/15` measured **4.19:1**, under AA. Surfaced only
+  after the contrast audit was corrected to composite an element's *own*
+  translucent background (it had been scoring translucent chips against the
+  wrong backdrop). Fixed with a solid `#3D2B1F` ground on mobile — same
+  palette, same gold border — taking it to **6.4:1**.
+- Guidance rail now scrolls rather than clipping if a large text scale makes
+  six tabs outgrow a short landscape viewport.
+
+### Verification notes
+440×956, 956×440, and at 75–175% UI text scale: **0** text under 12px, **0**
+WCAG AA contrast failures (with the corrected compositing), **0** primary
+controls under 44px, no horizontal scroll, no console errors. Landscape
+re-checked after the nav fix: arm, rail, sheets and the auto-save chip all
+clear the nav. Desktop re-measured and unchanged: status bar still a sticky
+48px green row, auto-save still inside it and static, expand arrows hidden,
+review box keeps its `/15` tint, 320px panels, 126px margins, 14px editor,
+100px pill, guidance columns side-by-side.
+
+**Deliberate sub-44px exceptions, flagged not settled:** the status dropdown
+*options* (~33px) and the expand chevrons (48×32) are both smaller than the
+44px floor because item 3 asked for smaller options and item 8 asked to
+reclaim vertical space. The chevrons were widened to 48px horizontally,
+which costs no vertical space since they sit alone on their line.
+
 ## [2026-07-24] – Panel & Guidance Refinements (second device review)
 
 Ten targeted notes from Aaron's review of the panels and guidance UI.

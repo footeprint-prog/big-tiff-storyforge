@@ -772,8 +772,14 @@
 
         body.mobile-layout {
             --mobile-header-h: 56px;
-            /* 60px of buttons + the nav's own 2px top border */
+            /* Button height only. MUST stay independent of the measured nav
+               height below: the nav's buttons consume this value, so feeding
+               the measured total back into it creates a growth loop. */
             --mobile-nav-h: 62px;
+            /* Full occupied nav height (buttons + Focus-bulge padding + safe
+               area). JS overwrites this from a real measurement; the value
+               here is just a sane fallback before that runs. */
+            --mobile-nav-measured: 76px;
             /* Two control tiers, both in rem so they scale with the UI text
                size in BOTH directions - scaling down genuinely shrinks the
                buttons, it doesn't just shrink their labels.
@@ -782,7 +788,9 @@
                           close buttons, sync, filters) */
             --tap: 2.75rem;      /* 44px at default scale */
             --tap-sm: 1.875rem;  /* 30px at default scale */
-            --mobile-nav-clear: calc(var(--mobile-nav-h) + env(safe-area-inset-bottom, 0px));
+            /* The measured height already includes the nav's safe-area
+               padding, so no extra inset is added here. */
+            --mobile-nav-clear: var(--mobile-nav-measured);
             touch-action: manipulation; /* kills iOS double-tap-zoom delay; pinch zoom still works */
         }
         @supports (height: 100dvh) {
@@ -980,11 +988,24 @@
 
         /* Scene view: summary -> status controls -> editor, with the guidance
            rail pinned to the right wall. */
-        /* All six guidance tabs live on the right edge now, so the editor
-           only needs clearance on that side. */
-        body.mobile-layout #scene-content { padding-left: 0.5rem; padding-right: 2.9rem; }
-        body.mobile-layout #scene-summary-bar { position: static; padding: 12px; }
-        body.mobile-layout #review-note-box { padding: 12px; }
+        /* Item 8 (2026-07-24): the guidance rail is a top layer, so the editor
+           extends to the right edge with the same margin as the left; content
+           scrolls beneath the rail. */
+        body.mobile-layout #scene-content { padding-left: 0.5rem; padding-right: 0.5rem; }
+        /* Item 6: the thick gold line is now the scene summary's bottom border
+           (it used to cap the status bar, which has moved to the left arm). */
+        body.mobile-layout #scene-summary-bar { position: static; padding: 12px; border-bottom: 5px solid rgba(212, 175, 55, 0.7); }
+        /* The review box's translucent gold tint (bg-[#D4AF37]/15) lightens
+           the backdrop enough that its gold heading measured 4.19:1 - under
+           AA. A solid #3D2B1F ground (already used across the tool) takes the
+           same gold to 6.4:1, keeping the gold border as the accent. */
+        body.mobile-layout #review-note-box { padding: 12px; background-color: #3D2B1F; }
+        /* The green arm is a top layer the EDITOR scrolls beneath (item 5),
+           but the summary and review note sit right under it and would be
+           permanently unreadable. Indent just those two clear of the arm;
+           the editor itself stays full-width. */
+        body.mobile-layout.scene-open #scene-summary-bar { padding-left: 5.6rem; }
+        body.mobile-layout.scene-open #review-note-box { padding-left: 5.6rem; }
         /* The summary's uppercase header repeats the scene title, which is
            already shown in the DRAFT label below it and in the Outline.
            At 440px that repetition costs ~3 wrapped lines above the editor. */
@@ -1000,13 +1021,76 @@
         body.mobile-layout .m-clamped { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
         body.mobile-layout #guidance-summary-text.m-clamped { -webkit-line-clamp: 3; }
         body.mobile-layout #review-note-text.m-clamped { -webkit-line-clamp: 2; }
-        body.mobile-layout .m-expand { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; margin-top: 2px; padding: 0 4px; background: none; border: none; color: #D4AF37; font-size: 0.875rem; font-weight: 600; text-decoration: underline; }
-        body.mobile-layout #scene-status-bar { position: static; top: auto !important; height: auto !important; min-height: 48px; flex-wrap: wrap; gap: 8px; padding: 8px; }
-        body.mobile-layout #scene-status-bar > .flex { flex-wrap: wrap; gap: 8px; flex: 1 1 auto; min-width: 0; justify-content: flex-start; }
-        body.mobile-layout #scene-status-bar .control-bar-item { padding: 0 10px; }
-        /* "Auto-saved just now" is reassurance, not a control - it wraps
-           inline with the buttons instead of claiming a row of its own. */
-        body.mobile-layout #auto-save-status { flex: 0 0 auto; min-height: 0; padding: 0 2px; font-size: 0.875rem; }
+        /* Item 9: Show more/less is just an arrow on its own bottom line,
+           lower-left, no text label - kills a lot of empty vertical space. */
+        /* Small arrow, but a wider hit area - width costs no vertical space
+           since it sits alone on the bottom line, so the target is easier to
+           hit without reintroducing the empty space item 9 removed. */
+        body.mobile-layout .m-expand { display: flex; align-items: center; justify-content: flex-start; align-self: flex-start; width: 3rem; height: 2rem; min-width: 3rem; min-height: 2rem; margin: 0; padding: 0; background: none; border: none; color: #D4AF37; font-size: 0.95rem; text-decoration: none; }
+
+        /* ---- Item 5 (2026-07-24): the green status bar becomes a fixed
+           "control arm" pinned to the upper-left, a top layer the editor
+           scrolls beneath. The status pill sits in the green corner; a green
+           arm extends down the left edge with Save / Draft Log / Sammy as
+           square icon buttons matching the guidance rail on the right. ---- */
+        body.mobile-layout #scene-status-bar {
+            position: fixed !important;
+            top: calc(var(--mobile-header-h) + 4px) !important;
+            left: 0;
+            z-index: 40;
+            height: auto !important; min-height: 0;
+            background-color: transparent !important;
+            border: none !important; border-radius: 0 !important;
+            padding: 0; margin: 0;
+            display: flex; flex-direction: column; align-items: flex-start; gap: 0;
+        }
+        /* Status pill in the green corner (shown only when a scene is loaded;
+           JS toggles its display, so don't force it here). */
+        body.mobile-layout #scene-status-select {
+            background: #1E6B5F;
+            padding: 5px;
+            border-radius: 0 0 12px 0;
+            width: auto;
+        }
+        body.mobile-layout .status-dropdown-wrapper { width: 7rem; }
+        body.mobile-layout .status-dropdown-trigger { min-height: var(--tap); font-size: 0.8rem; padding: 1px 20px 1px 8px; }
+        /* Item 3: the morph-down options match the thinner pill. The menu is
+           inset by the wrapper's own green padding so it lines up with the
+           pill exactly instead of jutting out past it. */
+        body.mobile-layout .status-dropdown-option { font-size: 0.8rem; padding: 7px 8px; }
+        body.mobile-layout #scene-status-select .status-dropdown-menu { left: 5px; right: 5px; }
+        body.mobile-layout .status-dropdown-wrapper.open .status-dropdown-menu { max-height: 200px; }
+
+        /* The green arm holding the three action buttons. */
+        body.mobile-layout #scene-status-bar > .flex {
+            flex-direction: column; align-items: flex-start; gap: 4px;
+            background: #1E6B5F;
+            padding: 4px;
+            border-radius: 0 12px 12px 0;
+        }
+        body.mobile-layout #scene-status-bar > .flex > button {
+            width: var(--tap); height: var(--tap); min-height: var(--tap);
+            padding: 0; gap: 0;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 10px;
+        }
+        /* Item 4: "Auto-saved…" leaves the arm and sits semi-transparent in
+           the bottom-right corner of the writing area. pointer-events:none so
+           taps pass through to the editor beneath it. */
+        body.mobile-layout #auto-save-status {
+            position: fixed;
+            right: 0.6rem;
+            bottom: calc(var(--mobile-nav-clear) + 0.4rem);
+            z-index: 30;
+            min-height: 0; padding: 2px 8px;
+            background: rgba(42, 33, 25, 0.55);
+            /* semi-transparent per item 4; !important beats the global
+               full-opacity label rule. Decorative status text, not content. */
+            color: rgba(244, 237, 228, 0.6) !important;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            pointer-events: none;
+        }
         body.mobile-layout #scene-content .gap-3.px-1 { display: block; }
         body.mobile-layout #scene-content .w-60 { display: none; }
         body.mobile-layout #scene-content .h-\[496px\] { height: auto; min-height: 60vh; min-height: 60svh; }
@@ -1026,14 +1110,17 @@
             background: #3D2B1F;
             border: 1px solid rgba(212, 175, 55, 0.55); border-right: none;
             border-radius: 10px 0 0 10px;
-            overflow: hidden;
+            /* auto (not hidden) so the six tabs stay reachable by scrolling
+               if a large UI text scale makes them outgrow a short landscape
+               viewport, rather than being silently clipped. */
+            overflow-y: auto; overflow-x: hidden;
             max-height: calc(100dvh - var(--mobile-header-h) - var(--mobile-nav-clear) - 12px);
         }
         body.mobile-layout .rail-tab {
             display: flex; align-items: center; justify-content: center;
-            /* icon-wide (item 7); still 44px tall for a comfortable tap */
-            width: 2.25rem; min-width: 2.25rem;
-            min-height: var(--tap);
+            /* square tabs (item 7, 2026-07-24) */
+            width: var(--tap); min-width: var(--tap);
+            height: var(--tap); min-height: var(--tap);
             padding: 0;
             background: transparent; border: none;
             border-bottom: 1px solid rgba(212, 175, 55, 0.3);
@@ -1047,7 +1134,7 @@
         /* Guidance drawer: the float-window shells reused as fixed,
            non-draggable pop-open drawers anchored just left of the rail.
            !important beats the shells' inline desktop geometry. */
-        body.mobile-layout .guidance-float-window { position: fixed; left: auto !important; right: 2.6rem !important; top: 50% !important; transform: translateY(-50%); width: min(74vw, 340px) !important; height: auto !important; max-height: calc(100dvh - var(--mobile-header-h) - var(--mobile-nav-clear) - 24px); min-width: 0; min-height: 0; z-index: 460; overscroll-behavior: contain; border-width: 2px; }
+        body.mobile-layout .guidance-float-window { position: fixed; left: auto !important; right: 3rem !important; top: 50% !important; transform: translateY(-50%); width: min(74vw, 340px) !important; height: auto !important; max-height: calc(100dvh - var(--mobile-header-h) - var(--mobile-nav-clear) - 24px); min-width: 0; min-height: 0; z-index: 460; overscroll-behavior: contain; border-width: 2px; }
 
         /* Item 8: the drawer's own header row (a duplicate title) is removed;
            the ONLY internal line is the separator under the card's own
@@ -1096,7 +1183,7 @@
 
         /* ---- Side panels: half-width slide-ins, never full screen ---- */
         body.mobile-layout #left-panel, body.mobile-layout #right-panel {
-            width: 50%; min-width: 12rem;
+            width: 70%; min-width: 12rem;
             top: var(--mobile-header-h); bottom: var(--mobile-nav-clear);
             z-index: 300; overscroll-behavior: contain;
         }
@@ -6413,10 +6500,20 @@
             if (!header) return;
             if (!isMobileMode()) {
                 document.body.style.removeProperty('--mobile-header-h');
+                document.body.style.removeProperty('--mobile-nav-measured');
                 return;
             }
             const h = Math.round(header.getBoundingClientRect().height);
             if (h > 0) document.body.style.setProperty('--mobile-header-h', h + 'px');
+            // The nav is taller than its buttons: it reserves padding for the
+            // Focus bulge, and that padding is rem-based so it grows with the
+            // UI text scale. Measure it rather than assuming, or bottom-anchored
+            // things (sheets, the auto-save chip) end up underneath it.
+            const nav = document.getElementById('mobile-nav');
+            if (nav) {
+                const nh = Math.round(nav.getBoundingClientRect().height);
+                if (nh > 0) document.body.style.setProperty('--mobile-nav-measured', nh + 'px');
+            }
         }
         window.addEventListener('resize', syncMobileHeaderHeight);
         window.addEventListener('orientationchange', () => setTimeout(syncMobileHeaderHeight, 120));
@@ -6726,9 +6823,11 @@
             const el = document.getElementById(textId);
             if (!el) return;
             const clamped = el.classList.toggle('m-clamped');
+            // Item 9: bare arrow, no text label.
             btn.innerHTML = clamped
-                ? '<i class="fa-solid fa-chevron-down"></i> Show more'
-                : '<i class="fa-solid fa-chevron-up"></i> Show less';
+                ? '<i class="fa-solid fa-chevron-down"></i>'
+                : '<i class="fa-solid fa-chevron-up"></i>';
+            btn.setAttribute('aria-label', clamped ? 'Show more' : 'Show less');
         }
 
         /**
@@ -6749,7 +6848,8 @@
                 btn.style.display = needsClamp ? '' : 'none';
                 if (needsClamp) {
                     el.classList.add('m-clamped');
-                    btn.innerHTML = '<i class="fa-solid fa-chevron-down"></i> Show more';
+                    btn.innerHTML = '<i class="fa-solid fa-chevron-down"></i>';
+                    btn.setAttribute('aria-label', 'Show more');
                 }
             });
         }
