@@ -2,6 +2,45 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-07-25] – Control Sizing Corrections (fifth review)
+
+### Fixed
+- **Status pill dimensions were inverted in the previous entry.** "Height of
+  the Scene Summary title line" had been applied as the pill's *height*
+  (20px tall × 60px wide). Corrected to the actual intent: the pill is
+  **double the Sammy button's width and the same height** — 88 × 44px.
+  Its dropdown options follow the wider pill.
+
+### Changed
+- **Green control shape tightened**: padding reduced to a uniform 4px and the
+  buttons left-aligned rather than centred, so the pill and all three action
+  buttons sit the same short distance from the window edge with an equal
+  green margin all round. The summary/review indent follows the wider shape.
+- **List tool removed** from the editor toolbar (desktop and mobile — the
+  request wasn't mobile-scoped), leaving B / I / U / Proofreader / zoom.
+- **Glasses icon centred** within its button.
+- **Show more/less chevrons now use the whole line as the hit area** (308px
+  wide instead of 48px). The row is otherwise empty, so this costs no
+  vertical space at all.
+- **Auto-save text is now light brown (`#8B6F47`)** and pulled further in
+  from the editor's rounded border so the two never touch.
+
+### Verification notes
+Measured at 440×956: pill 88×44 with Sammy at 44×44 (exactly double width,
+equal height); all four controls at x=4 inside a 4px-padded shape; list
+button absent; glasses `justify-content: center`; chevron hit area 308px
+matching the summary's inner width; auto-save at `rgb(139,111,71)` ending
+14px clear of the editor's right border. Toolbar still one line. **0**
+sub-12px text, **0** controls under 44px, no horizontal scroll, no console
+errors across eight views. Desktop re-measured unchanged: sticky 48px green
+row, auto-save still inside it in the original cream, 100×19 pill, book icon
+visible, 126px margins, 14px editor, 320px panels.
+
+**Intentional sub-AA exception:** the auto-save line now measures **1.34:1**
+— that is what "hardly noticeable" produces, and it was asked for
+explicitly. It is decorative reassurance only; saving happens regardless and
+is not conveyed by that text alone. Easy to raise if it turns out to matter.
+
 ## [2026-07-24] – Proofreader "Go To" + Header/Control Polish (fourth review)
 
 Seven notes from Aaron's fourth pass. Six are visual; the seventh adds a

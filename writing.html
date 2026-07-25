@@ -1022,8 +1022,8 @@
            (~74px) with a safe margin - closer in than it was. The summary's
            book icon is hidden because the status pill now occupies that slot
            (item 3), so the text starts where the icon used to. */
-        body.mobile-layout.scene-open #scene-summary-bar { padding-left: 5.375rem; }
-        body.mobile-layout.scene-open #review-note-box { padding-left: 5.375rem; }
+        body.mobile-layout.scene-open #scene-summary-bar { padding-left: 6.375rem; }
+        body.mobile-layout.scene-open #review-note-box { padding-left: 6.375rem; }
         body.mobile-layout #scene-summary-bar > .flex > .flex-shrink-0,
         body.mobile-layout #review-note-box > .flex > .flex-shrink-0 { display: none; }
         body.mobile-layout #scene-summary-bar > .flex,
@@ -1045,10 +1045,10 @@
         body.mobile-layout #review-note-text.m-clamped { -webkit-line-clamp: 2; }
         /* Item 9: Show more/less is just an arrow on its own bottom line,
            lower-left, no text label - kills a lot of empty vertical space. */
-        /* Small arrow, but a wider hit area - width costs no vertical space
-           since it sits alone on the bottom line, so the target is easier to
-           hit without reintroducing the empty space item 9 removed. */
-        body.mobile-layout .m-expand { display: flex; align-items: center; justify-content: flex-start; align-self: flex-start; width: 3rem; height: 2rem; min-width: 3rem; min-height: 2rem; margin: 0; padding: 0; background: none; border: none; color: #D4AF37; font-size: 0.95rem; text-decoration: none; }
+        /* Small arrow, but the WHOLE line is the hit area - the row it sits on
+           is otherwise empty, so spanning it costs no vertical space while
+           making the target far easier to hit. */
+        body.mobile-layout .m-expand { display: flex; align-items: center; justify-content: flex-start; align-self: stretch; width: 100%; height: 2rem; min-width: 0; min-height: 2rem; margin: 0; padding: 0; background: none; border: none; color: #D4AF37; font-size: 0.95rem; text-decoration: none; }
 
         /* ---- Item 5 (2026-07-24): the green status bar becomes a fixed
            "control arm" pinned to the upper-left, a top layer the editor
@@ -1068,8 +1068,10 @@
             border: 2px solid #D4AF37 !important;
             border-left: none !important;
             border-radius: 0 14px 14px 0 !important;
-            padding: 6px; margin: 0;
-            display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+            /* Equal margin of green on every side of the controls, kept tight
+               so they sit close to the window edge. */
+            padding: 4px; margin: 0;
+            display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
         }
         /* The pill is now a plain child of that single shape - no background
            or padding of its own (item 2). */
@@ -1079,20 +1081,19 @@
             border-radius: 0;
             width: auto;
         }
-        /* Item 3: shorter but longer - height of the Scene Summary title
-           line, width spanning the slot the summary's book icon used to
-           occupy (that icon is hidden below, so the pill takes its place). */
+        /* The pill is exactly DOUBLE the Sammy button's width and the SAME
+           height as it (2026-07-24 correction): 2 x 44px wide, 44px tall. */
         /* The #scene-status-bar prefix is required: the primary-tier rule
            "body.mobile-layout #scene-status-bar button { min-height: 44px }"
            carries an id and would otherwise out-rank a plain class rule and
            keep the pill 44px tall. */
-        body.mobile-layout #scene-status-bar .status-dropdown-wrapper { width: 3.75rem; min-height: 0; height: auto; }
+        body.mobile-layout #scene-status-bar .status-dropdown-wrapper { width: calc(var(--tap) * 2); min-height: 0; height: auto; }
         body.mobile-layout #scene-status-bar .status-dropdown-trigger {
             width: 100%; min-width: 0;
-            min-height: 0; height: 1.25rem;
-            font-size: 0.75rem; line-height: 1;
-            padding: 0 15px 0 7px;
-            background-size: 8px; background-position: right 4px center;
+            min-height: var(--tap); height: var(--tap);
+            font-size: 0.8rem; line-height: 1;
+            padding: 0 18px 0 10px;
+            background-size: 9px; background-position: right 6px center;
         }
         /* Item 3: the morph-down options match the thinner pill. The menu is
            inset by the wrapper's own green padding so it lines up with the
@@ -1102,7 +1103,7 @@
 
         /* The button stack, now inside the single merged shape (item 2). */
         body.mobile-layout #scene-status-bar > .flex {
-            flex-direction: column; align-items: flex-start; gap: 6px;
+            flex-direction: column; align-items: flex-start; gap: 4px;
             background: transparent;
             padding: 0;
             border-radius: 0;
@@ -1111,9 +1112,9 @@
         body.mobile-layout #scene-status-bar > .flex > button {
             width: var(--tap); height: var(--tap); min-height: var(--tap);
             padding: 0; gap: 0;
-            /* centered under the wider pill so the merged shape reads as one
-               deliberate block rather than a ragged edge */
-            margin: 0 auto;
+            /* left-aligned with the pill above so every control sits the same
+               short distance from the window edge */
+            margin: 0;
             display: flex; align-items: center; justify-content: center;
             border-radius: 10px;
         }
@@ -1126,15 +1127,18 @@
            taps pass through to the editor beneath it. */
         body.mobile-layout #auto-save-status {
             position: fixed;
-            right: 0.6rem;
-            bottom: calc(var(--mobile-nav-clear) + 0.4rem);
+            /* pulled further in so it never sits on the editor's rounded
+               border */
+            right: 1.6rem;
+            bottom: calc(var(--mobile-nav-clear) + 0.9rem);
             z-index: 30;
-            min-height: 0; padding: 2px 8px;
-            background: rgba(42, 33, 25, 0.55);
-            /* semi-transparent per item 4; !important beats the global
-               full-opacity label rule. Decorative status text, not content. */
-            color: rgba(244, 237, 228, 0.6) !important;
-            border-radius: 8px;
+            min-height: 0; padding: 0;
+            background: none;
+            /* Light brown, deliberately hardly noticeable (Aaron, 2026-07-24).
+               !important beats the global full-opacity label rule. This is
+               decorative reassurance, not content - see the CHANGELOG note on
+               it being an intentional sub-AA exception. */
+            color: #8B6F47 !important;
             font-size: 0.8rem;
             pointer-events: none;
         }
@@ -1704,16 +1708,12 @@
                                     <button onclick="formatEditorText('bold')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 font-bold">B</button>
                                     <button onclick="formatEditorText('italic')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 italic">I</button>
                                     <button onclick="formatEditorText('underline')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1">U</button>
-                                    <div class="w-px h-5 bg-[#D4AF37]/30 mx-2"></div>
-                                    <button onclick="formatEditorText('insertUnorderedList')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1">
-                                        <i class="fa-solid fa-list-ul"></i>
-                                    </button>
                                 </div>
                                 <div class="flex items-center gap-x-3">
                                     <div class="text-xs text-[#D4AF37]/70">
                                         <span id="word-count">0 words</span>
                                     </div>
-                                    <button onclick="openProofreader()" aria-label="Proofreader" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 flex items-center gap-x-1.5">
+                                    <button onclick="openProofreader()" aria-label="Proofreader" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 flex items-center justify-center gap-x-1.5">
                                         <i class="fa-solid fa-glasses"></i>
                                         <span class="btn-text">Proofreader</span>
                                     </button>
