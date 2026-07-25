@@ -2,6 +2,59 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-07-24] – Proofreader "Go To" + Header/Control Polish (fourth review)
+
+Seven notes from Aaron's fourth pass. Six are visual; the seventh adds a
+genuinely new Proofreader capability.
+
+### Added
+- **Proofreader "go to" arrow.** Every listed issue now carries an arrow that
+  closes the Proofreader, scrolls the offending text into view, and
+  highlights it. **It never mutates the draft**: wrapping the match in a
+  `<span>` would land in `editor.innerHTML` and autosave would persist the
+  highlight into Erica's prose. Instead it paints a `Range` via the CSS
+  Custom Highlight API (`::highlight(proofreader-target)`) where available,
+  and falls back to a plain text selection otherwise — both purely visual.
+  Because `getEditorPlainText()` injects newlines at block boundaries, the
+  issue offset doesn't map 1:1 onto DOM text nodes, so it picks the
+  occurrence *nearest* the expected offset rather than the first match. If
+  the draft changed and the text is gone, it says so instead of failing
+  silently.
+
+### Changed
+1. **Header logo**: the circular mark now matches the Login button's height
+   (30px on mobile), and the "Big Tiff" wordmark matches the circle.
+2. **The pill corner and button arm are one shape** — a single green block
+   with one 2px solid gold outline, instead of two separate green areas.
+3. **Status pill is shorter but longer**: 20px tall (the Scene Summary title
+   line height) and 60px wide, occupying the slot the summary's book icon
+   used to hold — that icon is hidden on mobile since the pill now sits
+   there. The morph-down options match the thinner pill exactly.
+4. **Sammy / Draft Log / Save** reordered in the arm (Sammy on top).
+5. **Scene summary and review note content moved left**, now sitting 21px
+   clear of the green shape instead of indented well past it.
+6. **All editor tools on one line** above the field, and the Proofreader's
+   magnifying glass is now a pair of glasses. Measured that full 44px-wide
+   tools still fit one line at 440px, so the single row costs nothing in
+   touch size.
+
+### Verification notes
+Go-to arrow tested end to end: correct word highlighted for two different
+issues, correct fallback selection when the Highlight API is stubbed out,
+**draft `innerHTML` byte-identical before and after** on both paths, and the
+"couldn't find that text" path when the draft no longer contains the match.
+Full audit at 440×956 across scene / proofreader / notepad / stats / text
+size / outline / library / landing: **0** sub-12px text, **0** WCAG AA
+contrast failures, **0** controls under 44px, no horizontal scroll, no
+console errors. Desktop re-measured unchanged: 32px logo mark, 21px
+wordmark, sticky 48px green row bar with its 5px gold cap, book icon still
+visible, 16px summary padding, autosave still inside the bar, 126px margins,
+14px editor, 320px panels.
+
+**Deliberate sub-44px exceptions (unchanged from the last round, both
+requested):** the status pill (20px, item 3 asked for shorter) and its
+dropdown options (30px). Everything else is at or above 44px.
+
 ## [2026-07-24] – Scene View Redesign: Green Control Arm (third device review)
 
 Nine notes from Aaron's third pass. The biggest is a structural change to the

@@ -770,6 +770,19 @@
         .review-flag-btn { background: none; border: none; padding: 0; margin: 0; color: #D4AF37; font: inherit; cursor: pointer; }
         .review-reason-inline.hidden { display: none !important; }
 
+        /* Proofreader "go to" arrow + the highlight it paints in the editor.
+           ::highlight() styles a Range without any DOM change, so the draft
+           itself is never modified (see goToProofreaderIssue). */
+        .proofreader-goto {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 2rem; height: 2rem;
+            border: 1px solid rgba(212, 175, 55, 0.6); border-radius: 8px;
+            background: none; color: #D4AF37; cursor: pointer;
+        }
+        .proofreader-goto:hover { background: rgba(212, 175, 55, 0.12); }
+        ::highlight(proofreader-target) { background-color: #D4AF37; color: #3D2B1F; }
+        body.mobile-layout .proofreader-goto { width: var(--tap); height: var(--tap); font-size: 1.05rem; }
+
         body.mobile-layout {
             --mobile-header-h: 56px;
             /* Button height only. MUST stay independent of the measured nav
@@ -947,10 +960,10 @@
            them collide instead of reflow. Height is measured at runtime into
            --mobile-header-h, so sheets and the rail follow whatever it becomes. */
         body.mobile-layout header .h-14 { gap: 4px; height: auto; min-height: var(--tap-sm); flex-wrap: wrap; padding: 2px 0; }
-        /* Logo mark at half its desktop size, and the header row is not
-           allowed to be taller than that mark demands. */
-        body.mobile-layout header .w-8.h-8 { width: 1rem; height: 1rem; flex-shrink: 0; }
-        body.mobile-layout header .w-8.h-8 i { font-size: 0.6rem; }
+        /* Item 1 (2026-07-24): the circular mark matches the Login button's
+           height, and the "Big Tiff" wordmark matches the circle's height. */
+        body.mobile-layout header .w-8.h-8 { width: var(--tap-sm); height: var(--tap-sm); flex-shrink: 0; }
+        body.mobile-layout header .w-8.h-8 i { font-size: 0.95rem; }
         body.mobile-layout #account-btn { height: var(--tap-sm); min-height: var(--tap-sm); }
         body.mobile-layout header .h-8 { height: var(--tap-sm); }
         body.mobile-layout header .h-14 > div { min-width: 0; }
@@ -960,7 +973,8 @@
         body.mobile-layout header .h-14 > div:first-child > div:first-child { min-width: 0; flex-shrink: 0; }
         body.mobile-layout header .h-14 > div:last-child { flex: 0 0 auto; gap: 8px; }
         body.mobile-layout #account-btn-label { max-width: 88px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        body.mobile-layout header .section-title { font-size: 0.85rem; white-space: nowrap; }
+        /* Wordmark sized to the circular mark's height (item 1). */
+        body.mobile-layout header .section-title { font-size: var(--tap-sm); line-height: 1; white-space: nowrap; }
         body.mobile-layout #account-btn { flex-shrink: 0; }
 
         /* ---- No moveable UI on touch: hide every drag/resize/float
@@ -1004,8 +1018,16 @@
            but the summary and review note sit right under it and would be
            permanently unreadable. Indent just those two clear of the arm;
            the editor itself stays full-width. */
-        body.mobile-layout.scene-open #scene-summary-bar { padding-left: 5.6rem; }
-        body.mobile-layout.scene-open #review-note-box { padding-left: 5.6rem; }
+        /* Item 5: content sits left-aligned, just clear of the green shape
+           (~74px) with a safe margin - closer in than it was. The summary's
+           book icon is hidden because the status pill now occupies that slot
+           (item 3), so the text starts where the icon used to. */
+        body.mobile-layout.scene-open #scene-summary-bar { padding-left: 5.375rem; }
+        body.mobile-layout.scene-open #review-note-box { padding-left: 5.375rem; }
+        body.mobile-layout #scene-summary-bar > .flex > .flex-shrink-0,
+        body.mobile-layout #review-note-box > .flex > .flex-shrink-0 { display: none; }
+        body.mobile-layout #scene-summary-bar > .flex,
+        body.mobile-layout #review-note-box > .flex { gap: 0; }
         /* The summary's uppercase header repeats the scene title, which is
            already shown in the DRAFT label below it and in the Outline.
            At 440px that repetition costs ~3 wrapped lines above the editor. */
@@ -1033,47 +1055,72 @@
            scrolls beneath. The status pill sits in the green corner; a green
            arm extends down the left edge with Save / Draft Log / Sammy as
            square icon buttons matching the guidance rail on the right. ---- */
+        /* Item 2 (2026-07-24): the pill's green corner and the button arm are
+           ONE continuous shape with a single 2px gold outline, rather than
+           two separate green blocks. */
         body.mobile-layout #scene-status-bar {
             position: fixed !important;
-            top: calc(var(--mobile-header-h) + 4px) !important;
+            top: var(--mobile-header-h) !important;
             left: 0;
             z-index: 40;
             height: auto !important; min-height: 0;
-            background-color: transparent !important;
-            border: none !important; border-radius: 0 !important;
-            padding: 0; margin: 0;
-            display: flex; flex-direction: column; align-items: flex-start; gap: 0;
+            background-color: #1E6B5F !important;
+            border: 2px solid #D4AF37 !important;
+            border-left: none !important;
+            border-radius: 0 14px 14px 0 !important;
+            padding: 6px; margin: 0;
+            display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
         }
-        /* Status pill in the green corner (shown only when a scene is loaded;
-           JS toggles its display, so don't force it here). */
+        /* The pill is now a plain child of that single shape - no background
+           or padding of its own (item 2). */
         body.mobile-layout #scene-status-select {
-            background: #1E6B5F;
-            padding: 5px;
-            border-radius: 0 0 12px 0;
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
             width: auto;
         }
-        body.mobile-layout .status-dropdown-wrapper { width: 7rem; }
-        body.mobile-layout .status-dropdown-trigger { min-height: var(--tap); font-size: 0.8rem; padding: 1px 20px 1px 8px; }
+        /* Item 3: shorter but longer - height of the Scene Summary title
+           line, width spanning the slot the summary's book icon used to
+           occupy (that icon is hidden below, so the pill takes its place). */
+        /* The #scene-status-bar prefix is required: the primary-tier rule
+           "body.mobile-layout #scene-status-bar button { min-height: 44px }"
+           carries an id and would otherwise out-rank a plain class rule and
+           keep the pill 44px tall. */
+        body.mobile-layout #scene-status-bar .status-dropdown-wrapper { width: 3.75rem; min-height: 0; height: auto; }
+        body.mobile-layout #scene-status-bar .status-dropdown-trigger {
+            width: 100%; min-width: 0;
+            min-height: 0; height: 1.25rem;
+            font-size: 0.75rem; line-height: 1;
+            padding: 0 15px 0 7px;
+            background-size: 8px; background-position: right 4px center;
+        }
         /* Item 3: the morph-down options match the thinner pill. The menu is
            inset by the wrapper's own green padding so it lines up with the
            pill exactly instead of jutting out past it. */
-        body.mobile-layout .status-dropdown-option { font-size: 0.8rem; padding: 7px 8px; }
-        body.mobile-layout #scene-status-select .status-dropdown-menu { left: 5px; right: 5px; }
+        body.mobile-layout .status-dropdown-option { font-size: 0.75rem; padding: 6px 6px; }
         body.mobile-layout .status-dropdown-wrapper.open .status-dropdown-menu { max-height: 200px; }
 
-        /* The green arm holding the three action buttons. */
+        /* The button stack, now inside the single merged shape (item 2). */
         body.mobile-layout #scene-status-bar > .flex {
-            flex-direction: column; align-items: flex-start; gap: 4px;
-            background: #1E6B5F;
-            padding: 4px;
-            border-radius: 0 12px 12px 0;
+            flex-direction: column; align-items: flex-start; gap: 6px;
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            width: 100%;
         }
         body.mobile-layout #scene-status-bar > .flex > button {
             width: var(--tap); height: var(--tap); min-height: var(--tap);
             padding: 0; gap: 0;
+            /* centered under the wider pill so the merged shape reads as one
+               deliberate block rather than a ragged edge */
+            margin: 0 auto;
             display: flex; align-items: center; justify-content: center;
             border-radius: 10px;
         }
+        /* Item 4: Sammy above Save in the stack. */
+        body.mobile-layout #scene-status-bar > .flex > button[aria-label="Send to Sammy"] { order: 1; }
+        body.mobile-layout #scene-status-bar > .flex > button[aria-label="Draft Log"] { order: 2; }
+        body.mobile-layout #scene-status-bar > .flex > button[aria-label="Save Draft"] { order: 3; }
         /* Item 4: "Auto-saved…" leaves the arm and sits semi-transparent in
            the bottom-right corner of the writing area. pointer-events:none so
            taps pass through to the editor beneath it. */
@@ -1094,10 +1141,22 @@
         body.mobile-layout #scene-content .gap-3.px-1 { display: block; }
         body.mobile-layout #scene-content .w-60 { display: none; }
         body.mobile-layout #scene-content .h-\[496px\] { height: auto; min-height: 60vh; min-height: 60svh; }
-        body.mobile-layout #editor-toolbar { position: sticky; top: 0; z-index: 25; background: #4A3A2E; border-radius: 0 0 12px 12px; flex-wrap: wrap; gap: 6px; padding: 6px; justify-content: flex-start; }
-        /* The toolbar's two inner groups must wrap too, or they overflow at
-           high page-zoom levels even though the toolbar itself wraps. */
-        body.mobile-layout #editor-toolbar > div { flex-wrap: wrap; gap: 6px; min-width: 0; }
+        /* Item 6 (2026-07-24): every editor tool on ONE line above the field.
+           It scrolls horizontally rather than wrapping, so a large text scale
+           can never push tools onto a second row. */
+        body.mobile-layout #editor-toolbar {
+            position: sticky; top: 0; z-index: 25;
+            background: #4A3A2E; border-radius: 0 0 12px 12px;
+            flex-wrap: nowrap; gap: 4px; padding: 5px 6px;
+            justify-content: flex-start;
+            overflow-x: auto; overflow-y: hidden;
+        }
+        body.mobile-layout #editor-toolbar > div { flex-wrap: nowrap; gap: 4px; min-width: 0; flex-shrink: 0; }
+        /* Measured: 44px-wide tools still fit on one line at 440px, so there
+           is no need to trade touch size for the single row. */
+        body.mobile-layout #editor-toolbar .text-tool-btn { min-width: var(--tap); padding-left: 0.4rem; padding-right: 0.4rem; }
+        body.mobile-layout #word-count { white-space: nowrap; font-size: 0.8rem; }
+        body.mobile-layout #editor-zoom-label { font-size: 0.8rem; }
         body.mobile-layout #editor { font-size: 1.0625rem; line-height: 1.65; min-height: 55vh; min-height: 55svh; padding: 1rem; border-radius: 1rem; }
 
         /* Guidance rail: all six tabs as one icon-only strip on the right
@@ -1655,7 +1714,7 @@
                                         <span id="word-count">0 words</span>
                                     </div>
                                     <button onclick="openProofreader()" aria-label="Proofreader" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 flex items-center gap-x-1.5">
-                                        <i class="fa-solid fa-magnifying-glass"></i>
+                                        <i class="fa-solid fa-glasses"></i>
                                         <span class="btn-text">Proofreader</span>
                                     </button>
                                     <div class="flex items-center gap-x-1 border border-[#D4AF37]/40 rounded-xl px-1.5 py-0.5" title="Display size only — does not affect saved draft">
@@ -4164,9 +4223,17 @@
                     : '';
 
                 card.innerHTML = `
-                    <div class="text-[10px] uppercase tracking-wide text-[#D4AF37]/60 mb-1">${issue.category}</div>
-                    <div class="text-[#F4EDE4]">"${issue.original}"</div>
-                    <div class="text-[#D4AF37]/70 text-xs mt-1">${issue.shortMessage}</div>
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0 flex-1">
+                            <div class="text-[10px] uppercase tracking-wide text-[#D4AF37]/60 mb-1">${issue.category}</div>
+                            <div class="text-[#F4EDE4]">"${issue.original}"</div>
+                            <div class="text-[#D4AF37]/70 text-xs mt-1">${issue.shortMessage}</div>
+                        </div>
+                        <button onclick="goToProofreaderIssue(${idx})" class="proofreader-goto flex-shrink-0"
+                                aria-label="Go to this text in the draft" title="Go to this text in the draft">
+                            <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                        </button>
+                    </div>
                     ${suggestionHtml}
                 `;
                 list.appendChild(card);
@@ -4176,6 +4243,113 @@
             const applyAllRow = document.getElementById('proofreader-apply-all-row');
             const hasAnySuggestion = lastProofreaderIssues.some(i => !!i.suggestion);
             if (applyAllRow) applyAllRow.classList.toggle('hidden', !hasAnySuggestion);
+        }
+
+        /**
+         * "Go to" an issue: closes the Proofreader and reveals the offending
+         * text in the editor, highlighted.
+         *
+         * DRAFT SAFETY: this never mutates editor content. Wrapping the match
+         * in a <span> would land inside editor.innerHTML and autosave would
+         * then persist the highlight into Erica's draft. So it uses the CSS
+         * Custom Highlight API where available (paints over a Range, no DOM
+         * change) and falls back to a plain text selection - both are purely
+         * visual.
+         */
+        function findRangeForIssue(editor, issue) {
+            // Collect text nodes and the running offset of each, so a plain-text
+            // index can be mapped back to a DOM position.
+            const nodes = [];
+            let total = '';
+            const walk = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+            let n;
+            while ((n = walk.nextNode())) {
+                nodes.push({ node: n, start: total.length });
+                total += n.textContent;
+            }
+            if (!nodes.length || !issue.original) return null;
+
+            // getEditorPlainText() injects newlines for block boundaries, so the
+            // issue offset won't line up exactly with this concatenation. Take
+            // the occurrence nearest the expected offset instead of the first.
+            const positions = [];
+            let from = 0, at;
+            while ((at = total.indexOf(issue.original, from)) !== -1) {
+                positions.push(at);
+                from = at + 1;
+            }
+            if (!positions.length) return null;
+            const target = positions.reduce((best, p) =>
+                Math.abs(p - issue.offset) < Math.abs(best - issue.offset) ? p : best, positions[0]);
+
+            const end = target + issue.original.length;
+            const locate = (idx) => {
+                for (let i = nodes.length - 1; i >= 0; i--) {
+                    if (nodes[i].start <= idx) return { node: nodes[i].node, offset: idx - nodes[i].start };
+                }
+                return { node: nodes[0].node, offset: 0 };
+            };
+            const s = locate(target), e = locate(end);
+            const range = document.createRange();
+            try {
+                range.setStart(s.node, Math.min(s.offset, s.node.textContent.length));
+                range.setEnd(e.node, Math.min(e.offset, e.node.textContent.length));
+            } catch (err) { return null; }
+            return range;
+        }
+
+        function goToProofreaderIssue(idx) {
+            const issue = lastProofreaderIssues[idx];
+            if (!issue) return;
+            const editor = document.getElementById('editor');
+            if (!editor) return;
+
+            hideProofreader();
+
+            const reveal = () => {
+                const range = findRangeForIssue(editor, issue);
+                if (!range) {
+                    // Nothing matched (draft edited since the check) - say so
+                    // rather than silently doing nothing.
+                    const status = document.getElementById('auto-save-status');
+                    if (status) {
+                        const prev = status.textContent;
+                        status.textContent = "Couldn't find that text";
+                        setTimeout(() => { status.textContent = prev; }, 2200);
+                    }
+                    return;
+                }
+
+                // Scroll the match into view within the editor's scroll parent.
+                const rect = range.getBoundingClientRect();
+                const scroller = document.getElementById('center-scroll-area') || document.scrollingElement;
+                if (rect.height || rect.width) {
+                    const sRect = scroller.getBoundingClientRect();
+                    scroller.scrollTop += (rect.top - sRect.top) - (sRect.height / 3);
+                }
+
+                // Highlight without touching the DOM.
+                let highlighted = false;
+                try {
+                    if (window.CSS && CSS.highlights && typeof Highlight === 'function') {
+                        CSS.highlights.set('proofreader-target', new Highlight(range));
+                        clearTimeout(goToProofreaderIssue._t);
+                        goToProofreaderIssue._t = setTimeout(() => {
+                            try { CSS.highlights.delete('proofreader-target'); } catch (e) {}
+                        }, 5000);
+                        highlighted = true;
+                    }
+                } catch (e) { /* fall through to selection */ }
+
+                if (!highlighted) {
+                    const sel = window.getSelection();
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }
+            };
+
+            // Let the Proofreader finish closing so layout is settled first.
+            requestAnimationFrame(() => setTimeout(reveal, 60));
         }
 
         /**
