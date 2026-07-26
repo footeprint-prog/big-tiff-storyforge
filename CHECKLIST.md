@@ -96,6 +96,43 @@ they aren't lost now that the old document is marked historical.
       real iOS Safari**, so the iOS-specific items (keyboard/caret behaviour,
       safe-area insets, real Page Zoom) still want a pass on Erica's actual
       phone before this is considered closed in the strict sense.
+- [ ] **Achievements — UI phase.** The data layer shipped 2026-07-26
+      (188 achievements, encrypted `progress.json`, usage tracking, the
+      engine, and the human-confirmed Full Outline Clear gate). Everything
+      below is presentation; the engine already emits
+      `bigtiff:achievement` / `bigtiff:progress-updated` events and
+      `getAchievementBook()` returns unlocked state, percent, remaining and
+      a formatted label for all 188, so none of this needs engine changes.
+      Added 2026-07-26 at Aaron's direction.
+      1. **Unique icons for each achievement.** Definitions already carry an
+         `ic` placeholder name per achievement; the Stats teaser currently
+         falls back to per-category FontAwesome icons. Needs a decision on
+         art style, source, and storage (sprite / inline SVG / image files).
+         **Discussion item first, not a build item.**
+      2. **Achievement book (bank)** showing completed achievements.
+      3. **Achievement window/list split** into achievements in progress
+         (with status) vs. not yet accomplished, showing a
+         completed/total count.
+      4. **Weekly achievements included but identified separately** from the
+         188 lifetime ones.
+      5. **Desktop header trophy shelf.** A visible bank in the header with
+         **5 empty slots** styled as empty trophy shelves — matching the 5
+         weeklies drawn each week. Completing a weekly places a unique
+         "live" animated creature GIF in a jar on that shelf. Two asset jobs:
+         generate the shelf artwork, then generate a bank of animated
+         creature GIFs. **Shelves empty on weekly reset.**
+      6. **Mobile achievements nav button + window.** Weeklies shown in a
+         lower-left collapsible bank of the same trophy shelf slots. Must
+         respect the existing mobile patterns (`mobileCloseEverything()`
+         one-at-a-time enforcement, `updateNavActiveState()` deriving
+         highlight from real open state, ≥44px targets) and must not collide
+         with the draggable guidance rail on the right edge.
+      - **Blocker for items 4-6:** the weekly pool is incomplete. The JSON
+        has 13 entries; Aaron is sourcing the rest toward 21. Selection
+        logic is pool-size agnostic, so adding them is a data edit — but the
+        weekly selection/reset itself still needs wiring (deterministic
+        seeded pick of 5 per ISO week, identical on every device and not
+        re-rollable by refreshing).
 - [ ] **Visual skinning of the tool.** Aaron is producing a fantasy-themed
       visual mockup separately; once complete, it will be broken down into
       individual elements to "skin" the existing functional tool. Directly
@@ -103,9 +140,12 @@ they aren't lost now that the old document is marked historical.
       polish" item below - this is the broader version of that same
       deferred work. Functional correctness takes priority until the
       mockup is ready. (Added 2026-06-22.)
-- [ ] **Full draft assembly function.** A function to assemble all
-      completed (or all, depending on design) per-scene drafts into one
-      complete manuscript document. Context: Aaron's original plan was for
+- [ ] **Full draft assembly function.** *(Also gates the
+      `manuscript-assembled` achievement, which ships unreachable until this
+      exists — its `counter.assemblyRun` metric is already in place and sits
+      at 0, so the achievement works the day this lands.)* A function to
+      assemble all completed (or all, depending on design) per-scene drafts
+      into one complete manuscript document. Context: Aaron's original plan was for
       the tool to assemble the complete draft, then bring that assembled
       document to Claude directly (outside this tool) for full-manuscript
       developmental/line editing - Grok has had difficulty with long text
@@ -204,4 +244,4 @@ rather than assuming the whole list is still live.
 
 ---
 
-*Last Updated: 2026-06-22*
+*Last Updated: 2026-07-26*
