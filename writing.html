@@ -4999,7 +4999,13 @@
                 // Tracked only after the fetch actually succeeds - a failed
                 // sync shouldn't count toward the Sync Keeper ladder.
                 trackEvent('syncAction');
-                // A sync can be what brings in the last Complete status.
+                // NOT because a sync can complete a scene - it can't. Only the
+                // user marks a scene Complete (handleStatusChange);
+                // reconcileSceneStatuses only ever writes 'review' or restores
+                // her own saved status. This hook matters because the sync is
+                // where those saved statuses get restored onto currentCanonData
+                // - i.e. the first moment in a fresh page load that an
+                // already-finished outline becomes visible to the engine.
                 maybePromptOutlineClear();
 
                 renderDynamicOutline();
