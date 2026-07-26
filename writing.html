@@ -4999,6 +4999,8 @@
                 // Tracked only after the fetch actually succeeds - a failed
                 // sync shouldn't count toward the Sync Keeper ladder.
                 trackEvent('syncAction');
+                // A sync can be what brings in the last Complete status.
+                maybePromptOutlineClear();
 
                 renderDynamicOutline();
                 showSyncSummaryReport(data, changeResult);
@@ -7364,6 +7366,51 @@
                 markProgressDirtyMetrics(null);
                 scheduleProgressFlush();
             });
+            maybePromptOutlineClear();
+        }
+
+        // ---- Full Outline Clear: human confirmation ----
+        // Aaron, 2026-07-26: this one is NOT machine-decidable. 'unfinished'
+        // is the natural resting state of a scene, so no reading of the
+        // outline proves the book is done - only Erica saying so does.
+        // The machine's only job is deciding when it's fair to ASK: every
+        // scene Complete, nothing flagged for review.
+        // Asks at most once per day so a wobbling last scene can't nag.
+        function outlineClearEligible() {
+            const scenes = (currentCanonData && currentCanonData.scenes) || [];
+            return !!scenes.length
+                && scenes.every(s => s.status === 'complete')
+                && scenes.every(s => !s.needsReviewReason);
+        }
+
+        function maybePromptOutlineClear() {
+            if (PROGRESS_DISABLED) return;
+            progSafe(() => {
+                loadProgress();
+                if (PROG.x.outlineClearConfirmed) return;
+                if (!outlineClearEligible()) return;
+                const today = progDayKey();
+                if (PROG.x.outlineClearAskedDay === today) return;
+                PROG.x.outlineClearAskedDay = today;
+                saveProgressSoon();
+                // Deferred a tick so this never fires mid-render, and so the
+                // outline/status UI has repainted behind the dialog first.
+                setTimeout(() => progSafe(() => {
+                    if (PROG.x.outlineClearConfirmed || !outlineClearEligible()) return;
+                    const total = ((currentCanonData && currentCanonData.scenes) || []).length;
+                    const yes = confirm(
+                        `Every one of your ${total} scenes is marked Complete, with nothing flagged for review.\n\n` +
+                        `Is the outline truly finished — everything written the way you want it?\n\n` +
+                        `Say yes only if you mean it. You can always come back to this later.`
+                    );
+                    if (!yes) return;
+                    PROG.x.outlineClearConfirmed = 1;
+                    PROG.x.outlineClearConfirmedAt = new Date().toISOString();
+                    saveProgressNow();
+                    markProgressDirtyMetrics(['scenes.terminal']);
+                    scheduleProgressFlush({ priority: true });
+                }), 400);
+            });
         }
 
         // =====================================================
@@ -7420,7 +7467,7 @@
             {id:'half-the-path',t:'Half the Path',d:'≥50% of current scenes Complete.',c:'scene-progress',ic:'half',o:42,r:{m:'ratio.complete',n:0.5}},
             {id:'three-quarters-path',t:'Three-Quarters Path',d:'≥75% of current scenes Complete.',c:'scene-progress',ic:'three-quarters',o:43,r:{m:'ratio.complete',n:0.75}},
             {id:'all-scenes-complete',t:'All Scenes Complete',d:'Every current scene is Complete.',c:'scene-progress',ic:'all-scenes',o:44,r:{m:'ratio.complete',n:1}},
-            {id:'full-outline-clear',t:'Full Outline Clear',d:'Every scene in a final decided status.',c:'scene-progress',ic:'clear',o:45,r:{m:'scenes.terminal',n:1}},
+            {id:'full-outline-clear',t:'Full Outline Clear',d:'You confirmed the outline is truly finished.',c:'scene-progress',ic:'clear',o:45,r:{m:'scenes.terminal',n:1}},
             {id:'words-100',t:'Hundred Words',d:'100 cumulative words.',c:'wordcraft-lifetime',ic:'words-100',o:50,r:{m:'words.total',n:100}},
             {id:'words-250',t:'Two Hundred Fifty',d:'250 cumulative words.',c:'wordcraft-lifetime',ic:'words-250',o:51,r:{m:'words.total',n:250}},
             {id:'words-500',t:'Five Hundred',d:'500 cumulative words.',c:'wordcraft-lifetime',ic:'words-500',o:52,r:{m:'words.total',n:500}},
@@ -7675,15 +7722,13 @@
             const completed = Math.max(done, P.c.scenesCompleted || 0);
             f.set('counter.scenesCompleted', completed);
             f.set('ratio.complete', scenes.length ? (done / scenes.length) : 0);
-            // "Full Outline Clear" = every scene has actually been through her
-            // hands and nothing is left flagged. NOT simply "no scene is in an
-            // unexpected status" - 'unfinished' is the DEFAULT, so counting it
-            // as terminal made this unlock on a brand-new project having done
-            // nothing at all. Requires draft text on every scene and no
-            // outstanding review flags.
-            f.set('scenes.terminal', (scenes.length
-                && scenes.every(s => s.status !== 'review')
-                && scenes.every(s => P.s[s.id] && P.s[s.id].drf)) ? 1 : 0);
+            // "Full Outline Clear" is HUMAN-CONFIRMED (Aaron, 2026-07-26).
+            // The machine can only decide when to *ask*: every scene Complete
+            // with no review flags. It never unlocks on its own - 'unfinished'
+            // is the natural resting state of a scene, so no automatic reading
+            // of the outline can tell you the book is actually done. Only
+            // Erica saying yes does that. See maybePromptOutlineClear().
+            f.set('scenes.terminal', P.x.outlineClearConfirmed ? 1 : 0);
 
             f.set('weekly.perfectCount', P.wk.perfectCount || 0);
             f.set('weekly.perfectCur', P.wk.perfectCur || 0);

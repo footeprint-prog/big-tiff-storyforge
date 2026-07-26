@@ -71,12 +71,19 @@ teaser now shows real data instead of the old hardcoded mock.
   sabotaging the layer mid-session and confirming typing, autosave, word
   count, and all other localStorage keys were unaffected.
 
+### Resolved after review
+- **`full-outline-clear` is now human-confirmed** (Aaron, 2026-07-26). Its
+  original trigger ("every scene has a terminal status") read literally
+  counted `unfinished` — the *natural resting state* of a scene — as
+  terminal, so it unlocked on a brand-new project having done nothing.
+  Settled: **no automatic reading of the outline can prove the book is
+  finished; only Erica saying so can.** The engine's only job is deciding
+  when it's fair to *ask* — every scene Complete, nothing flagged for
+  review — and then it prompts. Declining leaves it locked. It asks at most
+  once per day, so a last scene that wobbles in and out of Complete can
+  never nag.
+
 ### Flagged, not settled
-- **`full-outline-clear` had an ambiguous trigger** ("every scene has a
-  terminal status"). Read literally it counted `unfinished` — the *default*
-  state — as terminal, so it unlocked on a brand-new project having done
-  nothing. Reinterpreted as "every scene has draft text and none are flagged
-  for review." **Aaron's call whether that's the intended meaning.**
 - **`manuscript-assembled` is currently unreachable** — it targets a
   full-draft-assembly feature that doesn't exist. The `counter.assemblyRun`
   metric ships at 0 so it works the day that feature lands.
@@ -97,6 +104,14 @@ Desktop re-verified unchanged: 100×19 pill at `9999px` radius showing the
 full word, arrow tab hidden, action bank always visible, copy buttons
 hidden, status bar `sticky`, guidance rail hidden. **0** console errors
 throughout.
+
+`full-outline-clear` gate tested across all five states: all-unfinished
+(not eligible, no prompt), partially complete (not eligible), all complete
+*with* a review flag (not eligible, no prompt), all complete with flags
+cleared (eligible, prompts once), declined (stays locked, fact stays 0,
+no nag on same-day re-check), and confirmed on a later day (unlocks, and
+the confirmation survives a merge in both directions). Fresh-project
+regression re-checked: still 0.
 
 ## [2026-07-25] – Guidance Copy, Rail Drag, Circular Status (sixth review)
 
