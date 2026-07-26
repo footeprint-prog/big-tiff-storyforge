@@ -2581,6 +2581,7 @@
 
         function toggleLeftPanel() {
             console.log("[Debug] toggleLeftPanel() called");
+            trackEvent('outlineOpen');
             try {
                 const panel = document.getElementById('left-panel');
                 if (!panel) {
@@ -2602,6 +2603,7 @@
 
         function toggleRightPanel() {
             console.log("[Debug] toggleRightPanel() called");
+            trackEvent('libraryOpen');
             try {
                 const panel = document.getElementById('right-panel');
                 if (!panel) {
@@ -2659,6 +2661,7 @@
         }
 
         function writingFocusMode() {
+            trackEvent('focusOn'); trackEvent('focusWriting');
             closeAllFloatingWindows();
 
             // "Home positions, open" - undo any Reading Focus collapse.
@@ -2668,6 +2671,7 @@
         }
 
         function readingFocusMode() {
+            trackEvent('focusOn'); trackEvent('focusReading');
             closeAllFloatingWindows();
 
             // Collapse every home card to its header row to minimize
@@ -3077,6 +3081,7 @@
         // ==================== LIBRARY SEARCH ====================
         function filterLibrary() {
             const searchTerm = document.getElementById('library-search').value.toLowerCase().trim();
+            trackLibrarySearch(searchTerm);
             const sections = document.querySelectorAll('.library-category');
 
             sections.forEach(section => {
@@ -3247,7 +3252,8 @@
         }
 
         function createNewNote() {
-            const newNote = { 
+            trackEvent('noteCreate');
+            const newNote = {
                 id: Date.now().toString(), 
                 title: '', 
                 content: '', 
@@ -3411,6 +3417,7 @@
 
         function addCurrentNoteToLibrary() {
             if (!currentNoteId) return;
+            trackEvent('noteToLibrary');
 
             const idx = notepadNotes.findIndex(n => n.id === currentNoteId);
             if (idx === -1) return;
@@ -3522,6 +3529,7 @@
         }
 
         function openNotepad() {
+            trackEvent('notepadOpen');
             if (isMobileMode()) mobileCloseEverything('notepad-window');
             const notepad = document.getElementById('notepad-window');
             notepad.classList.remove('hidden');
@@ -3659,6 +3667,7 @@
          */
         function createNewDraftSnapshot() {
             if (!currentScene) return;
+            trackEvent('snapshotCreate', { sceneId: currentScene.id });
             const editor = document.getElementById('editor');
             const snapshots = loadDraftSnapshots(currentScene.id);
 
@@ -3697,6 +3706,7 @@
         function restoreDraftSnapshotToEditor() {
             if (!currentScene) return;
             if (draftPadSelectedId === null) return; // Already viewing current draft
+            trackEvent('snapshotRestore', { sceneId: currentScene.id });
 
             const snapshots = loadDraftSnapshots(currentScene.id);
             const snap = snapshots.find(s => s.id === draftPadSelectedId);
@@ -3764,6 +3774,7 @@
                 alert('Select a scene first to view its drafts.');
                 return;
             }
+            trackEvent('draftpadOpen', { sceneId: currentScene.id });
             if (isMobileMode()) mobileCloseEverything('draftpad-window');
             const draftpad = document.getElementById('draftpad-window');
             draftpad.classList.remove('hidden');
@@ -3981,6 +3992,7 @@
         }
 
         function openChangelog(filter) {
+            trackEvent('changelogOpen');
             if (isMobileMode()) {
                 mobileCloseEverything('changelog-window');
                 // Mobile shows one chronological feed - the filter tabs are
@@ -4225,6 +4237,7 @@
         let lastProofreaderCheckedText = ''; // exact plain text the current issues' offsets are valid against
 
         function openProofreader() {
+            trackEvent('proofrun');
             if (isMobileMode()) mobileCloseEverything('proofreader-window');
             const win = document.getElementById('proofreader-window');
             win.classList.remove('hidden');
@@ -4510,6 +4523,7 @@
         function applyProofreaderSuggestion(idx) {
             const issue = lastProofreaderIssues[idx];
             if (!issue || !issue.suggestion) return;
+            trackEvent('proofApply');
 
             const currentPlainText = getEditorPlainText();
             const candidateAtOffset = lastProofreaderCheckedText.substring(issue.offset, issue.offset + issue.length);
@@ -4723,6 +4737,7 @@
                 alert('Select a scene first.');
                 return;
             }
+            trackEvent('sendSammy', { sceneId: currentScene.id });
 
             if (isMobileMode()) mobileCloseEverything('sammy-export-window');
 
@@ -4854,6 +4869,10 @@
                     localStorage.setItem(currentDraftStorageKey(currentScene.id), editor.innerHTML);
                     // Debounced push to the data repo (primary only, no-op without a token).
                     pushDraftToServer(currentScene.id, editor.innerHTML, false);
+                    // Progress tracking is throttled to 2s: this is the hottest
+                    // path in the app and the analytics layer must never add
+                    // per-keystroke work.
+                    scheduleWritingTrack(currentScene.id);
                 }
                 updateWordCount();
                 refreshDraftPadIfOpen();
@@ -4882,6 +4901,11 @@
             checkSession();
             renderLandingScreen();
             refreshProgressPill();
+
+            // Progress/achievement tracking. Starts from local state only;
+            // bootstrapData() merges in the remote copy once it arrives.
+            initProgressTracking();
+
             bootstrapData();
 
             // TEMP: ?mockConflict=1 previews the draft-conflict banner UI.
@@ -4971,6 +4995,10 @@
                 currentCanonData = data;
                 lastSyncTimestamp = new Date();
                 previousCanonData = JSON.parse(JSON.stringify(data));
+
+                // Tracked only after the fetch actually succeeds - a failed
+                // sync shouldn't count toward the Sync Keeper ladder.
+                trackEvent('syncAction');
 
                 renderDynamicOutline();
                 showSyncSummaryReport(data, changeResult);
@@ -5420,8 +5448,18 @@
                 }
             }
 
+            // Snapshot the pre-change scene list so harmonic-closure can tell
+            // whether this was the LAST non-complete scene.
+            const scenesBefore = ((currentCanonData && currentCanonData.scenes) || [])
+                .map(s => ({ id: s.id, status: s.status }));
+            const wasReview = scene.status === 'review';
+
             scene.status = newStatus;
             scene.needsReviewReason = null; // Clear reason once user intentionally changes it
+
+            trackEvent('statusChange', { sceneId: scene.id });
+            trackStatusChange(scene.id, newStatus, scenesBefore);
+            if (wasReview) progSafe(() => { if (!PROG.f.reviewCleared) { PROG.f.reviewCleared = new Date().toISOString(); saveProgressSoon(); } });
 
             // Persist locally so this status survives the next sync (Sammy's JSON stays read-only).
             saveSceneStatus(scene.id, newStatus, null);
@@ -5674,6 +5712,7 @@
          * automatically, since the floating window always shows full content).
          */
         function toggleGuidanceCardMinimize(key) {
+            trackEvent('guidanceOpen');
             const card = document.getElementById(`guidance-card-${key}`);
             const content = document.getElementById(`guidance-${key}`);
             const icon = document.getElementById(`guidance-minimize-icon-${key}`);
@@ -5705,6 +5744,7 @@
         const guidanceFloatInitialized = new Set();
 
         function floatGuidanceCard(key) {
+            trackEvent('guidanceOpen');
             // Touch devices never float cards - route to the drawer instead
             // (safety net; the float buttons are hidden on mobile anyway).
             if (isMobileMode()) { mobileToggleGuidanceDrawer(key); return; }
@@ -5925,6 +5965,7 @@
 
             currentScene = scene;
             localStorage.setItem('last-selected-scene-id', scene.id);
+            trackEvent('sceneSelect', { sceneId: scene.id });
             if (typeof pushStateToServer === 'function') pushStateToServer();
 
             // Mobile: a scene pick means "take me to the editor" - close the
@@ -6118,10 +6159,15 @@
             const scenes = (currentCanonData && currentCanonData.scenes) || [];
             const total = scenes.length;
             const localDone = scenes.filter(s => s.status === 'complete').length;
-            let localWords = 0;
-            for (let i = 0; i < localStorage.length; i++) {
-                const k = localStorage.key(i);
-                if (k && k.startsWith('current-draft:')) localWords += plainWordCount(localStorage.getItem(k));
+            // Use the maintained word index when available - the full
+            // localStorage scan below is O(scenes x draft length) and is
+            // noticeably slow on a phone with 100+ scenes.
+            let localWords = wordIndexTotal;
+            if (!localWords) {
+                for (let i = 0; i < localStorage.length; i++) {
+                    const k = localStorage.key(i);
+                    if (k && k.startsWith('current-draft:')) localWords += plainWordCount(localStorage.getItem(k));
+                }
             }
             // Prefer shared stats.json (so all profiles see Erica's real numbers);
             // fall back to locally-derived values when it hasn't loaded yet.
@@ -6133,15 +6179,37 @@
                 totalScenes: total,
                 totalWords: words,
                 streak,
-                achievements: [
-                    { id: 'first_scene', icon: 'fa-seedling',        label: 'First Scene',   unlocked: done >= 1 },
-                    { id: 'five_scenes', icon: 'fa-layer-group',     label: '5 Scenes',      unlocked: done >= 5 },
-                    { id: 'act1_done',   icon: 'fa-flag-checkered',  label: 'Act 1 Done',    unlocked: false },
-                    { id: 'streak7',     icon: 'fa-fire',            label: '7-Day Streak',  unlocked: false },
-                    { id: 'words10k',    icon: 'fa-feather',         label: '10k Words',     unlocked: words >= 10000 },
-                    { id: 'wordsmith',   icon: 'fa-trophy',          label: 'Wordsmith',     unlocked: false }
-                ]
+                achievements: statsAchievementTiles(),
+                achievementsUnlocked: PROG ? Object.keys(PROG.u).length : 0,
+                achievementsTotal: (window.ACHIEVEMENTS || []).length
             };
+        }
+
+        // The Stats window shows a 6-tile teaser, not the full book (that's a
+        // later phase). Real engine data: everything already unlocked, newest
+        // first, backfilled with whatever is closest to unlocking - so the
+        // panel always shows something actionable rather than a wall of locks.
+        // Icons are per-category placeholders until the real icon set lands.
+        const STATS_CAT_ICON = {
+            'first-steps': 'fa-seedling', 'consistency': 'fa-fire',
+            'scene-progress': 'fa-layer-group', 'wordcraft-lifetime': 'fa-feather',
+            'wordcraft-session': 'fa-bolt', 'tool-mastery': 'fa-wand-magic-sparkles',
+            'usage-tracking': 'fa-compass', 'depth': 'fa-water',
+            'completion': 'fa-trophy', 'weekly': 'fa-star'
+        };
+        function statsAchievementTiles() {
+            const book = progSafe(getAchievementBook, null);
+            if (!book || !book.length) return [];
+            const done = book.filter(a => a.unlocked)
+                .sort((x, y) => String(y.unlockedAt).localeCompare(String(x.unlockedAt)));
+            const near = book.filter(a => !a.unlocked && !a.hidden)
+                .sort((x, y) => y.progress.pct - x.progress.pct);
+            return done.concat(near).slice(0, 6).map(a => ({
+                id: a.id,
+                icon: STATS_CAT_ICON[a.category] || 'fa-award',
+                label: a.title,
+                unlocked: a.unlocked
+            }));
         }
 
         function refreshProgressPill() {
@@ -6156,6 +6224,7 @@
 
         // ---- Stats window (mirrors Draft Pad's window pattern) ----
         function showStoryStats() {
+            trackEvent('statsOpen');
             if (isMobileMode()) mobileCloseEverything('stats-window');
             const win = document.getElementById('stats-window');
             win.classList.remove('hidden');
@@ -6182,8 +6251,9 @@
                 tile(s.scenesCompleted, 'Scenes Done') +
                 tile(s.totalWords.toLocaleString(), 'Words') +
                 tile(s.streak, 'Day Streak');
-            const unlocked = s.achievements.filter(a => a.unlocked).length;
-            document.getElementById('stats-ach-count').textContent = `${unlocked}/${s.achievements.length}`;
+            // Count is the REAL total across all 188, not the 6 teaser tiles.
+            document.getElementById('stats-ach-count').textContent =
+                `${s.achievementsUnlocked}/${s.achievementsTotal}`;
             document.getElementById('stats-achievements').innerHTML = s.achievements.map(a =>
                 `<div class="flex items-center gap-x-2 rounded-xl p-2 border ${a.unlocked
                     ? 'border-[#D4AF37]/50 bg-[#4A3A2E]'
@@ -6622,20 +6692,32 @@
                 try {
                     const scenes = (currentCanonData && currentCanonData.scenes) || [];
                     const done = scenes.filter(s => s.status === 'complete').length;
-                    let words = 0;
-                    for (let i = 0; i < localStorage.length; i++) {
-                        const k = localStorage.key(i);
-                        if (k && k.startsWith('current-draft:')) words += plainWordCount(localStorage.getItem(k));
+                    // Prefer the maintained in-memory index over rescanning all
+                    // of localStorage; fall back to a scan if it isn't built yet.
+                    let words = wordIndexTotal;
+                    if (!words) {
+                        for (let i = 0; i < localStorage.length; i++) {
+                            const k = localStorage.key(i);
+                            if (k && k.startsWith('current-draft:')) words += plainWordCount(localStorage.getItem(k));
+                        }
                     }
-                    const base = statsData || { schemaVersion: 1, events: [], achievementsUnlocked: [], streakDays: [] };
+                    const base = statsData || { schemaVersion: 2, streakDays: [] };
+                    base.schemaVersion = 2;
                     base.scenesCompleted = done;
                     base.totalWords = words;
                     const today = new Date().toISOString().slice(0, 10);
                     base.streakDays = Array.isArray(base.streakDays) ? base.streakDays : [];
                     if (!base.streakDays.includes(today)) base.streakDays.push(today);
-                    base.events = Array.isArray(base.events) ? base.events : [];
-                    if (eventType) base.events.push({ type: eventType, at: new Date().toISOString(), ...(meta || {}) });
-                    if (base.events.length > 2000) base.events = base.events.slice(-2000);
+
+                    // v2: the per-event activity log is GONE from this file. It
+                    // published a plaintext record of when Erica writes to a
+                    // public repo. That detail now lives encrypted in
+                    // progress.json; drain any legacy array on first v2 write.
+                    base.events = [];
+                    delete base.achievementsUnlocked;   // was dead/unused, and would leak WHICH badges
+                    base.achievementsUnlockedCount = PROG ? Object.keys(PROG.u).length : 0;
+                    base.achievementsTotal = (window.ACHIEVEMENTS || []).length;
+
                     const sha = await getFileSha('stats.json');
                     await pushToDataRepo('stats.json', base, { sha, message: `Stats: ${eventType || 'update'}` });
                     statsData = base;
@@ -6733,6 +6815,1206 @@
             }, STATE_PUSH_DEBOUNCE);
         }
 
+        // =====================================================
+        // PROGRESS & ACHIEVEMENTS - DATA LAYER
+        // =====================================================
+        // Local-first: every mutation lands in localStorage immediately; the
+        // encrypted push to progress.json is backup + cross-device mirror
+        // only. If the push never happens nothing is lost but continuity.
+        //
+        // This whole layer is STRICTLY SECONDARY. It must never be able to
+        // break the editor - every entry point is wrapped, and three failures
+        // trip PROGRESS_DISABLED for the rest of the session.
+        // =====================================================
+        const PROGRESS_LS_KEY = 'bigtiff-progress';
+        const PROGRESS_DIRTY_KEY = 'bigtiff-progress-dirty';
+        const PROGRESS_DAY_WINDOW = 400;   // days kept at full fidelity before folding into roll{}
+
+        let PROG = null;
+        let PROGRESS_DISABLED = false;
+        let _progFailures = 0;
+
+        function noteTrackerFailure(e) {
+            _progFailures++;
+            console.warn('[progress] failure ' + _progFailures, e);
+            if (_progFailures >= 3) {
+                PROGRESS_DISABLED = true;
+                console.warn('[progress] disabled for this session after 3 failures');
+            }
+        }
+
+        // Wrap anything that touches the progress layer. Returns undefined on
+        // failure rather than throwing into the caller (usually an editor or
+        // click handler that must keep working).
+        function progSafe(fn, fallback) {
+            if (PROGRESS_DISABLED) return fallback;
+            try { return fn(); } catch (e) { noteTrackerFailure(e); return fallback; }
+        }
+
+        function emptyProgress() {
+            return {
+                v: 1,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                c: {}, f: {}, d: {}, h: new Array(24).fill(0),
+                b: { session: 0, day: 0, sceneDraft: 0, sceneDraftId: null },
+                s: {}, k: {}, u: {}, x: {},
+                wk: { weeks: {}, perfectCount: 0, perfectCur: 0, perfectMax: 0 },
+                roll: null
+            };
+        }
+
+        // Tolerates partial/corrupt stored objects - any missing branch is
+        // rebuilt rather than throwing, so a bad write can't brick tracking.
+        function normalizeProgress(p) {
+            const base = emptyProgress();
+            if (!p || typeof p !== 'object') return base;
+            base.v = 1;
+            base.createdAt = p.createdAt || base.createdAt;
+            base.updatedAt = p.updatedAt || base.updatedAt;
+            base.c = (p.c && typeof p.c === 'object') ? p.c : {};
+            base.f = (p.f && typeof p.f === 'object') ? p.f : {};
+            base.d = (p.d && typeof p.d === 'object') ? p.d : {};
+            base.h = (Array.isArray(p.h) && p.h.length === 24) ? p.h.map(n => Number(n) || 0) : base.h;
+            base.b = Object.assign(base.b, (p.b && typeof p.b === 'object') ? p.b : {});
+            base.s = (p.s && typeof p.s === 'object') ? p.s : {};
+            base.k = (p.k && typeof p.k === 'object') ? p.k : {};
+            base.u = (p.u && typeof p.u === 'object') ? p.u : {};
+            base.x = (p.x && typeof p.x === 'object') ? p.x : {};
+            base.wk = Object.assign(base.wk, (p.wk && typeof p.wk === 'object') ? p.wk : {});
+            base.wk.weeks = (base.wk.weeks && typeof base.wk.weeks === 'object') ? base.wk.weeks : {};
+            base.roll = (p.roll && typeof p.roll === 'object') ? p.roll : null;
+            return base;
+        }
+
+        function loadProgress() {
+            if (PROG) return PROG;
+            PROG = progSafe(() => normalizeProgress(_lsJSON(PROGRESS_LS_KEY, 'null')), null) || emptyProgress();
+            return PROG;
+        }
+
+        // ---- localStorage mirror (coalesced; forced sync on pagehide) ----
+        let _progSaveTimer = null;
+        function saveProgressSoon() {
+            if (PROGRESS_DISABLED) return;
+            clearTimeout(_progSaveTimer);
+            _progSaveTimer = setTimeout(saveProgressNow, 400);
+        }
+        function saveProgressNow() {
+            if (PROGRESS_DISABLED || !PROG) return;
+            clearTimeout(_progSaveTimer);
+            progSafe(() => {
+                PROG.updatedAt = new Date().toISOString();
+                localStorage.setItem(PROGRESS_LS_KEY, JSON.stringify(PROG));
+                localStorage.setItem(PROGRESS_DIRTY_KEY, '1');
+            });
+        }
+
+        // ---- date/week helpers ----
+        function progDayKey(d) {
+            const t = d || new Date();
+            // Local date, not UTC: a 9pm session must land on today, not tomorrow.
+            return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+        }
+        function progDayFromKey(key) {
+            const [y, m, d] = key.split('-').map(Number);
+            return new Date(y, m - 1, d);
+        }
+        function progDaysBetween(aKey, bKey) {
+            return Math.round((progDayFromKey(bKey) - progDayFromKey(aKey)) / 86400000);
+        }
+        function progIsWeekend(d) { const n = (d || new Date()).getDay(); return n === 0 || n === 6; }
+        // ISO-8601 week key, e.g. "2026-W30". Weeks start Monday.
+        function progWeekKey(d) {
+            const t = new Date(d || new Date());
+            t.setHours(0, 0, 0, 0);
+            t.setDate(t.getDate() + 3 - ((t.getDay() + 6) % 7));   // shift to Thursday of this week
+            const firstThu = new Date(t.getFullYear(), 0, 4);
+            firstThu.setDate(firstThu.getDate() + 3 - ((firstThu.getDay() + 6) % 7));
+            const week = 1 + Math.round((t - firstThu) / (7 * 86400000));
+            return `${t.getFullYear()}-W${String(week).padStart(2, '0')}`;
+        }
+
+        function progDay(key) {
+            const k = key || progDayKey();
+            if (!PROG.d[k]) PROG.d[k] = { w: 0, s: 0, z: 0, m: 0, e: progIsWeekend(progDayFromKey(k)) ? 1 : 0, k: 0 };
+            return PROG.d[k];
+        }
+
+        // ---- Fold days older than the window into roll{} scalars ----
+        // Lossless for every metric the rules actually need: they want distinct-day
+        // COUNTS and cumulative totals, never "what happened on 2024-03-11".
+        function foldOldDays() {
+            const keys = Object.keys(PROG.d).sort();
+            if (keys.length <= PROGRESS_DAY_WINDOW) return;
+            const cut = keys.length - PROGRESS_DAY_WINDOW;
+            const roll = PROG.roll || { through: null, w: 0, writeDays: 0, k1kDays: 0, mobileDays: 0, weekendDays: 0, sessions: 0, zeroSessions: 0 };
+            for (let i = 0; i < cut; i++) {
+                const day = PROG.d[keys[i]];
+                roll.w += day.w || 0;
+                if (day.w > 0) roll.writeDays++;
+                if (day.k) roll.k1kDays++;
+                if (day.m) roll.mobileDays++;
+                if (day.e && day.w > 0) roll.weekendDays++;
+                roll.sessions += day.s || 0;
+                roll.zeroSessions += day.z || 0;
+                roll.through = keys[i];
+                delete PROG.d[keys[i]];
+            }
+            PROG.roll = roll;
+        }
+
+        // ---- Streaks: ALWAYS derived from d{}, never merged ----
+        function recomputeStreaks() {
+            const keys = Object.keys(PROG.d).filter(k => (PROG.d[k].w || 0) > 0).sort();
+            const kKeys = Object.keys(PROG.d).filter(k => PROG.d[k].k).sort();
+            const run = (arr) => {
+                let cur = 0, max = 0, prev = null;
+                arr.forEach(k => {
+                    cur = (prev && progDaysBetween(prev, k) === 1) ? cur + 1 : 1;
+                    if (cur > max) max = cur;
+                    prev = k;
+                });
+                return { cur, max, last: prev };
+            };
+            const w = run(keys), q = run(kKeys);
+            const prevK = PROG.k || {};
+            // A "current" streak only counts if it reaches today or yesterday;
+            // otherwise it's history and the live streak is 0.
+            const today = progDayKey();
+            const liveW = (w.last && progDaysBetween(w.last, today) <= 1) ? w.cur : 0;
+            const liveQ = (q.last && progDaysBetween(q.last, today) <= 1) ? q.cur : 0;
+            // Record the most recent break so streak-keeper can see it.
+            let brokenAt = prevK.brokenAt || null, brokenLen = prevK.brokenLen || 0;
+            for (let i = 1; i < keys.length; i++) {
+                if (progDaysBetween(keys[i - 1], keys[i]) > 1) {
+                    const lenBefore = run(keys.slice(0, i)).cur;
+                    brokenAt = keys[i - 1]; brokenLen = lenBefore;
+                }
+            }
+            PROG.k = {
+                writeCur: liveW, writeMax: w.max, lastWriteDay: w.last || null,
+                k1kCur: liveQ, k1kMax: q.max, lastK1kDay: q.last || null,
+                brokenAt, brokenLen
+            };
+        }
+
+        // ---- Merge (join-semilattice: order never matters) ----
+        // Every field merges by max / earliest / union, so two devices can
+        // reconcile in either direction and land on the same result.
+        function _mergeMaxNums(a, b) {
+            const o = Object.assign({}, a || {});
+            Object.keys(b || {}).forEach(k => {
+                const bv = b[k];
+                if (typeof bv === 'number') o[k] = Math.max(Number(o[k]) || 0, bv);
+                else if (o[k] === undefined) o[k] = bv;
+            });
+            return o;
+        }
+        function _mergeMinIso(a, b) {
+            const o = Object.assign({}, a || {});
+            Object.keys(b || {}).forEach(k => {
+                if (!o[k] || b[k] < o[k]) o[k] = b[k];
+            });
+            return o;
+        }
+        function mergeProgress(a, b) {
+            a = normalizeProgress(a); b = normalizeProgress(b);
+            const o = emptyProgress();
+            o.createdAt = (a.createdAt < b.createdAt) ? a.createdAt : b.createdAt;
+            o.c = _mergeMaxNums(a.c, b.c);
+            o.f = _mergeMinIso(a.f, b.f);
+            o.u = _mergeMinIso(a.u, b.u);
+            o.b = _mergeMaxNums(a.b, b.b);
+            o.x = _mergeMaxNums(a.x, b.x);
+            o.h = a.h.map((v, i) => Math.max(v || 0, b.h[i] || 0));
+            // days: per-field max
+            o.d = {};
+            Object.keys(a.d).concat(Object.keys(b.d)).forEach(k => {
+                const da = a.d[k] || {}, db = b.d[k] || {};
+                o.d[k] = {
+                    w: Math.max(da.w || 0, db.w || 0), s: Math.max(da.s || 0, db.s || 0),
+                    z: Math.max(da.z || 0, db.z || 0), m: Math.max(da.m || 0, db.m || 0),
+                    e: Math.max(da.e || 0, db.e || 0), k: Math.max(da.k || 0, db.k || 0)
+                };
+            });
+            // scenes: mw max, sp SORTED union, sel/drf OR.
+            // sp is sorted rather than insertion-ordered so the merge is
+            // commutative - an insertion-ordered union produced a different
+            // array depending on which side merged first, which would flip
+            // status-journey on/off purely by sync order. Only the DISTINCT
+            // COUNT is used; "ended Complete" is read from the live scene.
+            o.s = {};
+            Object.keys(a.s).concat(Object.keys(b.s)).forEach(id => {
+                const sa = a.s[id] || {}, sb = b.s[id] || {};
+                const sp = (sa.sp || []).slice();
+                (sb.sp || []).forEach(st => { if (sp.indexOf(st) === -1) sp.push(st); });
+                sp.sort();
+                o.s[id] = {
+                    mw: Math.max(sa.mw || 0, sb.mw || 0),
+                    sp: sp.slice(0, 6),
+                    sel: (sa.sel || sb.sel) ? 1 : 0,
+                    drf: (sa.drf || sb.drf) ? 1 : 0,
+                    edn: Math.max(sa.edn || 0, sb.edn || 0),
+                    edl: ((sa.edl || '') > (sb.edl || '')) ? sa.edl : (sb.edl || null)
+                };
+            });
+            // weekly
+            o.wk = {
+                weeks: {},
+                perfectCount: Math.max(a.wk.perfectCount || 0, b.wk.perfectCount || 0),
+                perfectCur: Math.max(a.wk.perfectCur || 0, b.wk.perfectCur || 0),
+                perfectMax: Math.max(a.wk.perfectMax || 0, b.wk.perfectMax || 0)
+            };
+            Object.keys(a.wk.weeks).concat(Object.keys(b.wk.weeks)).forEach(wk => {
+                const wa = a.wk.weeks[wk] || {}, wb = b.wk.weeks[wk] || {};
+                const done = (wa.done || []).slice();
+                (wb.done || []).forEach(id => { if (done.indexOf(id) === -1) done.push(id); });
+                o.wk.weeks[wk] = { a: wa.a || wb.a || [], done, p: Math.max(wa.p || 0, wb.p || 0) };
+            });
+            // roll: whichever folded further wins
+            const ra = a.roll, rb = b.roll;
+            o.roll = (!ra) ? rb : (!rb) ? ra : ((ra.through || '') >= (rb.through || '') ? ra : rb);
+            o.updatedAt = new Date().toISOString();
+            return o;
+        }
+
+        // =====================================================
+        // WRITING SESSIONS + WORD INDEX
+        // =====================================================
+        // "Session" here means a WRITING session and is unrelated to the
+        // login session (SESSION_KEY / bigtiff-session-auth). It starts on
+        // ANY interaction - not just typing - because the zero-word-session
+        // achievements deliberately reward simply showing up.
+        const WRITE_SESSION_LS_KEY = 'bigtiff-write-session';
+        const SESSION_IDLE_MS = 15 * 60 * 1000;
+        let writeSession = null;
+        let _sessionIdleTimer = null;
+
+        // In-memory word index. Replaces the O(scenes x length) full
+        // localStorage scan that getStatsData/syncStatsToRepo do, which is
+        // genuinely slow on a phone with 100+ scenes. Rebuilt only at boot
+        // and session start.
+        let wordIndex = {};
+        let wordIndexTotal = 0;
+
+        function rebuildWordIndex() {
+            wordIndex = {}; wordIndexTotal = 0;
+            const PREFIX = 'current-draft:';
+            for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                if (k && k.startsWith(PREFIX)) {
+                    const n = plainWordCount(localStorage.getItem(k));
+                    wordIndex[k.slice(PREFIX.length)] = n;
+                    wordIndexTotal += n;
+                }
+            }
+            return wordIndexTotal;
+        }
+
+        function noteEditorWords(sceneId, html) {
+            const n = plainWordCount(html);
+            wordIndexTotal += n - (wordIndex[sceneId] || 0);
+            wordIndex[sceneId] = n;
+            return n;
+        }
+
+        function persistWriteSession() {
+            if (!writeSession) return;
+            progSafe(() => localStorage.setItem(WRITE_SESSION_LS_KEY, JSON.stringify(writeSession)));
+        }
+
+        function startWriteSession(resumed) {
+            if (!resumed) {
+                writeSession = {
+                    id: 's-' + Date.now(),
+                    startedAt: new Date().toISOString(),
+                    day: progDayKey(),
+                    lastActiveAt: new Date().toISOString(),
+                    baseline: wordIndexTotal,
+                    words: 0,
+                    scenes: []
+                };
+                PROG.c.sessionsTotal = (PROG.c.sessionsTotal || 0) + 1;
+                progDay().s++;
+                persistWriteSession();
+                saveProgressSoon();
+            }
+            armSessionIdle();
+        }
+
+        function armSessionIdle() {
+            clearTimeout(_sessionIdleTimer);
+            _sessionIdleTimer = setTimeout(() => progSafe(() => endWriteSession('idle')), SESSION_IDLE_MS);
+        }
+
+        // Finalize into the day bucket. Guarded by id so a resumed-then-ended
+        // session can never be counted twice.
+        function endWriteSession(reason) {
+            if (!writeSession) return;
+            const s = writeSession;
+            clearTimeout(_sessionIdleTimer);
+            if (PROG.x.lastFinalizedSession === s.id) { writeSession = null; return; }
+            PROG.x.lastFinalizedSession = s.id;
+            const day = progDay(s.day);
+            day.w += s.words;
+            if (s.words === 0) { day.z++; PROG.c.sessionsZeroWord = (PROG.c.sessionsZeroWord || 0) + 1; }
+            if (day.w >= 1000) day.k = 1;
+            if (s.words > (PROG.b.session || 0)) { PROG.b.session = s.words; PROG.x.pbSessionBeaten = 1; }
+            if (day.w > (PROG.b.day || 0)) PROG.b.day = day.w;
+            recomputeStreaks();
+            localStorage.removeItem(WRITE_SESSION_LS_KEY);
+            writeSession = null;
+            saveProgressNow();
+            markProgressDirtyMetrics(null);           // full sweep at session end
+            flushProgressToRepo({ reason: reason || 'session-end' });
+        }
+
+        function touchWriteSession() {
+            const now = Date.now();
+            if (writeSession) {
+                const last = Date.parse(writeSession.lastActiveAt);
+                if (now - last >= SESSION_IDLE_MS) { endWriteSession('idle'); startWriteSession(false); return; }
+                if (writeSession.day !== progDayKey()) { endWriteSession('midnight'); startWriteSession(false); return; }
+                writeSession.lastActiveAt = new Date(now).toISOString();
+                armSessionIdle();
+            } else {
+                startWriteSession(false);
+            }
+        }
+
+        function restoreWriteSession() {
+            const stored = progSafe(() => _lsJSON(WRITE_SESSION_LS_KEY, 'null'), null);
+            if (!stored || !stored.id) return;
+            const idle = Date.now() - Date.parse(stored.lastActiveAt || stored.startedAt);
+            if (idle < SESSION_IDLE_MS && stored.day === progDayKey()) {
+                // Resume: baseline still refers to the same word index, which
+                // rebuildWordIndex() reproduces exactly. A refresh mid-session
+                // must not cost a 1,900-word session its shot at the 2k badge.
+                writeSession = stored;
+                armSessionIdle();
+            } else {
+                // Orphaned by a tab kill - finalize it with its last persisted
+                // word count rather than losing it.
+                writeSession = stored;
+                endWriteSession('orphan');
+            }
+        }
+
+        // =====================================================
+        // EVENT TRACKING
+        // =====================================================
+        // Named feature events only - deliberately NOT a generic click log.
+        // Each instrumented call site is one line: trackEvent('libraryOpen').
+        const TRACK_FIRST_FLAG = {
+            syncAction: 'sync', sceneSelect: 'sceneSelect', guidanceOpen: 'guidance',
+            statusChange: 'statusChange', statsOpen: 'statsOpen', draftpadOpen: 'draftpad',
+            snapshotCreate: 'checkpoint', snapshotRestore: 'restore', libraryOpen: 'library',
+            notepadOpen: 'notepad', focusOn: 'focus', proofrun: 'proofread',
+            sendSammy: 'sendSammy', search: 'search', changelogOpen: 'changelog',
+            noteCreate: 'noteCreate', noteToLibrary: 'noteToLibrary',
+            mobileDrawerOpen: 'mobileDrawer', proofApply: 'proofApply',
+            outlineOpen: 'outline', assemblyRun: 'assembly'
+        };
+
+        function trackEvent(name, meta) {
+            if (PROGRESS_DISABLED || !name) return;
+            progSafe(() => {
+                loadProgress();
+                PROG.c[name] = (PROG.c[name] || 0) + 1;
+                const flag = TRACK_FIRST_FLAG[name];
+                if (flag && !PROG.f[flag]) PROG.f[flag] = new Date().toISOString();
+                touchWriteSession();
+
+                // Guidance-returned state machine: wrote -> reopened guidance
+                // -> wrote again.
+                if ((name === 'guidanceOpen' || name === 'mobileDrawerOpen') && PROG.x.guidanceReturn === 1) {
+                    PROG.x.guidanceReturn = 2;
+                }
+
+                if (meta && meta.sceneId) {
+                    const sc = progScene(meta.sceneId);
+                    if (name === 'sceneSelect') sc.sel = 1;
+                }
+                saveProgressSoon();
+                markProgressDirtyMetrics(['counter.' + name, flag ? 'flag.' + flag : null]);
+                scheduleProgressFlush();
+            });
+        }
+
+        // edn/edl = distinct edit-day count + last edit day. A count rather
+        // than a list so this stays fixed-size per scene forever.
+        function progScene(id) {
+            if (!PROG.s[id]) PROG.s[id] = { mw: 0, sp: [], sel: 0, drf: 0, edn: 0, edl: null };
+            const s = PROG.s[id];
+            if (s.edn === undefined) { s.edn = 0; s.edl = null; }
+            return s;
+        }
+
+        // filterLibrary() runs on every keystroke, so count one SEARCH per
+        // burst rather than one per character - otherwise "Tiff" alone would
+        // clear the Searcher-5 badge.
+        let _searchTrackTimer = null;
+        let _lastTrackedSearch = '';
+        function trackLibrarySearch(term) {
+            if (PROGRESS_DISABLED) return;
+            clearTimeout(_searchTrackTimer);
+            if (!term) return;
+            _searchTrackTimer = setTimeout(() => {
+                if (term === _lastTrackedSearch) return;
+                _lastTrackedSearch = term;
+                trackEvent('search');
+            }, 1200);
+        }
+
+        // Throttle wrapper for the editor input handler. Trailing-edge only:
+        // the final state after a typing burst is the one that matters, and
+        // this keeps per-keystroke cost at exactly one setTimeout reset.
+        const WRITING_TRACK_THROTTLE = 2000;
+        let _writingTrackTimer = null;
+        function scheduleWritingTrack(sceneId) {
+            if (PROGRESS_DISABLED) return;
+            clearTimeout(_writingTrackTimer);
+            _writingTrackTimer = setTimeout(() => {
+                const ed = document.getElementById('editor');
+                if (ed) trackWriting(sceneId, ed.innerHTML);
+            }, WRITING_TRACK_THROTTLE);
+        }
+
+        // Called (throttled) from the editor input handler.
+        function trackWriting(sceneId, html) {
+            if (PROGRESS_DISABLED || !sceneId) return;
+            progSafe(() => {
+                loadProgress();
+                const before = wordIndexTotal;
+                const n = noteEditorWords(sceneId, html);
+                const delta = wordIndexTotal - before;
+                touchWriteSession();
+
+                const sc = progScene(sceneId);
+                sc.sel = 1;
+                if (n > 0) {
+                    sc.drf = 1;
+                    if (!PROG.f.words) PROG.f.words = new Date().toISOString();
+                    if (PROG.x.guidanceReturn === 2) PROG.x.guidanceReturn = 3;
+                    else if (!PROG.x.guidanceReturn) PROG.x.guidanceReturn = 1;
+                }
+                if (n > (sc.mw || 0)) sc.mw = n;
+                if (n > (PROG.b.sceneDraft || 0)) { PROG.b.sceneDraft = n; PROG.b.sceneDraftId = sceneId; }
+
+                if (delta > 0) {
+                    const now = new Date();
+                    const today = progDayKey(now);
+                    if (sc.edl !== today) { sc.edl = today; sc.edn = (sc.edn || 0) + 1; }
+                    const day = progDay();
+                    day.w += delta;
+                    if (day.w >= 1000) day.k = 1;
+                    if (day.w > (PROG.b.day || 0)) PROG.b.day = day.w;
+                    PROG.h[now.getHours()] = (PROG.h[now.getHours()] || 0) + delta;
+
+                    const hr = now.getHours();
+                    if (hr < 5 && !PROG.f.nightWrite) PROG.f.nightWrite = now.toISOString();
+                    if (hr < 8 && !PROG.f.dawnWrite) PROG.f.dawnWrite = now.toISOString();
+                    if (progIsWeekend(now) && !PROG.f.weekendWrite) PROG.f.weekendWrite = now.toISOString();
+                    if (typeof isMobileMode === 'function' && isMobileMode()) {
+                        day.m = 1;
+                        if (!PROG.f.mobileWrite) PROG.f.mobileWrite = now.toISOString();
+                    }
+                    if (writeSession) {
+                        writeSession.words = Math.max(0, wordIndexTotal - writeSession.baseline);
+                        if (writeSession.scenes.indexOf(sceneId) === -1) writeSession.scenes.push(sceneId);
+                        if (writeSession.words > (PROG.b.session || 0)) {
+                            PROG.b.session = writeSession.words;
+                            PROG.x.pbSessionBeaten = 1;
+                        }
+                        persistWriteSession();
+                    }
+                    recomputeStreaks();
+                }
+                saveProgressSoon();
+                markProgressDirtyMetrics(null);   // word changes touch many metric families
+                scheduleProgressFlush();
+            });
+        }
+
+        // Scene status transitions feed several bespoke rules.
+        function trackStatusChange(sceneId, newStatus, scenesBefore) {
+            if (PROGRESS_DISABLED || !sceneId) return;
+            progSafe(() => {
+                loadProgress();
+                const sc = progScene(sceneId);
+                if (sc.sp.indexOf(newStatus) === -1 && sc.sp.length < 6) sc.sp.push(newStatus);
+                if (newStatus === 'complete') {
+                    if (!PROG.f.sceneComplete) PROG.f.sceneComplete = new Date().toISOString();
+                    // Persist the count so the scene-completion ladder survives
+                    // a canon reload that hasn't repopulated currentCanonData yet.
+                    const liveDone = ((currentCanonData && currentCanonData.scenes) || [])
+                        .filter(s => s.status === 'complete').length;
+                    PROG.c.scenesCompleted = Math.max(PROG.c.scenesCompleted || 0, liveDone);
+                    const today = progDayKey();
+                    if (PROG.x.completeDay !== today) { PROG.x.completeDay = today; PROG.x.completeToday = []; }
+                    PROG.x.completeToday = PROG.x.completeToday || [];
+                    if (PROG.x.completeToday.indexOf(sceneId) === -1) PROG.x.completeToday.push(sceneId);
+                    if (PROG.x.completeToday.length >= 2) PROG.x.twoScenesSameDay = 1;
+                    // harmonic-closure: this was the LAST non-complete scene.
+                    const remaining = (scenesBefore || []).filter(s => s.id !== sceneId && s.status !== 'complete').length;
+                    if ((scenesBefore || []).length && remaining === 0) PROG.x.harmonic = 1;
+                }
+                saveProgressSoon();
+                markProgressDirtyMetrics(null);
+                scheduleProgressFlush();
+            });
+        }
+
+        // =====================================================
+        // ACHIEVEMENT DEFINITIONS (188)
+        // =====================================================
+        // Generated from storyforge-achievements.json v3.1.0. Field names
+        // are short because this ships inline: t=title d=description
+        // c=category ic=icon o=order h=hidden r=rule {m:metric, n:threshold}.
+        // Every rule fires on >=, which is what makes progress-toward-next
+        // available for all 188 (pct = cur/target) rather than just a
+        // locked/unlocked boolean.
+        //
+        // manuscript-assembled targets counter.assemblyRun, which stays 0
+        // until a full-draft-assembly feature exists. Intentional: the
+        // achievement then works the day that feature lands.
+        const ACHIEVEMENTS = [
+            {id:'portal-opened',t:'Portal Opened',d:'You stepped through the portal for the first time.',c:'first-steps',ic:'portal',o:1,r:{m:'flag.portal',n:1}},
+            {id:'first-sync',t:'First Sync',d:'First successful sync with Sammy.',c:'first-steps',ic:'sync',o:2,r:{m:'flag.sync',n:1}},
+            {id:'scene-selected',t:'Scene Selected',d:'First scene selected from Outline.',c:'first-steps',ic:'outline',o:3,r:{m:'flag.sceneSelect',n:1}},
+            {id:'guidance-received',t:'Guidance Received',d:'First guidance card opened or expanded.',c:'first-steps',ic:'guidance',o:4,r:{m:'flag.guidance',n:1}},
+            {id:'first-words',t:'First Words',d:'First non-empty text in any draft.',c:'first-steps',ic:'quill',o:5,r:{m:'flag.words',n:1}},
+            {id:'status-touched',t:'Status Touched',d:'First status change by user.',c:'first-steps',ic:'status',o:6,r:{m:'flag.statusChange',n:1}},
+            {id:'progress-window-opened',t:'Progress Window Opened',d:'First open of Stats & Progress.',c:'first-steps',ic:'stats',o:7,r:{m:'flag.statsOpen',n:1}},
+            {id:'one-day-wonder',t:'One Day Wonder',d:'Wrote on a single day.',c:'consistency',ic:'day',o:10,r:{m:'days.write',n:1}},
+            {id:'three-day-harmonic',t:'Three-Day Harmonic',d:'Wrote on three different days.',c:'consistency',ic:'days-3',o:11,r:{m:'days.write',n:3}},
+            {id:'week-of-resonance',t:'Week of Resonance',d:'Wrote on ≥4 days in a 7-day window.',c:'consistency',ic:'week',o:12,r:{m:'days.write',n:4}},
+            {id:'streak-of-balance',t:'Streak of Balance',d:'3 consecutive writing days.',c:'consistency',ic:'streak-3',o:13,r:{m:'streak.writeMax',n:3}},
+            {id:'extended-harmonic',t:'Extended Harmonic',d:'7 consecutive writing days.',c:'consistency',ic:'streak-7',o:14,r:{m:'streak.writeMax',n:7}},
+            {id:'streak-14',t:'Fourteen-Day Harmonic',d:'14 consecutive writing days.',c:'consistency',ic:'streak-14',o:15,r:{m:'streak.writeMax',n:14}},
+            {id:'streak-21',t:'Twenty-One-Day Harmonic',d:'21 consecutive writing days.',c:'consistency',ic:'streak-21',o:16,r:{m:'streak.writeMax',n:21}},
+            {id:'streak-30',t:'Thirty-Day Harmonic',d:'30 consecutive writing days.',c:'consistency',ic:'streak-30',o:17,r:{m:'streak.writeMax',n:30}},
+            {id:'streak-keeper',t:'Streak Keeper',d:'Recovered a broken streak within 3 days.',c:'consistency',ic:'recovery',o:18,r:{m:'x.streakKeeper',n:1}},
+            {id:'monthly-cadence',t:'Monthly Cadence',d:'Wrote on ≥12 days in one calendar month.',c:'consistency',ic:'month',o:19,r:{m:'days.monthMax',n:12}},
+            {id:'monthly-strong',t:'Strong Month',d:'Wrote on ≥20 days in one calendar month.',c:'consistency',ic:'month-strong',o:20,r:{m:'days.monthMax',n:20}},
+            {id:'perfect-week-1',t:'Perfect Week',d:'Completed all 5 active weekly achievements in a single week.',c:'consistency',ic:'perfect-1',o:21,r:{m:'weekly.perfectCount',n:1}},
+            {id:'perfect-weeks-2',t:'Two Perfect Weeks',d:'Completed all 5 weeklies in two different weeks (not necessarily consecutive).',c:'consistency',ic:'perfect-2',o:22,r:{m:'weekly.perfectCount',n:2}},
+            {id:'perfect-weeks-3',t:'Three Perfect Weeks',d:'Three weeks of completing every weekly.',c:'consistency',ic:'perfect-3',o:23,r:{m:'weekly.perfectCount',n:3}},
+            {id:'perfect-streak-2',t:'Perfect Streak ×2',d:'Two consecutive weeks of completing all 5 weeklies.',c:'consistency',ic:'perfect-streak-2',o:24,r:{m:'weekly.perfectMax',n:2}},
+            {id:'perfect-streak-3',t:'Perfect Streak ×3',d:'Three consecutive weeks of completing all 5 weeklies.',c:'consistency',ic:'perfect-streak-3',o:25,r:{m:'weekly.perfectMax',n:3}},
+            {id:'perfect-streak-5',t:'Perfect Streak ×5',d:'Five consecutive weeks of completing all 5 weeklies.',c:'consistency',ic:'perfect-streak-5',o:26,r:{m:'weekly.perfectMax',n:5}},
+            {id:'perfect-streak-8',t:'Perfect Streak ×8',d:'Eight consecutive weeks of completing all 5 weeklies.',c:'consistency',ic:'perfect-streak-8',o:27,r:{m:'weekly.perfectMax',n:8}},
+            {id:'first-scene-complete',t:'First Scene Complete',d:'First scene marked Complete.',c:'scene-progress',ic:'complete-1',o:30,r:{m:'counter.scenesCompleted',n:1}},
+            {id:'review-resolver',t:'Review Resolver',d:'Cleared a Review status for the first time.',c:'scene-progress',ic:'review',o:31,r:{m:'flag.reviewCleared',n:1}},
+            {id:'scenes-2',t:'Two Scenes Woven',d:'Two scenes Complete.',c:'scene-progress',ic:'scenes-2',o:32,r:{m:'counter.scenesCompleted',n:2}},
+            {id:'scenes-3',t:'Three Scenes Woven',d:'Three scenes Complete.',c:'scene-progress',ic:'scenes-3',o:33,r:{m:'counter.scenesCompleted',n:3}},
+            {id:'scenes-4',t:'Four Scenes Woven',d:'Four scenes Complete.',c:'scene-progress',ic:'scenes-4',o:34,r:{m:'counter.scenesCompleted',n:4}},
+            {id:'scenes-5',t:'Five Scenes Woven',d:'Five scenes Complete.',c:'scene-progress',ic:'scenes-5',o:35,r:{m:'counter.scenesCompleted',n:5}},
+            {id:'scenes-7',t:'Seven Scenes Woven',d:'Seven scenes Complete.',c:'scene-progress',ic:'scenes-7',o:36,r:{m:'counter.scenesCompleted',n:7}},
+            {id:'scenes-10',t:'Ten Scenes Woven',d:'Ten scenes Complete.',c:'scene-progress',ic:'scenes-10',o:37,r:{m:'counter.scenesCompleted',n:10}},
+            {id:'scenes-12',t:'Twelve Scenes Woven',d:'Twelve scenes Complete.',c:'scene-progress',ic:'scenes-12',o:38,r:{m:'counter.scenesCompleted',n:12}},
+            {id:'scenes-15',t:'Fifteen Scenes Woven',d:'Fifteen scenes Complete.',c:'scene-progress',ic:'scenes-15',o:39,r:{m:'counter.scenesCompleted',n:15}},
+            {id:'scenes-20',t:'Twenty Scenes Woven',d:'Twenty scenes Complete.',c:'scene-progress',ic:'scenes-20',o:40,r:{m:'counter.scenesCompleted',n:20}},
+            {id:'scenes-25',t:'Twenty-Five Scenes Woven',d:'Twenty-five scenes Complete.',c:'scene-progress',ic:'scenes-25',o:41,r:{m:'counter.scenesCompleted',n:25}},
+            {id:'half-the-path',t:'Half the Path',d:'≥50% of current scenes Complete.',c:'scene-progress',ic:'half',o:42,r:{m:'ratio.complete',n:0.5}},
+            {id:'three-quarters-path',t:'Three-Quarters Path',d:'≥75% of current scenes Complete.',c:'scene-progress',ic:'three-quarters',o:43,r:{m:'ratio.complete',n:0.75}},
+            {id:'all-scenes-complete',t:'All Scenes Complete',d:'Every current scene is Complete.',c:'scene-progress',ic:'all-scenes',o:44,r:{m:'ratio.complete',n:1}},
+            {id:'full-outline-clear',t:'Full Outline Clear',d:'Every scene in a final decided status.',c:'scene-progress',ic:'clear',o:45,r:{m:'scenes.terminal',n:1}},
+            {id:'words-100',t:'Hundred Words',d:'100 cumulative words.',c:'wordcraft-lifetime',ic:'words-100',o:50,r:{m:'words.total',n:100}},
+            {id:'words-250',t:'Two Hundred Fifty',d:'250 cumulative words.',c:'wordcraft-lifetime',ic:'words-250',o:51,r:{m:'words.total',n:250}},
+            {id:'words-500',t:'Five Hundred',d:'500 cumulative words.',c:'wordcraft-lifetime',ic:'words-500',o:52,r:{m:'words.total',n:500}},
+            {id:'words-750',t:'Seven Hundred Fifty',d:'750 cumulative words.',c:'wordcraft-lifetime',ic:'words-750',o:53,r:{m:'words.total',n:750}},
+            {id:'words-1000',t:'Thousand Words',d:'1,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-1k',o:54,r:{m:'words.total',n:1000}},
+            {id:'words-1500',t:'Fifteen Hundred',d:'1,500 cumulative words.',c:'wordcraft-lifetime',ic:'words-1.5k',o:55,r:{m:'words.total',n:1500}},
+            {id:'words-2000',t:'Two Thousand',d:'2,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-2k',o:56,r:{m:'words.total',n:2000}},
+            {id:'words-2500',t:'Twenty-Five Hundred',d:'2,500 cumulative words.',c:'wordcraft-lifetime',ic:'words-2.5k',o:57,r:{m:'words.total',n:2500}},
+            {id:'words-3000',t:'Three Thousand',d:'3,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-3k',o:58,r:{m:'words.total',n:3000}},
+            {id:'words-4000',t:'Four Thousand',d:'4,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-4k',o:59,r:{m:'words.total',n:4000}},
+            {id:'words-5000',t:'Five Thousand',d:'5,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-5k',o:60,r:{m:'words.total',n:5000}},
+            {id:'words-6000',t:'Six Thousand',d:'6,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-6k',o:61,r:{m:'words.total',n:6000}},
+            {id:'words-7000',t:'Seven Thousand',d:'7,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-7k',o:62,r:{m:'words.total',n:7000}},
+            {id:'words-7500',t:'Seven Thousand Five Hundred',d:'7,500 cumulative words.',c:'wordcraft-lifetime',ic:'words-7.5k',o:63,r:{m:'words.total',n:7500}},
+            {id:'words-8000',t:'Eight Thousand',d:'8,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-8k',o:64,r:{m:'words.total',n:8000}},
+            {id:'words-9000',t:'Nine Thousand',d:'9,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-9k',o:65,r:{m:'words.total',n:9000}},
+            {id:'words-10000',t:'Ten Thousand',d:'10,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-10k',o:66,r:{m:'words.total',n:10000}},
+            {id:'words-11000',t:'Eleven Thousand',d:'11,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-11k',o:67,r:{m:'words.total',n:11000}},
+            {id:'words-12000',t:'Twelve Thousand',d:'12,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-12k',o:68,r:{m:'words.total',n:12000}},
+            {id:'words-12500',t:'Twelve Thousand Five Hundred',d:'12,500 cumulative words.',c:'wordcraft-lifetime',ic:'words-12.5k',o:69,r:{m:'words.total',n:12500}},
+            {id:'words-14000',t:'Fourteen Thousand',d:'14,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-14k',o:70,r:{m:'words.total',n:14000}},
+            {id:'words-15000',t:'Fifteen Thousand',d:'15,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-15k',o:71,r:{m:'words.total',n:15000}},
+            {id:'words-16000',t:'Sixteen Thousand',d:'16,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-16k',o:72,r:{m:'words.total',n:16000}},
+            {id:'words-17500',t:'Seventeen Thousand Five Hundred',d:'17,500 cumulative words.',c:'wordcraft-lifetime',ic:'words-17.5k',o:73,r:{m:'words.total',n:17500}},
+            {id:'words-18000',t:'Eighteen Thousand',d:'18,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-18k',o:74,r:{m:'words.total',n:18000}},
+            {id:'words-20000',t:'Twenty Thousand',d:'20,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-20k',o:75,r:{m:'words.total',n:20000}},
+            {id:'words-22500',t:'Twenty-Two Thousand Five Hundred',d:'22,500 cumulative words.',c:'wordcraft-lifetime',ic:'words-22.5k',o:76,r:{m:'words.total',n:22500}},
+            {id:'words-25000',t:'Twenty-Five Thousand',d:'25,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-25k',o:77,r:{m:'words.total',n:25000}},
+            {id:'words-27500',t:'Twenty-Seven Thousand Five Hundred',d:'27,500 cumulative words.',c:'wordcraft-lifetime',ic:'words-27.5k',o:78,r:{m:'words.total',n:27500}},
+            {id:'words-30000',t:'Thirty Thousand',d:'30,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-30k',o:79,r:{m:'words.total',n:30000}},
+            {id:'words-32500',t:'Thirty-Two Thousand Five Hundred',d:'32,500 cumulative words.',c:'wordcraft-lifetime',ic:'words-32.5k',o:80,r:{m:'words.total',n:32500}},
+            {id:'words-35000',t:'Thirty-Five Thousand',d:'35,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-35k',o:81,r:{m:'words.total',n:35000}},
+            {id:'words-37500',t:'Thirty-Seven Thousand Five Hundred',d:'37,500 cumulative words.',c:'wordcraft-lifetime',ic:'words-37.5k',o:82,r:{m:'words.total',n:37500}},
+            {id:'words-40000',t:'Forty Thousand',d:'40,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-40k',o:83,r:{m:'words.total',n:40000}},
+            {id:'words-42500',t:'Forty-Two Thousand Five Hundred',d:'42,500 cumulative words.',c:'wordcraft-lifetime',ic:'words-42.5k',o:84,r:{m:'words.total',n:42500}},
+            {id:'words-45000',t:'Forty-Five Thousand',d:'45,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-45k',o:85,r:{m:'words.total',n:45000}},
+            {id:'words-47500',t:'Forty-Seven Thousand Five Hundred',d:'47,500 cumulative words.',c:'wordcraft-lifetime',ic:'words-47.5k',o:86,r:{m:'words.total',n:47500}},
+            {id:'words-50000',t:'Fifty Thousand',d:'50,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-50k',o:87,r:{m:'words.total',n:50000}},
+            {id:'words-55000',t:'Fifty-Five Thousand',d:'55,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-55k',o:88,r:{m:'words.total',n:55000}},
+            {id:'words-60000',t:'Sixty Thousand',d:'60,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-60k',o:89,r:{m:'words.total',n:60000}},
+            {id:'words-65000',t:'Sixty-Five Thousand',d:'65,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-65k',o:90,r:{m:'words.total',n:65000}},
+            {id:'words-70000',t:'Seventy Thousand',d:'70,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-70k',o:91,r:{m:'words.total',n:70000}},
+            {id:'words-75000',t:'Seventy-Five Thousand — Novel Length',d:'75,000 cumulative words. Solid YA novel territory.',c:'wordcraft-lifetime',ic:'words-75k',o:92,r:{m:'words.total',n:75000}},
+            {id:'words-80000',t:'Eighty Thousand — Novel Length',d:'80,000 cumulative words. Classic YA / YA Fantasy length.',c:'wordcraft-lifetime',ic:'words-80k',o:93,r:{m:'words.total',n:80000}},
+            {id:'words-85000',t:'Eighty-Five Thousand',d:'85,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-85k',o:94,r:{m:'words.total',n:85000}},
+            {id:'words-90000',t:'Ninety Thousand',d:'90,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-90k',o:95,r:{m:'words.total',n:90000}},
+            {id:'words-95000',t:'Ninety-Five Thousand',d:'95,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-95k',o:96,r:{m:'words.total',n:95000}},
+            {id:'words-100000',t:'One Hundred Thousand',d:'100,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-100k',o:97,r:{m:'words.total',n:100000}},
+            {id:'words-110000',t:'One Hundred Ten Thousand',d:'110,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-110k',o:98,r:{m:'words.total',n:110000}},
+            {id:'words-120000',t:'One Hundred Twenty Thousand',d:'120,000 cumulative words.',c:'wordcraft-lifetime',ic:'words-120k',o:99,r:{m:'words.total',n:120000}},
+            {id:'session-250',t:'Focused Session — 250',d:'≥250 words in one continuous session.',c:'wordcraft-session',ic:'session-250',o:110,r:{m:'best.session',n:250}},
+            {id:'session-500',t:'Focused Session — 500',d:'≥500 words in one continuous session.',c:'wordcraft-session',ic:'session-500',o:111,r:{m:'best.session',n:500}},
+            {id:'session-750',t:'Focused Session — 750',d:'≥750 words in one continuous session.',c:'wordcraft-session',ic:'session-750',o:112,r:{m:'best.session',n:750}},
+            {id:'session-1000',t:'Focused Session — 1,000',d:'≥1,000 words in one continuous session.',c:'wordcraft-session',ic:'session-1k',o:113,r:{m:'best.session',n:1000}},
+            {id:'session-1500',t:'Focused Session — 1,500',d:'≥1,500 words in one continuous session.',c:'wordcraft-session',ic:'session-1.5k',o:114,r:{m:'best.session',n:1500}},
+            {id:'session-2000',t:'Focused Session — 2,000',d:'≥2,000 words in one continuous session.',c:'wordcraft-session',ic:'session-2k',o:115,r:{m:'best.session',n:2000}},
+            {id:'day-500',t:'Solid Day — 500',d:'≥500 words in one calendar day.',c:'wordcraft-session',ic:'day-500',o:116,r:{m:'best.day',n:500}},
+            {id:'day-750',t:'Solid Day — 750',d:'≥750 words in one calendar day.',c:'wordcraft-session',ic:'day-750',o:117,r:{m:'best.day',n:750}},
+            {id:'day-1000',t:'Strong Day — 1,000',d:'≥1,000 words in one calendar day.',c:'wordcraft-session',ic:'day-1k',o:118,r:{m:'best.day',n:1000}},
+            {id:'day-1500',t:'Power Day — 1,500',d:'≥1,500 words in one calendar day.',c:'wordcraft-session',ic:'day-1.5k',o:119,r:{m:'best.day',n:1500}},
+            {id:'day-2000',t:'Epic Day — 2,000',d:'≥2,000 words in one calendar day.',c:'wordcraft-session',ic:'day-2k',o:120,r:{m:'best.day',n:2000}},
+            {id:'days-1k-x3',t:'Three Strong Days',d:'≥1,000 words on three different days.',c:'wordcraft-session',ic:'days-1k-3',o:121,r:{m:'days.k1k',n:3}},
+            {id:'days-1k-x5',t:'Five Strong Days',d:'≥1,000 words on five different days.',c:'wordcraft-session',ic:'days-1k-5',o:122,r:{m:'days.k1k',n:5}},
+            {id:'days-1k-x7',t:'Seven Strong Days',d:'≥1,000 words on seven different days.',c:'wordcraft-session',ic:'days-1k-7',o:123,r:{m:'days.k1k',n:7}},
+            {id:'streak-1k-3',t:'Three-Day 1k Streak',d:'≥1,000 words on three consecutive days.',c:'wordcraft-session',ic:'streak-1k-3',o:124,r:{m:'streak.k1kMax',n:3}},
+            {id:'streak-1k-5',t:'Five-Day 1k Streak',d:'≥1,000 words on five consecutive days.',c:'wordcraft-session',ic:'streak-1k-5',o:125,r:{m:'streak.k1kMax',n:5}},
+            {id:'streak-1k-7',t:'Seven-Day 1k Streak',d:'≥1,000 words on seven consecutive days.',c:'wordcraft-session',ic:'streak-1k-7',o:126,r:{m:'streak.k1kMax',n:7}},
+            {id:'personal-best-session',t:'Personal Best Session',d:'New personal-best session word count.',c:'wordcraft-session',ic:'best',o:127,r:{m:'x.pbSession',n:1}},
+            {id:'draft-depth-500',t:'Draft Depth — 500',d:'One scene draft > 500 words.',c:'wordcraft-session',ic:'depth-500',o:128,r:{m:'scene.maxWords',n:500}},
+            {id:'draft-depth-1000',t:'Draft Depth — 1,000',d:'One scene draft > 1,000 words.',c:'wordcraft-session',ic:'depth-1k',o:129,r:{m:'scene.maxWords',n:1000}},
+            {id:'draft-depth-1500',t:'Draft Depth — 1,500',d:'One scene draft > 1,500 words.',c:'wordcraft-session',ic:'depth-1.5k',o:130,r:{m:'scene.maxWords',n:1500}},
+            {id:'draft-depth-2000',t:'Draft Depth — 2,000',d:'One scene draft > 2,000 words.',c:'wordcraft-session',ic:'depth-2k',o:131,r:{m:'scene.maxWords',n:2000}},
+            {id:'draft-pad-opened',t:'Draft Pad Opened',d:'First open of Draft Pad.',c:'tool-mastery',ic:'draftpad',o:140,r:{m:'flag.draftpad',n:1}},
+            {id:'checkpoint-created',t:'Checkpoint Created',d:'First named snapshot created.',c:'tool-mastery',ic:'checkpoint',o:141,r:{m:'flag.checkpoint',n:1}},
+            {id:'snapshot-restored',t:'Snapshot Restored',d:'First restore of a snapshot.',c:'tool-mastery',ic:'restore',o:142,r:{m:'flag.restore',n:1}},
+            {id:'library-explorer',t:'Library Explorer',d:'First meaningful Library visit.',c:'tool-mastery',ic:'library',o:143,r:{m:'flag.library',n:1}},
+            {id:'lore-guardian',t:'Lore Guardian',d:'First view of a flagged Library entry.',c:'tool-mastery',ic:'lore',o:144,r:{m:'flag.loreFlagged',n:1}},
+            {id:'notepad-awakened',t:'Notepad Awakened',d:'First use of Notepad.',c:'tool-mastery',ic:'notepad',o:145,r:{m:'flag.notepad',n:1}},
+            {id:'focus-mode-engaged',t:'Focus Mode Engaged',d:'First Focus mode activation.',c:'tool-mastery',ic:'focus',o:146,r:{m:'flag.focus',n:1}},
+            {id:'proofreader-consulted',t:'Proofreader Consulted',d:'First run of Proofreader.',c:'tool-mastery',ic:'proof',o:147,r:{m:'flag.proofread',n:1}},
+            {id:'sent-to-sammy',t:'Sent to Sammy',d:'First use of Send to Sammy.',c:'tool-mastery',ic:'send',o:148,r:{m:'flag.sendSammy',n:1}},
+            {id:'mobile-portal',t:'Mobile Portal',d:'First writing action on mobile/touch.',c:'tool-mastery',ic:'mobile',o:149,r:{m:'flag.mobileWrite',n:1}},
+            {id:'notepad-to-library',t:'Note to Lore',d:'Added a Notepad note to the Library at least once.',c:'tool-mastery',ic:'note-library',o:150,r:{m:'flag.noteToLibrary',n:1}},
+            {id:'mobile-context-open-1',t:'Context Revealed',d:'Manually opened a hidden scene context / guidance window on mobile for the first time.',c:'tool-mastery',ic:'context-1',o:151,r:{m:'flag.mobileDrawer',n:1}},
+            {id:'mobile-guidance-rail',t:'Guidance Rail Used',d:'Interacted with the mobile guidance rail / drawer system.',c:'tool-mastery',ic:'rail',o:152,r:{m:'flag.mobileDrawer',n:1}},
+            {id:'library-opens-5',t:'Library Regular — 5',d:'Opened Library 5 times.',c:'usage-tracking',ic:'lib-5',o:160,r:{m:'counter.libraryOpen',n:5}},
+            {id:'library-opens-10',t:'Library Regular — 10',d:'Opened Library 10 times.',c:'usage-tracking',ic:'lib-10',o:161,r:{m:'counter.libraryOpen',n:10}},
+            {id:'library-opens-25',t:'Library Regular — 25',d:'Opened Library 25 times.',c:'usage-tracking',ic:'lib-25',o:162,r:{m:'counter.libraryOpen',n:25}},
+            {id:'library-opens-50',t:'Library Regular — 50',d:'Opened Library 50 times.',c:'usage-tracking',ic:'lib-50',o:163,r:{m:'counter.libraryOpen',n:50}},
+            {id:'library-opens-100',t:'Library Devotee — 100',d:'Opened Library 100 times.',c:'usage-tracking',ic:'lib-100',o:164,r:{m:'counter.libraryOpen',n:100}},
+            {id:'outline-opens-10',t:'Outline Walker — 10',d:'Opened Outline 10 times.',c:'usage-tracking',ic:'outline-10',o:165,r:{m:'counter.outlineOpen',n:10}},
+            {id:'outline-opens-25',t:'Outline Walker — 25',d:'Opened Outline 25 times.',c:'usage-tracking',ic:'outline-25',o:166,r:{m:'counter.outlineOpen',n:25}},
+            {id:'outline-opens-50',t:'Outline Walker — 50',d:'Opened Outline 50 times.',c:'usage-tracking',ic:'outline-50',o:167,r:{m:'counter.outlineOpen',n:50}},
+            {id:'search-used-5',t:'Searcher — 5',d:'Used Library search 5 times.',c:'usage-tracking',ic:'search-5',o:168,r:{m:'counter.search',n:5}},
+            {id:'search-used-15',t:'Searcher — 15',d:'Used Library search 15 times.',c:'usage-tracking',ic:'search-15',o:169,r:{m:'counter.search',n:15}},
+            {id:'search-used-30',t:'Searcher — 30',d:'Used Library search 30 times.',c:'usage-tracking',ic:'search-30',o:170,r:{m:'counter.search',n:30}},
+            {id:'zero-word-logins-3',t:'Just Checking In — 3',d:'3 zero-word sessions.',c:'usage-tracking',ic:'zero-3',o:171,r:{m:'counter.sessionsZeroWord',n:3}},
+            {id:'zero-word-logins-10',t:'Just Checking In — 10',d:'10 zero-word sessions.',c:'usage-tracking',ic:'zero-10',o:172,r:{m:'counter.sessionsZeroWord',n:10}},
+            {id:'zero-word-logins-25',t:'Professional Lurker — 25',d:'25 zero-word sessions.',c:'usage-tracking',ic:'zero-25',o:173,r:{m:'counter.sessionsZeroWord',n:25}},
+            {id:'status-changes-10',t:'Status Fiddler — 10',d:'Changed status 10 times.',c:'usage-tracking',ic:'status-10',o:174,r:{m:'counter.statusChange',n:10}},
+            {id:'status-changes-25',t:'Status Fiddler — 25',d:'Changed status 25 times.',c:'usage-tracking',ic:'status-25',o:175,r:{m:'counter.statusChange',n:25}},
+            {id:'checkpoints-created-5',t:'Snapshot Collector — 5',d:'Created 5 named snapshots.',c:'usage-tracking',ic:'snap-5',o:176,r:{m:'counter.snapshotCreate',n:5}},
+            {id:'checkpoints-created-15',t:'Snapshot Collector — 15',d:'Created 15 named snapshots.',c:'usage-tracking',ic:'snap-15',o:177,r:{m:'counter.snapshotCreate',n:15}},
+            {id:'focus-mode-uses-5',t:'Focus Seeker — 5',d:'Entered Focus mode 5 times.',c:'usage-tracking',ic:'focus-5',o:178,r:{m:'counter.focusOn',n:5}},
+            {id:'focus-mode-uses-15',t:'Focus Seeker — 15',d:'Entered Focus mode 15 times.',c:'usage-tracking',ic:'focus-15',o:179,r:{m:'counter.focusOn',n:15}},
+            {id:'send-to-sammy-5',t:'Sammy Correspondent — 5',d:'Used Send to Sammy 5 times.',c:'usage-tracking',ic:'send-5',o:180,r:{m:'counter.sendSammy',n:5}},
+            {id:'send-to-sammy-15',t:'Sammy Correspondent — 15',d:'Used Send to Sammy 15 times.',c:'usage-tracking',ic:'send-15',o:181,r:{m:'counter.sendSammy',n:15}},
+            {id:'mobile-days-5',t:'Mobile Writer — 5',d:'Wrote on mobile on 5 different days.',c:'usage-tracking',ic:'mobile-5',o:182,r:{m:'days.mobile',n:5}},
+            {id:'mobile-days-15',t:'Mobile Writer — 15',d:'Wrote on mobile on 15 different days.',c:'usage-tracking',ic:'mobile-15',o:183,r:{m:'days.mobile',n:15}},
+            {id:'weekend-writer-3',t:'Weekend Writer — 3',d:'Wrote on 3 different weekends.',c:'usage-tracking',ic:'weekend-3',o:184,r:{m:'days.weekend',n:3}},
+            {id:'weekend-writer-8',t:'Weekend Writer — 8',d:'Wrote on 8 different weekends.',c:'usage-tracking',ic:'weekend-8',o:185,r:{m:'days.weekend',n:8}},
+            {id:'late-night-write',t:'Late-Night Portal',d:'Wrote after midnight (local time).',c:'usage-tracking',ic:'late-night',o:186,r:{m:'flag.nightWrite',n:1}},
+            {id:'early-bird-write',t:'Early Bird Portal',d:'Wrote before 8:00 AM (local time).',c:'usage-tracking',ic:'early-bird',o:187,r:{m:'flag.dawnWrite',n:1}},
+            {id:'draftlog-opens-3',t:'Draft Log Visitor — 3',d:'Opened the Draft Pad / Draft Log 3 times.',c:'usage-tracking',ic:'draftlog-3',o:190,r:{m:'counter.draftpadOpen',n:3}},
+            {id:'draftlog-opens-10',t:'Draft Log Visitor — 10',d:'Opened the Draft Pad / Draft Log 10 times.',c:'usage-tracking',ic:'draftlog-10',o:191,r:{m:'counter.draftpadOpen',n:10}},
+            {id:'draftlog-opens-25',t:'Draft Log Regular — 25',d:'Opened the Draft Pad / Draft Log 25 times.',c:'usage-tracking',ic:'draftlog-25',o:192,r:{m:'counter.draftpadOpen',n:25}},
+            {id:'snapshot-created-3',t:'Snapshot Maker — 3',d:'Created 3 named snapshots (any scenes).',c:'usage-tracking',ic:'snap-3',o:193,r:{m:'counter.snapshotCreate',n:3}},
+            {id:'snapshot-created-10',t:'Snapshot Maker — 10',d:'Created 10 named snapshots.',c:'usage-tracking',ic:'snap-10',o:194,r:{m:'counter.snapshotCreate',n:10}},
+            {id:'snapshot-restored-3',t:'Time Traveler — 3',d:'Restored a snapshot 3 times.',c:'usage-tracking',ic:'restore-3',o:195,r:{m:'counter.snapshotRestore',n:3}},
+            {id:'snapshot-restored-10',t:'Time Traveler — 10',d:'Restored a snapshot 10 times.',c:'usage-tracking',ic:'restore-10',o:196,r:{m:'counter.snapshotRestore',n:10}},
+            {id:'notepad-opens-3',t:'Notepad Visitor — 3',d:'Opened the Notepad 3 times.',c:'usage-tracking',ic:'notepad-3',o:197,r:{m:'counter.notepadOpen',n:3}},
+            {id:'notepad-opens-10',t:'Notepad Visitor — 10',d:'Opened the Notepad 10 times.',c:'usage-tracking',ic:'notepad-10',o:198,r:{m:'counter.notepadOpen',n:10}},
+            {id:'notepad-opens-25',t:'Notepad Regular — 25',d:'Opened the Notepad 25 times.',c:'usage-tracking',ic:'notepad-25',o:199,r:{m:'counter.notepadOpen',n:25}},
+            {id:'multiple-checkpoints',t:'Multiple Checkpoints',d:'3+ named snapshots on the same scene.',c:'depth',ic:'checkpoints-3',o:200,r:{m:'scene.maxSnapshots',n:3}},
+            {id:'notepad-notes-3',t:'Note Taker — 3',d:'Created 3 notes in the Notepad.',c:'usage-tracking',ic:'notes-3',o:200,r:{m:'counter.noteCreate',n:3}},
+            {id:'guidance-returned',t:'Guidance Returned',d:'Returned to guidance after writing and edited again.',c:'depth',ic:'return',o:201,r:{m:'x.guidanceReturned',n:1}},
+            {id:'notepad-notes-10',t:'Note Taker — 10',d:'Created 10 notes in the Notepad.',c:'usage-tracking',ic:'notes-10',o:201,r:{m:'counter.noteCreate',n:10}},
+            {id:'status-journey',t:'Status Journey',d:'Same scene moved through ≥3 statuses ending in Complete.',c:'depth',ic:'journey',o:202,r:{m:'x.statusJourney',n:1}},
+            {id:'mobile-context-open-5',t:'Context Explorer — 5',d:'Manually opened mobile scene context windows 5 times.',c:'usage-tracking',ic:'context-5',o:202,r:{m:'counter.mobileDrawerOpen',n:5}},
+            {id:'changelog-reader',t:'Changelog Reader',d:'Opened Global Outline or Library Changelog.',c:'depth',ic:'changelog',o:203,r:{m:'flag.changelog',n:1}},
+            {id:'mobile-context-open-15',t:'Context Explorer — 15',d:'Manually opened mobile scene context windows 15 times.',c:'usage-tracking',ic:'context-15',o:203,r:{m:'counter.mobileDrawerOpen',n:15}},
+            {id:'revisited-scene-5',t:'Scene Revisitor — 5',d:'Edited the same scene on ≥5 different days.',c:'depth',ic:'revisit-5',o:204,r:{m:'scene.maxEditDays',n:5}},
+            {id:'focus-writing-3',t:'Writing Focus — 3',d:'Entered Writing Focus mode 3 times.',c:'usage-tracking',ic:'focus-w-3',o:204,r:{m:'counter.focusWriting',n:3}},
+            {id:'two-scenes-same-day',t:'Two Scenes in One Day',d:'Marked two different scenes Complete on the same day.',c:'depth',ic:'two-scenes-day',o:205,r:{m:'x.twoScenesSameDay',n:1}},
+            {id:'focus-reading-3',t:'Reading Focus — 3',d:'Entered Reading Focus mode 3 times.',c:'usage-tracking',ic:'focus-r-3',o:205,r:{m:'counter.focusReading',n:3}},
+            {id:'proof-suggestions-applied',t:'Proofreader Applied',d:'Applied suggestions from the Proofreader at least once.',c:'depth',ic:'proof-apply',o:206,r:{m:'flag.proofApply',n:1}},
+            {id:'proofreader-runs-5',t:'Proofreader — 5',d:'Ran the Proofreader 5 times.',c:'usage-tracking',ic:'proof-5',o:206,r:{m:'counter.proofrun',n:5}},
+            {id:'proofreader-runs-15',t:'Proofreader — 15',d:'Ran the Proofreader 15 times.',c:'usage-tracking',ic:'proof-15',o:207,r:{m:'counter.proofrun',n:15}},
+            {id:'changelog-opens-5',t:'Changelog Watcher — 5',d:'Opened the Changelog 5 times.',c:'usage-tracking',ic:'changelog-5',o:208,r:{m:'counter.changelogOpen',n:5}},
+            {id:'sync-actions-5',t:'Sync Keeper — 5',d:'Performed 5 successful syncs.',c:'usage-tracking',ic:'sync-5',o:209,r:{m:'counter.syncAction',n:5}},
+            {id:'sync-actions-15',t:'Sync Keeper — 15',d:'Performed 15 successful syncs.',c:'usage-tracking',ic:'sync-15',o:210,r:{m:'counter.syncAction',n:15}},
+            {id:'the-novel-complete',t:'The Novel Complete',d:'All scenes Complete and progress 100%.',c:'completion',ic:'novel-complete',o:220,r:{m:'ratio.complete',n:1}},
+            {id:'manuscript-assembled',t:'Manuscript Assembled',d:'Used full draft assembly (when available).',c:'completion',ic:'assemble',o:221,r:{m:'counter.assemblyRun',n:1}},
+            {id:'first-full-pass',t:'First Full Pass',d:'Every scene touched at least once.',c:'completion',ic:'full-pass',o:222,r:{m:'x.fullPass',n:1}},
+            {id:'harmonic-closure',t:'Harmonic Closure',d:'Final remaining open scene marked Complete.',c:'completion',ic:'closure',o:223,r:{m:'x.harmonic',n:1}},
+            {id:'ya-length-reached',t:'YA Length Reached',d:'Reached the classic YA novel range (75k+).',c:'completion',ic:'ya-length',o:224,r:{m:'words.total',n:75000}},
+            {id:'gift-delivered',t:'Gift Delivered',d:'Primary writing phase complete. This was always for her.',c:'completion',ic:'gift',o:225,h:1,r:{m:'x.gift',n:1}}
+        ];
+        // A top-level const is not a window property; the engine and the
+        // console test harness both reach it through window.
+        window.ACHIEVEMENTS = ACHIEVEMENTS;
+
+        // =====================================================
+        // ACHIEVEMENT ENGINE
+        // =====================================================
+        // Every rule is {m: metricKey, n: threshold} and fires on >=. That
+        // uniformity is what gives progress-toward-next for free on ALL
+        // achievements (pct = cur/target) - which is what lets the later UI
+        // show "4,958 words to go" in large type instead of a bare padlock.
+        //
+        // The handful of genuinely bespoke rules are NOT special-cased in the
+        // evaluator: each is a small producer writing a number into the x.*
+        // namespace, indistinguishable from words.total downstream.
+
+        const BESPOKE_FACTS = {
+            'x.streakKeeper': (P) => {
+                const k = P.k || {};
+                if (!(k.brokenLen >= 2) || !k.brokenAt || !k.lastWriteDay) return P.x.streakKeeper || 0;
+                const gap = progDaysBetween(k.brokenAt, k.lastWriteDay);
+                return (gap > 1 && gap <= 3) ? 1 : (P.x.streakKeeper || 0);
+            },
+            'x.fullPass': (P, ctx) => {
+                const ids = (ctx.scenes || []).map(s => s.id);
+                if (!ids.length) return 0;
+                return ids.every(id => P.s[id] && P.s[id].sel && P.s[id].drf) ? 1 : 0;
+            },
+            // ">=3 statuses AND currently Complete". The distinct-status count
+            // comes from the (sorted, order-free) sp set; "ended Complete" is
+            // read from the live scene, so this never depends on merge order.
+            'x.statusJourney': (P, ctx) => {
+                const byId = {};
+                (ctx.scenes || []).forEach(s => { byId[s.id] = s.status; });
+                return Object.keys(P.s).some(id =>
+                    (P.s[id].sp || []).length >= 3 && byId[id] === 'complete'
+                ) ? 1 : 0;
+            },
+            'x.harmonic': (P, ctx) => {
+                const sc = ctx.scenes || [];
+                return (sc.length && sc.every(s => s.status === 'complete') && P.x.harmonic) ? 1 : 0;
+            },
+            'x.twoScenesSameDay': (P) => P.x.twoScenesSameDay || 0,
+            'x.guidanceReturned': (P) => (P.x.guidanceReturn >= 3) ? 1 : 0,
+            'x.pbSession': (P) => P.x.pbSessionBeaten || 0,
+            'x.gift': (P) => P.x.gift || 0
+        };
+
+        function progDistinctDays(pred, rollKey) {
+            let n = (PROG.roll && PROG.roll[rollKey]) || 0;
+            Object.keys(PROG.d).forEach(k => { if (pred(PROG.d[k])) n++; });
+            return n;
+        }
+
+        // Flatten PROG into a flat metric -> number map.
+        function deriveFacts(ctx) {
+            const P = PROG;
+            const f = new Map();
+            const scenes = (ctx && ctx.scenes) || [];
+
+            const rolledWords = (P.roll && P.roll.w) || 0;
+            let liveWords = 0;
+            Object.keys(P.d).forEach(k => { liveWords += P.d[k].w || 0; });
+            // Cumulative words: prefer the live index when it's higher, so a
+            // pre-existing draft written before tracking existed still counts.
+            f.set('words.total', Math.max(rolledWords + liveWords, wordIndexTotal));
+            f.set('words.today', (P.d[progDayKey()] || {}).w || 0);
+
+            Object.keys(P.c).forEach(k => f.set('counter.' + k, P.c[k] || 0));
+            Object.keys(P.f).forEach(k => f.set('flag.' + k, P.f[k] ? 1 : 0));
+
+            f.set('streak.writeCur', (P.k && P.k.writeCur) || 0);
+            f.set('streak.writeMax', (P.k && P.k.writeMax) || 0);
+            f.set('streak.k1kCur', (P.k && P.k.k1kCur) || 0);
+            f.set('streak.k1kMax', (P.k && P.k.k1kMax) || 0);
+
+            f.set('days.write', progDistinctDays(d => (d.w || 0) > 0, 'writeDays'));
+            f.set('days.k1k', progDistinctDays(d => !!d.k, 'k1kDays'));
+            f.set('days.mobile', progDistinctDays(d => !!d.m, 'mobileDays'));
+            f.set('days.weekend', progDistinctDays(d => d.e && (d.w || 0) > 0, 'weekendDays'));
+
+            f.set('best.session', P.b.session || 0);
+            f.set('best.day', P.b.day || 0);
+            f.set('scene.maxWords', P.b.sceneDraft || 0);
+
+            // Most distinct writing days within any single calendar month.
+            const byMonth = {};
+            Object.keys(P.d).forEach(k => { if ((P.d[k].w || 0) > 0) byMonth[k.slice(0, 7)] = (byMonth[k.slice(0, 7)] || 0) + 1; });
+            f.set('days.monthMax', Object.keys(byMonth).reduce((m, k) => Math.max(m, byMonth[k]), 0));
+
+            // Deepest revision history on any one scene.
+            f.set('scene.maxEditDays', Object.keys(P.s).reduce((m, id) => Math.max(m, P.s[id].edn || 0), 0));
+            let maxSnaps = 0;
+            const SNAP_PREFIX = 'draft-snapshots:';
+            for (let i = 0; i < localStorage.length; i++) {
+                const k = localStorage.key(i);
+                if (k && k.startsWith(SNAP_PREFIX)) {
+                    try { maxSnaps = Math.max(maxSnaps, (JSON.parse(localStorage.getItem(k)) || []).length); } catch (e) {}
+                }
+            }
+            f.set('scene.maxSnapshots', maxSnaps);
+
+            const done = scenes.filter(s => s.status === 'complete').length;
+            const completed = Math.max(done, P.c.scenesCompleted || 0);
+            f.set('counter.scenesCompleted', completed);
+            f.set('ratio.complete', scenes.length ? (done / scenes.length) : 0);
+            // "Full Outline Clear" = every scene has actually been through her
+            // hands and nothing is left flagged. NOT simply "no scene is in an
+            // unexpected status" - 'unfinished' is the DEFAULT, so counting it
+            // as terminal made this unlock on a brand-new project having done
+            // nothing at all. Requires draft text on every scene and no
+            // outstanding review flags.
+            f.set('scenes.terminal', (scenes.length
+                && scenes.every(s => s.status !== 'review')
+                && scenes.every(s => P.s[s.id] && P.s[s.id].drf)) ? 1 : 0);
+
+            f.set('weekly.perfectCount', P.wk.perfectCount || 0);
+            f.set('weekly.perfectCur', P.wk.perfectCur || 0);
+            f.set('weekly.perfectMax', P.wk.perfectMax || 0);
+
+            Object.keys(BESPOKE_FACTS).forEach(key => {
+                let v = 0;
+                try { v = BESPOKE_FACTS[key](P, ctx || {}) || 0; } catch (e) { v = 0; }
+                f.set(key, v);
+            });
+            return f;
+        }
+
+        function buildAchievementCtx() {
+            return { scenes: (currentCanonData && currentCanonData.scenes) || [] };
+        }
+
+        // metric -> [rules], built once so a typing burst examines ~65 rules
+        // rather than all 188.
+        let RULES_BY_METRIC = null;
+        function buildRuleIndex() {
+            RULES_BY_METRIC = {};
+            (window.ACHIEVEMENTS || []).forEach(a => {
+                if (!a.r || !a.r.m) return;
+                (RULES_BY_METRIC[a.r.m] = RULES_BY_METRIC[a.r.m] || []).push(a);
+            });
+        }
+
+        function evaluateAchievements(facts, dirtyMetrics) {
+            const all = window.ACHIEVEMENTS || [];
+            if (!RULES_BY_METRIC) buildRuleIndex();
+            let pool;
+            if (dirtyMetrics && dirtyMetrics.size) {
+                const seen = new Set();
+                pool = [];
+                dirtyMetrics.forEach(m => {
+                    (RULES_BY_METRIC[m] || []).forEach(a => { if (!seen.has(a.id)) { seen.add(a.id); pool.push(a); } });
+                });
+            } else {
+                pool = all;
+            }
+            const unlocks = [], progress = {};
+            pool.forEach(a => {
+                const cur = facts.get(a.r.m) || 0;
+                if (PROG.u[a.id]) return;
+                if (cur >= a.r.n) {
+                    const at = new Date().toISOString();
+                    PROG.u[a.id] = at;
+                    unlocks.push({
+                        id: a.id, title: a.t, description: a.d, category: a.c,
+                        icon: a.ic, order: a.o, hidden: !!a.h,
+                        unlockedAt: at, metric: a.r.m, value: cur, target: a.r.n
+                    });
+                } else {
+                    progress[a.id] = {
+                        cur, target: a.r.n,
+                        pct: Math.max(0, Math.min(1, cur / a.r.n)),
+                        remaining: Math.max(0, a.r.n - cur)
+                    };
+                }
+            });
+            return { unlocks, progress };
+        }
+
+        // Next still-locked milestone on the same metric, so a toast can say
+        // "next: 4,958 words to go" without the UI re-deriving anything.
+        function nextMilestoneFor(metric, facts) {
+            const cands = (RULES_BY_METRIC[metric] || [])
+                .filter(a => !PROG.u[a.id])
+                .sort((x, y) => x.r.n - y.r.n);
+            if (!cands.length) return null;
+            const a = cands[0];
+            const cur = facts.get(metric) || 0;
+            return {
+                id: a.id, title: a.t, cur, target: a.r.n,
+                pct: Math.max(0, Math.min(1, cur / a.r.n)),
+                remaining: Math.max(0, a.r.n - cur)
+            };
+        }
+
+        // ---- Evaluation scheduling ----
+        // Never runs synchronously from the editor input handler.
+        const EVAL_MIN_GAP = 1000;
+        const PENDING_TOASTS_KEY = 'bigtiff-pending-toasts';
+        let _dirtyMetrics = new Set();
+        let _fullSweepPending = false;
+        let _evalScheduled = false;
+        let _lastEvalAt = 0;
+
+        function markProgressDirtyMetrics(metrics) {
+            if (metrics === null) _fullSweepPending = true;
+            else (metrics || []).forEach(m => { if (m) _dirtyMetrics.add(m); });
+            scheduleAchievementEval();
+        }
+
+        function scheduleAchievementEval() {
+            if (_evalScheduled || PROGRESS_DISABLED) return;
+            _evalScheduled = true;
+            const gap = Math.max(0, EVAL_MIN_GAP - (Date.now() - _lastEvalAt));
+            const run = () => {
+                _evalScheduled = false;
+                _lastEvalAt = Date.now();
+                progSafe(runAchievementEval);
+            };
+            setTimeout(() => {
+                if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(run, { timeout: 500 });
+                else run();
+            }, gap);
+        }
+
+        function runAchievementEval() {
+            if (PROGRESS_DISABLED || !PROG) return;
+            const ctx = buildAchievementCtx();
+            const facts = deriveFacts(ctx);
+            const dirty = _fullSweepPending ? null : _dirtyMetrics;
+            const res = evaluateAchievements(facts, dirty);
+            _dirtyMetrics = new Set();
+            _fullSweepPending = false;
+
+            const total = (window.ACHIEVEMENTS || []).length;
+            const unlockedCount = Object.keys(PROG.u).length;
+
+            if (res.unlocks.length) {
+                res.unlocks.forEach((u, i) => {
+                    u.index = i; u.total = res.unlocks.length;
+                    u.next = nextMilestoneFor(u.metric, facts);
+                });
+                saveProgressNow();
+                // Durable queue BEFORE dispatch: a trophy swallowed by a tab
+                // death is the worst possible failure for a reward system.
+                progSafe(() => {
+                    const q = _lsJSON(PENDING_TOASTS_KEY, '[]');
+                    localStorage.setItem(PENDING_TOASTS_KEY, JSON.stringify(q.concat(res.unlocks)));
+                });
+                window.dispatchEvent(new CustomEvent('bigtiff:achievement', {
+                    detail: { items: res.unlocks, unlockedCount, totalCount: total }
+                }));
+                scheduleProgressFlush({ priority: true });
+                if (typeof syncStatsToRepo === 'function') syncStatsToRepo('achievement_unlocked', { count: unlockedCount });
+            }
+            window.dispatchEvent(new CustomEvent('bigtiff:progress-updated', {
+                detail: { unlockedCount, totalCount: total, progress: res.progress }
+            }));
+        }
+
+        function acknowledgeAchievementToasts(ids) {
+            progSafe(() => {
+                const q = _lsJSON(PENDING_TOASTS_KEY, '[]');
+                const keep = ids ? q.filter(t => ids.indexOf(t.id) === -1) : [];
+                localStorage.setItem(PENDING_TOASTS_KEY, JSON.stringify(keep));
+            });
+        }
+
+        // Everything the later achievement-book UI needs, in one call.
+        function getAchievementBook() {
+            loadProgress();
+            if (!RULES_BY_METRIC) buildRuleIndex();
+            const facts = deriveFacts(buildAchievementCtx());
+            const fmt = (n) => (n >= 1000 && Number.isInteger(n)) ? n.toLocaleString() : String(Math.round(n * 100) / 100);
+            return (window.ACHIEVEMENTS || []).slice().sort((a, b) => a.o - b.o).map(a => {
+                const un = PROG.u[a.id];
+                const cur = facts.get(a.r.m) || 0;
+                const masked = a.h && !un;
+                return {
+                    id: a.id, category: a.c, order: a.o,
+                    title: masked ? '???' : a.t,
+                    description: masked ? 'A hidden achievement.' : a.d,
+                    icon: masked ? 'question' : a.ic,
+                    unlocked: !!un, unlockedAt: un || null, hidden: !!a.h,
+                    progress: un
+                        ? { cur: a.r.n, target: a.r.n, pct: 1, remaining: 0, label: 'Complete' }
+                        : {
+                            cur, target: a.r.n,
+                            pct: Math.max(0, Math.min(1, cur / a.r.n)),
+                            remaining: Math.max(0, a.r.n - cur),
+                            label: `${fmt(cur)} / ${fmt(a.r.n)}`
+                        }
+                };
+            });
+        }
+
+        // =====================================================
+        // PROGRESS SYNC (encrypted progress.json)
+        // =====================================================
+        // Every push here is a git commit, so write amplification is the main
+        // risk. Policy: 90s idle after activity (10s when an unlock is
+        // pending), behind a hard 5-minute floor. Worst case ~12 commits/hr,
+        // realistically 4-8/day - quieter than the existing draft push, which
+        // already commits every 2.5s of typing pause.
+        const PROGRESS_IDLE_FLUSH = 90 * 1000;
+        const PROGRESS_PRIORITY_IDLE = 10 * 1000;
+        const PROGRESS_MIN_INTERVAL = 5 * 60 * 1000;
+        let _progFlushTimer = null;
+        let _progLastFlush = 0;
+        let _progFlushInFlight = false;
+
+        function scheduleProgressFlush(opts) {
+            if (PROGRESS_DISABLED) return;
+            if (currentUserRole !== 'primary' || !getWriteToken()) return;
+            const idle = (opts && opts.priority) ? PROGRESS_PRIORITY_IDLE : PROGRESS_IDLE_FLUSH;
+            clearTimeout(_progFlushTimer);
+            _progFlushTimer = setTimeout(() => {
+                const since = Date.now() - _progLastFlush;
+                if (since < PROGRESS_MIN_INTERVAL) {
+                    // Respect the floor: re-arm for the remainder instead of pushing.
+                    clearTimeout(_progFlushTimer);
+                    _progFlushTimer = setTimeout(() => flushProgressToRepo({ reason: 'idle' }), PROGRESS_MIN_INTERVAL - since);
+                    return;
+                }
+                flushProgressToRepo({ reason: 'idle' });
+            }, idle);
+        }
+
+        async function flushProgressToRepo(opts) {
+            if (PROGRESS_DISABLED || !PROG) return;
+            if (currentUserRole !== 'primary' || !getWriteToken()) return;
+            if (_progFlushInFlight) return;
+            clearTimeout(_progFlushTimer);
+            _progFlushInFlight = true;
+            try {
+                await _progPushOnce();
+                _progLastFlush = Date.now();
+                localStorage.removeItem(PROGRESS_DIRTY_KEY);
+            } catch (e) {
+                if (e && e.conflict) {
+                    // Retry the whole read-merge-write once; on a second
+                    // failure leave dirty set and let the next flush carry it.
+                    try {
+                        await _progPushOnce();
+                        _progLastFlush = Date.now();
+                        localStorage.removeItem(PROGRESS_DIRTY_KEY);
+                    } catch (e2) { console.warn('[progress push] conflict persisted', e2); }
+                } else {
+                    console.warn('[progress push] failed', e);
+                }
+            } finally {
+                _progFlushInFlight = false;
+            }
+        }
+
+        // Read sha+content together (the drafts.json pattern), merge, write.
+        // Never a blind PUT - progress must merge across devices.
+        async function _progPushOnce() {
+            let sha, remoteInner = null;
+            try {
+                const r = await fetch(`${DATA_API_BASE}/progress.json?t=${Date.now()}`, {
+                    cache: 'no-store',
+                    headers: { Authorization: `Bearer ${getWriteToken()}`, Accept: 'application/vnd.github+json' }
+                });
+                if (r.ok) {
+                    const j = await r.json();
+                    sha = j.sha;
+                    const env = JSON.parse(new TextDecoder().decode(b64ToBytes(j.content.replace(/\s/g, ''))));
+                    if (env && env.progressEnc) {
+                        const json = await decryptDraft(env.progressEnc);
+                        if (json) remoteInner = JSON.parse(json);
+                    }
+                }
+            } catch (e) { /* first write, or unreadable - fall through to plain push */ }
+
+            if (remoteInner) {
+                PROG = mergeProgress(PROG, remoteInner);
+                recomputeStreaks();
+                saveProgressNow();
+            }
+            foldOldDays();
+            const enc = await encryptDraft(JSON.stringify(PROG));
+            const now = new Date().toISOString();
+            await pushToDataRepo('progress.json',
+                { schemaVersion: 1, progressEnc: enc, updatedAt: now },
+                { sha, message: `Progress: ${Object.keys(PROG.u).length} achievements` });
+            localStorage.setItem('local-progress-pushed-at', now);
+        }
+
+        // Hydrate on load. Unlike state.json this ALWAYS merges rather than
+        // adopting-if-newer - safe because every field merges by max/earliest/
+        // union, and it means a device that's been offline contributes its
+        // data instead of losing it.
+        async function hydrateProgressFromRepo() {
+            try {
+                const r = await fetch(`${DATA_RAW_BASE}/progress.json?t=${Date.now()}`, { cache: 'no-store' });
+                if (!r.ok) return;
+                const env = await r.json();
+                if (!env || !env.progressEnc) return;
+                const json = await decryptDraft(env.progressEnc);
+                if (!json) return;
+                loadProgress();
+                PROG = mergeProgress(PROG, JSON.parse(json));
+                recomputeStreaks();
+                saveProgressNow();
+                markProgressDirtyMetrics(null);
+            } catch (e) { console.warn('[progress hydrate] failed', e); }
+        }
+
+        // ---- Boot ----
+        function initProgressTracking() {
+            progSafe(() => {
+                loadProgress();
+                rebuildWordIndex();
+                restoreWriteSession();
+                buildRuleIndex();
+                recomputeStreaks();
+                if (!PROG.f.portal) PROG.f.portal = new Date().toISOString();
+                saveProgressSoon();
+                markProgressDirtyMetrics(null);
+
+                // Save-on-hide. Also closes a real gap: the comment above
+                // mobileImmediateSave promised blur/hide/pagehide but only
+                // blur was ever wired, so backgrounding Safari without
+                // blurring the editor skipped the immediate draft push.
+                const onHide = () => {
+                    progSafe(() => {
+                        if (writeSession) { writeSession.lastActiveAt = new Date().toISOString(); persistWriteSession(); }
+                        saveProgressNow();
+                    });
+                    try { if (typeof mobileImmediateSave === 'function') mobileImmediateSave(); } catch (e) {}
+                    // Fire-and-forget: crypto.subtle cannot be awaited here.
+                    // The boot-dirty flush below is the real recovery path.
+                    try { flushProgressToRepo({ reason: 'pagehide' }); } catch (e) {}
+                };
+                window.addEventListener('pagehide', onHide);
+                document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') onHide(); });
+
+                // Anything left dirty from a previous run gets pushed shortly
+                // after boot settles.
+                if (localStorage.getItem(PROGRESS_DIRTY_KEY)) {
+                    setTimeout(() => progSafe(() => flushProgressToRepo({ reason: 'boot-dirty' })), 20000);
+                }
+            });
+        }
+
         // ---- Session validation against real accounts ----
         function validateSessionAgainstAccounts() {
             if (!currentUser || !accountsData || !Array.isArray(accountsData.users)) return;
@@ -6746,6 +8028,7 @@
         async function bootstrapData() {
             try { await fetchAccounts(); validateSessionAgainstAccounts(); } catch (e) { console.warn('[accounts fetch] failed', e); }
             try { await syncFromDataRepo(); } catch (e) { console.warn('[data sync] failed', e); }
+            try { await hydrateProgressFromRepo(); } catch (e) { console.warn('[progress hydrate] failed', e); }
             refreshAccountButton(); applyRoleGating(); renderGreeting();
             if (!currentScene) renderLandingScreen();
             refreshProgressPill();
@@ -7004,6 +8287,7 @@
             const card = document.getElementById(`guidance-card-${key}`);
             const floatWindow = document.getElementById(`guidance-float-${key}`);
             if (!card || !floatWindow) return;
+            trackEvent('mobileDrawerOpen');
             // A drawer always shows full content - undo any minimized state.
             if (guidanceMinimized.has(key)) toggleGuidanceCardMinimize(key);
             ensureDrawerCloseButton(card, key);
@@ -7172,6 +8456,7 @@
          * exactly as before.
          */
         function toggleReviewReason(el, ev) {
+            progSafe(() => { if (!PROG.f.loreFlagged) { PROG.f.loreFlagged = new Date().toISOString(); saveProgressSoon(); markProgressDirtyMetrics(['flag.loreFlagged']); } });
             if (!isMobileMode()) return;
             ev.stopPropagation();
             ev.preventDefault();

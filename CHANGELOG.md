@@ -2,6 +2,102 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-07-26] – Achievements & Usage Tracking (data layer)
+
+The engine behind 188 achievements plus the usage tracking that drives them.
+**No new UI yet** — the achievement book, toasts, icons, and creature
+animations are a separate later phase. The Stats window's existing 6-badge
+teaser now shows real data instead of the old hardcoded mock.
+
+### Added
+- **`progress.json`** — a new, **AES-encrypted** file in the data repo
+  holding all behavioural data: counters, per-day buckets, hour-of-day
+  histogram, personal bests, per-scene records, streaks, unlock log, and
+  weekly state. Same envelope shape as `state.json`, so it reuses the
+  existing encrypt/push/hydrate pattern.
+- **188 achievement definitions embedded inline** (~31 KB), generated from
+  `storyforge-achievements.json` v3.1.0 and cross-checked against the source
+  (0 mismatches on ids, titles, and every word threshold).
+- **Named-event tracking at ~25 call sites** — one line each
+  (`trackEvent('libraryOpen')`). Covers panel opens, notepad, draft pad,
+  snapshots create/restore, focus modes, proofreader run + apply, Sammy
+  sends, canon syncs, changelog, library search, guidance cards, mobile
+  drawers, scene selection, and status changes. **Not** a generic click log,
+  by choice.
+- **Writing sessions** (a genuinely new concept — none existed). 15-minute
+  idle timeout, ends on idle/unload/midnight, and *resumes* across a page
+  refresh so a 1,900-word session doesn't lose its shot at the 2,000-word
+  badge. Deliberately starts on **any** interaction, not just typing, so the
+  "zero-word session" achievements can actually fire.
+- **In-memory word index**, replacing the full-localStorage rescan that
+  `getStatsData()` and `syncStatsToRepo()` ran on every call — that was
+  O(scenes × draft length) and slow on a phone with 100+ scenes.
+- **`getAchievementBook()`** — returns all 188 with unlocked state, percent,
+  remaining, and a formatted label, plus hidden-achievement masking.
+  Everything the later book UI needs, measured at 1.8 ms.
+
+### Changed
+- **`stats.json` bumped to schemaVersion 2.** It no longer carries a
+  2,000-entry plaintext activity log. That log published a running record of
+  *when Erica writes* to a **public** repo — a real privacy leak that
+  predates this work. It is now drained on the first v2 write, and that
+  detail lives encrypted in `progress.json` instead. The dead
+  `achievementsUnlocked` array is replaced by an
+  `achievementsUnlockedCount` scalar, so a viewer profile can render
+  "13 / 188" without decrypting anything or leaking *which* badges.
+- **Stats window** now shows the real unlock count out of 188, and its six
+  tiles are drawn from actual engine state (unlocked first, then whatever is
+  closest to unlocking) rather than the previous hardcoded list, three of
+  whose entries were permanently `false`.
+
+### Fixed
+- **`initMobileMode` only wired `editor.blur`** despite the comment above
+  `mobileImmediateSave` promising blur/hide/pagehide. Backgrounding Safari
+  without blurring the editor skipped the immediate draft push. Now also
+  wired to `visibilitychange` and `pagehide`.
+
+### Design notes worth knowing
+- **Write amplification** was the main risk, since every push is a git
+  commit. Local-first: every mutation hits localStorage immediately; the
+  repo push is backup only, on a 90 s idle timer behind a hard 5-minute
+  floor. Measured: **120 typing events over 12 s produced exactly 1
+  progress commit.** That's quieter than the existing draft push, which
+  already commits every 2.5 s of typing pause.
+- **The merge is a join-semilattice** — every field merges by max, earliest,
+  or union, so two devices reconcile to the same result in either direction.
+  Verified commutative, associative, and idempotent.
+- **The analytics layer can never break the editor.** Every entry point is
+  wrapped; three failures trip a kill switch for the session. Verified by
+  sabotaging the layer mid-session and confirming typing, autosave, word
+  count, and all other localStorage keys were unaffected.
+
+### Flagged, not settled
+- **`full-outline-clear` had an ambiguous trigger** ("every scene has a
+  terminal status"). Read literally it counted `unfinished` — the *default*
+  state — as terminal, so it unlocked on a brand-new project having done
+  nothing. Reinterpreted as "every scene has draft text and none are flagged
+  for review." **Aaron's call whether that's the intended meaning.**
+- **`manuscript-assembled` is currently unreachable** — it targets a
+  full-draft-assembly feature that doesn't exist. The `counter.assemblyRun`
+  metric ships at 0 so it works the day that feature lands.
+- **Weekly system is deferred** pending the full pool (the JSON has 13
+  entries; Aaron is sourcing more). The selection logic is pool-size
+  agnostic, so adding them is a data edit with no code change.
+
+### Verification notes
+Boundary thresholds asserted exactly (10,000 words fires `words-10000` but
+not `words-11000`; 9,999 fires neither; 3rd distinct day; 0.75 ratio but not
+0.74). Streaks verified including the day-3-vs-day-4 `streak-keeper`
+boundary and stale-streak reset. No double-unlock on repeat sweeps. Merge
+verified commutative/associative/idempotent with an order-insensitive
+comparison. Full 188-rule sweep measured at **0.1 ms**, dirty-subset sweep
+0.05 ms. Session resume across reload confirmed with no double-counted
+session. Mobile path exercised via `setMobilePreview(true)` at 440×956.
+Desktop re-verified unchanged: 100×19 pill at `9999px` radius showing the
+full word, arrow tab hidden, action bank always visible, copy buttons
+hidden, status bar `sticky`, guidance rail hidden. **0** console errors
+throughout.
+
 ## [2026-07-25] – Guidance Copy, Rail Drag, Circular Status (sixth review)
 
 Four requests: a copy button on each guidance drawer, larger guidance-rail
