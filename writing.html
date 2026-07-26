@@ -34,6 +34,11 @@
         .fantasy-header {
             background: #1E6B5F;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.25);
+            /* Item 3 (2026-07-26): gold underline on BOTH desktop and mobile
+               (Aaron's call). On mobile it doubles as the top cap of the
+               scene-status arm, which hangs flush beneath it with no top
+               border of its own. */
+            border-bottom: 2px solid #D4AF37;
         }
         
         .section-title {
@@ -972,6 +977,12 @@
            them collide instead of reflow. Height is measured at runtime into
            --mobile-header-h, so sheets and the rail follow whatever it becomes. */
         body.mobile-layout header .h-14 { gap: 4px; height: auto; min-height: var(--tap-sm); flex-wrap: wrap; padding: 2px 0; }
+        /* Item 4 (2026-07-26): 4px of air below the header, mobile only.
+           Deliberately a MARGIN, not padding or extra height: margin is
+           excluded from getBoundingClientRect().height, so
+           --mobile-header-h is unaffected and the fixed status arm stays
+           flush under the gold border while flow content gets the gap. */
+        body.mobile-layout header { margin-bottom: 4px; }
         /* Item 1 (2026-07-24): the circular mark matches the Login button's
            height, and the "Big Tiff" wordmark matches the circle's height. */
         body.mobile-layout header .w-8.h-8 { width: var(--tap-sm); height: var(--tap-sm); flex-shrink: 0; }
@@ -1079,14 +1090,18 @@
             background-color: #1E6B5F !important;
             border: 2px solid #D4AF37 !important;
             border-left: none !important;
-            border-radius: 0 14px 14px 0 !important;
-            /* Item 3 (2026-07-26): ONE continuous green shape whose RIGHT
-               edge stands off the controls by 4x the original 4px margin.
-               Left/top/bottom stay at 4px so the buttons keep sitting the
-               same short distance from the window edge, exactly as before.
+            /* Item 5 (2026-07-26): the arm is now a compound shape hanging
+               off the header - square and flush at the top with NO top gold
+               border (the header's own bottom edge caps it), rounded only at
+               the lower-right. Reads as one continuous green form with the
+               header rather than a separate floating block. */
+            border-top: none !important;
+            border-radius: 0 0 14px 0 !important;
+            /* Uniform 4px of green on every side (the "4x" in the previous
+               round was a typo for 4px - reverted 2026-07-26).
                --arm-pad-r is shared with the options drawer below so the two
                can never drift apart. */
-            --arm-pad-r: 16px;
+            --arm-pad-r: 4px;
             padding: 4px var(--arm-pad-r) 4px 4px; margin: 0;
             display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
         }
@@ -1108,7 +1123,10 @@
         body.mobile-layout #scene-status-bar .status-dropdown-trigger {
             width: 3.5rem; height: 3.5rem; min-width: 3.5rem; min-height: 3.5rem;
             border-radius: 50%;
-            border: 1px solid #D4AF37;
+            /* Item 2 (2026-07-26): 2px gold ring, matching the arm's own
+               2px edge so the circle reads as part of the same family. */
+            border: 2px solid #D4AF37;
+            box-sizing: border-box;
             padding: 0;
             /* Item 5 (2026-07-26): larger status letter. 1.5rem keeps the
                two-character "UF" comfortably inside the 3.5rem circle. */
@@ -1155,6 +1173,9 @@
         body.mobile-layout #scene-status-bar .status-dropdown-option {
             width: 2.75rem; height: 2.75rem; min-width: 2.75rem; min-height: 0;
             border-radius: 50%;
+            /* Item 2 (2026-07-26): same 2px gold ring as the status circle. */
+            border: 2px solid #D4AF37;
+            box-sizing: border-box;
             display: flex; align-items: center; justify-content: center;
             font-size: 0.8rem; font-weight: 700; padding: 0; flex-shrink: 0;
         }
