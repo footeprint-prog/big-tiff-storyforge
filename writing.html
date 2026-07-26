@@ -144,6 +144,12 @@
             border-bottom-color: transparent;
         }
 
+        /* Trigger/option content renders both a full word and a short
+           1-2 letter code (updateStatusSelector); desktop shows the word,
+           the mobile circular redesign shows only the code (see mobile
+           #scene-status-bar rules). */
+        .status-trigger-code { display: none; }
+
         .status-dropdown-menu {
             position: absolute;
             top: 100%;
@@ -261,6 +267,12 @@
         .guidance-float-btn:hover {
             opacity: 1;
         }
+
+        /* Mobile-only copy-to-clipboard button on each guidance card;
+           desktop has no use for it (selecting/copying works normally
+           there), so it stays display:none until body.mobile-layout
+           turns it on (see mobile guidance-drawer CSS). */
+        .guidance-copy-btn { display: none; }
 
         .guidance-card {
             scrollbar-width: thin;
@@ -1081,35 +1093,97 @@
             border-radius: 0;
             width: auto;
         }
-        /* The pill is exactly DOUBLE the Sammy button's width and the SAME
-           height as it (2026-07-24 correction): 2 x 44px wide, 44px tall. */
-        /* The #scene-status-bar prefix is required: the primary-tier rule
-           "body.mobile-layout #scene-status-bar button { min-height: 44px }"
-           carries an id and would otherwise out-rank a plain class rule and
-           keep the pill 44px tall. */
-        body.mobile-layout #scene-status-bar .status-dropdown-wrapper { width: calc(var(--tap) * 2); min-height: 0; height: auto; }
+        /* Item (2026-07-25): the pill becomes a large circular status
+           button - a single letter code (R / UF / C) in a 1px gold border,
+           still sitting inside the SAME green-arm/2px-gold-border shape
+           (#scene-status-bar above, unchanged) with its 4px padding. Size
+           matches the enlarged guidance-rail icons (3.5rem) so both edge
+           banks read as the same weight. */
+        body.mobile-layout #scene-status-bar .status-dropdown-wrapper { width: auto; min-height: 0; height: auto; position: relative; }
         body.mobile-layout #scene-status-bar .status-dropdown-trigger {
-            width: 100%; min-width: 0;
-            min-height: var(--tap); height: var(--tap);
-            font-size: 0.8rem; line-height: 1;
-            padding: 0 18px 0 10px;
-            background-size: 9px; background-position: right 6px center;
+            width: 3.5rem; height: 3.5rem; min-width: 3.5rem; min-height: 3.5rem;
+            border-radius: 50%;
+            border: 1px solid #D4AF37;
+            padding: 0;
+            font-size: 0.95rem; font-weight: 700; line-height: 1;
+            display: flex; align-items: center; justify-content: center;
+            /* the desktop chevron-in-background doesn't read on a circle -
+               tapping the whole circle is the affordance instead */
+            background-image: none !important;
         }
-        /* Item 3: the morph-down options match the thinner pill. The menu is
-           inset by the wrapper's own green padding so it lines up with the
-           pill exactly instead of jutting out past it. */
-        body.mobile-layout .status-dropdown-option { font-size: 0.75rem; padding: 6px 6px; }
-        body.mobile-layout .status-dropdown-wrapper.open .status-dropdown-menu { max-height: 200px; }
+        body.mobile-layout #scene-status-bar .status-dropdown-wrapper.open .status-dropdown-trigger {
+            border-radius: 50%; border-bottom-color: #D4AF37;
+        }
+        /* Options slide out horizontally to the right of the circle rather
+           than dropping down beneath it (desktop behavior) - this control
+           sits flush against the left screen edge now, so down-and-under
+           has nowhere comfortable to go. Same two alternate statuses,
+           same click targets, just a sideways reveal. */
+        body.mobile-layout #scene-status-bar .status-dropdown-menu {
+            top: 0; left: 100%; right: auto; bottom: auto;
+            margin-left: 8px;
+            display: flex; flex-direction: row; align-items: center; gap: 6px;
+            max-height: none; height: 3.5rem;
+            width: 0; opacity: 0;
+            border: none; border-radius: 9999px;
+            overflow: hidden;
+            transition: width 0.18s ease, opacity 0.15s ease;
+        }
+        body.mobile-layout #scene-status-bar .status-dropdown-wrapper.open .status-dropdown-menu {
+            width: auto; opacity: 1;
+        }
+        body.mobile-layout #scene-status-bar .status-dropdown-option {
+            width: 2.75rem; height: 2.75rem; min-width: 2.75rem; min-height: 0;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem; font-weight: 700; padding: 0; flex-shrink: 0;
+        }
+        /* The trigger/options render both a full word and a short code
+           (see updateStatusSelector); mobile shows only the code so it fits
+           the circle, desktop keeps the full word it always had. */
+        body.mobile-layout .status-trigger-label { display: none; }
+        body.mobile-layout .status-trigger-code { display: inline; }
 
-        /* The button stack, now inside the single merged shape (item 2). */
+        /* Dropdown-arrow tab: opens/closes the Sammy/Draft Log/Save bank,
+           independent of the status circle above it. Bank starts collapsed
+           on mobile (see the > .flex rule below) so the arm is just the
+           circle by default; tapping the tab reveals the same bank that
+           always existed, now inside the same green/2px-gold shape. */
+        .status-actions-toggle { display: none; }
+        /* Chrome-tier (--tap-sm, 30px floor) like other set-once toggles
+           (drawer-close, panel headers) - not below it, matching the
+           project's touch-target floor rather than inventing a smaller one. */
+        body.mobile-layout #scene-status-bar .status-actions-toggle {
+            display: flex; align-items: center; justify-content: center;
+            width: 100%; min-height: var(--tap-sm); height: var(--tap-sm);
+            background: none; border: none; color: #D4AF37; font-size: 0.7rem;
+            padding: 0;
+        }
+        body.mobile-layout #scene-status-bar.actions-open .status-actions-toggle i {
+            transform: rotate(180deg);
+        }
+
+        /* The button stack, now inside the single merged shape (item 2).
+           It's wrapped in its own .status-actions-bank (distinct from the
+           outer .flex, which also carries #auto-save-status) specifically
+           so collapsing it via the arrow tab can't also hide the
+           auto-save indicator - display:none on an ancestor hides
+           descendants even if they're position:fixed, which auto-save-status
+           is. Collapsed by default on mobile; the arrow tab toggles
+           #scene-status-bar.actions-open to reveal it. */
         body.mobile-layout #scene-status-bar > .flex {
-            flex-direction: column; align-items: flex-start; gap: 4px;
             background: transparent;
             padding: 0;
             border-radius: 0;
             width: 100%;
         }
-        body.mobile-layout #scene-status-bar > .flex > button {
+        body.mobile-layout #scene-status-bar .status-actions-bank {
+            flex-direction: column; align-items: flex-start; gap: 4px;
+            width: 100%;
+            display: none;
+        }
+        body.mobile-layout #scene-status-bar.actions-open .status-actions-bank { display: flex; }
+        body.mobile-layout #scene-status-bar .status-actions-bank > button {
             width: var(--tap); height: var(--tap); min-height: var(--tap);
             padding: 0; gap: 0;
             /* left-aligned with the pill above so every control sits the same
@@ -1119,9 +1193,9 @@
             border-radius: 10px;
         }
         /* Item 4: Sammy above Save in the stack. */
-        body.mobile-layout #scene-status-bar > .flex > button[aria-label="Send to Sammy"] { order: 1; }
-        body.mobile-layout #scene-status-bar > .flex > button[aria-label="Draft Log"] { order: 2; }
-        body.mobile-layout #scene-status-bar > .flex > button[aria-label="Save Draft"] { order: 3; }
+        body.mobile-layout #scene-status-bar .status-actions-bank > button[aria-label="Send to Sammy"] { order: 1; }
+        body.mobile-layout #scene-status-bar .status-actions-bank > button[aria-label="Draft Log"] { order: 2; }
+        body.mobile-layout #scene-status-bar .status-actions-bank > button[aria-label="Save Draft"] { order: 3; }
         /* Item 4: "Auto-saved…" leaves the arm and sits semi-transparent in
            the bottom-right corner of the writing area. pointer-events:none so
            taps pass through to the editor beneath it. */
@@ -1179,11 +1253,18 @@
             overflow-y: auto; overflow-x: hidden;
             max-height: calc(100dvh - var(--mobile-header-h) - var(--mobile-nav-clear) - 12px);
         }
+        /* Enlarged (2026-07-25) to read as the same weight as the Sammy/
+           Draft Log/Save action buttons on the opposite edge - those are
+           var(--tap) 44px each; the rail strip stays a connected column
+           (touching, one shared border) rather than switching to separate
+           bordered pills, so simply bumping this past --tap was the way to
+           make them feel like peers without breaking the "connected bank"
+           layout Aaron asked to keep. */
         body.mobile-layout .rail-tab {
             display: flex; align-items: center; justify-content: center;
             /* square tabs (item 7, 2026-07-24) */
-            width: var(--tap); min-width: var(--tap);
-            height: var(--tap); min-height: var(--tap);
+            width: 3.5rem; min-width: 3.5rem;
+            height: 3.5rem; min-height: 3.5rem;
             padding: 0;
             background: transparent; border: none;
             border-bottom: 1px solid rgba(212, 175, 55, 0.3);
@@ -1191,8 +1272,14 @@
             color: #D4AF37;
         }
         body.mobile-layout #mobile-guidance-rail .rail-tab:last-child { border-bottom: none; }
-        body.mobile-layout .rail-tab i { font-size: 1rem; }
+        body.mobile-layout .rail-tab i { font-size: 1.375rem; }
         body.mobile-layout .rail-tab.active { background: #D4AF37; color: #3D2B1F; }
+        /* Armed after a 1s press-and-hold (setupGuidanceRailDrag): a visible
+           cue that the next finger movement now drags the whole bank rather
+           than opening a drawer. */
+        body.mobile-layout.scene-open #mobile-guidance-rail.rail-dragging {
+            box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.8), 0 4px 14px rgba(0,0,0,0.4);
+        }
 
         /* Guidance drawer: the float-window shells reused as fixed,
            non-draggable pop-open drawers anchored just left of the rail.
@@ -1216,6 +1303,17 @@
         }
         .m-drawer-close { display: none; background: none; border: none; color: #D4AF37; cursor: pointer; }
         body.mobile-layout .guidance-float-body .m-drawer-close { display: inline-flex; align-items: center; justify-content: center; min-width: var(--tap-sm); min-height: var(--tap-sm); font-size: 1.15rem; }
+        /* Item (2026-07-25): copy-to-clipboard button in each guidance
+           drawer's own header row, alongside the drawer-close button. Same
+           chrome-tier size as m-drawer-close (set-once action, not a
+           writing-time control). Icon swaps to a checkmark briefly on
+           success via copyGuidanceCardText(). */
+        body.mobile-layout .guidance-copy-btn {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: var(--tap-sm); min-height: var(--tap-sm);
+            font-size: 1rem; color: #D4AF37; background: none; border: none;
+        }
+        body.mobile-layout .guidance-copy-btn.copy-flash { color: #A3E6C9; }
 
         /* ---- Former floating windows become full-screen sheets (one at a
            time), pinned below the header and above the bottom nav.
@@ -1583,8 +1681,12 @@
                      class="mb-3 px-4 flex items-center justify-between sticky z-20"
                      style="background-color: #1E6B5F; border-top: 5px solid rgba(212,175,55,0.7); border-bottom: 1px solid rgba(212,175,55,1); border-radius: 0 0 1rem 1rem; height: 48px;">
                     <div id="scene-status-select" class="status-dropdown-wrapper control-bar-item" style="display:none;"></div>
+                    <button id="status-actions-toggle" type="button" class="status-actions-toggle" aria-label="Show scene action buttons" aria-expanded="false" onclick="toggleStatusActionsBank()">
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </button>
                     <div class="flex items-center gap-x-3">
                         <div id="auto-save-status" class="control-bar-item text-[#F4EDE4]/80">Auto-saved just now</div>
+                        <div class="status-actions-bank flex items-center gap-x-3">
                         <button onclick="saveDraft()" aria-label="Save Draft" class="control-bar-item bg-transparent border border-[#D4AF37]/60 hover:bg-[#D4AF37]/10 rounded-xl text-[#F4EDE4] transition-colors flex items-center gap-x-1.5">
                             <i class="fa-solid fa-floppy-disk"></i>
                             <span class="btn-text">Save Draft</span>
@@ -1597,6 +1699,7 @@
                             <i class="fa-solid fa-paper-plane"></i>
                             <span class="btn-text">Sammy</span>
                         </button>
+                        </div>
                     </div>
                 </div>
 
@@ -1617,6 +1720,9 @@
                                     </button>
                                     <button onclick="floatGuidanceCard('purpose')" class="guidance-float-btn" title="Open in floating window">
                                         <i class="fa-solid fa-expand"></i>
+                                    </button>
+                                    <button onclick="copyGuidanceCardText('purpose', this)" class="guidance-copy-btn" title="Copy text" aria-label="Copy Purpose text">
+                                        <i class="fa-solid fa-copy"></i>
                                     </button>
                                 </div>
                             </div>
@@ -1644,6 +1750,9 @@
                                     <button onclick="floatGuidanceCard('canon')" class="guidance-float-btn" title="Open in floating window">
                                         <i class="fa-solid fa-expand"></i>
                                     </button>
+                                    <button onclick="copyGuidanceCardText('canon', this)" class="guidance-copy-btn" title="Copy text" aria-label="Copy Key Canon to Honor text">
+                                        <i class="fa-solid fa-copy"></i>
+                                    </button>
                                 </div>
                             </div>
                             <div id="guidance-canon" class="text-[#E8D9C0] leading-snug"></div>
@@ -1668,6 +1777,9 @@
                                     </button>
                                     <button onclick="floatGuidanceCard('emotional')" class="guidance-float-btn" title="Open in floating window">
                                         <i class="fa-solid fa-expand"></i>
+                                    </button>
+                                    <button onclick="copyGuidanceCardText('emotional', this)" class="guidance-copy-btn" title="Copy text" aria-label="Copy Emotional State text">
+                                        <i class="fa-solid fa-copy"></i>
                                     </button>
                                 </div>
                             </div>
@@ -1747,6 +1859,9 @@
                                     <button onclick="floatGuidanceCard('beats')" class="guidance-float-btn" title="Open in floating window">
                                         <i class="fa-solid fa-expand"></i>
                                     </button>
+                                    <button onclick="copyGuidanceCardText('beats', this)" class="guidance-copy-btn" title="Copy text" aria-label="Copy Must-Happen Beats text">
+                                        <i class="fa-solid fa-copy"></i>
+                                    </button>
                                 </div>
                             </div>
                             <div id="guidance-beats" class="text-[#E8D9C0] leading-snug"></div>
@@ -1771,6 +1886,9 @@
                                     <button onclick="floatGuidanceCard('setting')" class="guidance-float-btn" title="Open in floating window">
                                         <i class="fa-solid fa-expand"></i>
                                     </button>
+                                    <button onclick="copyGuidanceCardText('setting', this)" class="guidance-copy-btn" title="Copy text" aria-label="Copy Setting &amp; Tone text">
+                                        <i class="fa-solid fa-copy"></i>
+                                    </button>
                                 </div>
                             </div>
                             <div id="guidance-setting" class="text-[#E8D9C0] leading-snug"></div>
@@ -1794,6 +1912,9 @@
                                     </button>
                                     <button onclick="floatGuidanceCard('success')" class="guidance-float-btn" title="Open in floating window">
                                         <i class="fa-solid fa-expand"></i>
+                                    </button>
+                                    <button onclick="copyGuidanceCardText('success', this)" class="guidance-copy-btn" title="Copy text" aria-label="Copy Success for This Scene text">
+                                        <i class="fa-solid fa-copy"></i>
                                     </button>
                                 </div>
                             </div>
@@ -5187,6 +5308,11 @@
             wrapper.classList.remove('open');
             wrapper.innerHTML = '';
 
+            // Mobile: the action-button bank (Sammy/Draft Log/Save) starts
+            // collapsed behind the arrow tab on every scene load, same as a
+            // fresh drawer - see toggleStatusActionsBank().
+            if (typeof resetStatusActionsBank === 'function') resetStatusActionsBank();
+
             const currentStatus = scene.status || 'unfinished';
             const pillClass = currentStatus === 'complete' ? 'status-pill-complete' :
                                currentStatus === 'review' ? 'status-pill-review' : 'status-pill-unfinished';
@@ -5194,21 +5320,28 @@
             // Same status-ordering rule as before: current status always first,
             // and "Review" never appears as a pickable alternative unless it's
             // already the current status (tool sets it, user only clears it).
+            // "code" is the mobile circular button's letter (R/UF/C) - see the
+            // mobile #scene-status-bar CSS, which shows the code and hides
+            // the full word on the circle/its slide-out options.
             const allStatuses = [
-                { value: 'unfinished', label: 'Unfinished', pillClass: 'status-pill-unfinished' },
-                { value: 'complete', label: 'Complete', pillClass: 'status-pill-complete' },
-                { value: 'review', label: 'Review', pillClass: 'status-pill-review' }
+                { value: 'unfinished', label: 'Unfinished', code: 'UF', pillClass: 'status-pill-unfinished' },
+                { value: 'complete', label: 'Complete', code: 'C', pillClass: 'status-pill-complete' },
+                { value: 'review', label: 'Review', code: 'R', pillClass: 'status-pill-review' }
             ];
             const otherEntries = allStatuses.filter(s =>
                 s.value !== currentStatus && s.value !== 'review'
             );
 
-            const currentLabel = allStatuses.find(s => s.value === currentStatus)?.label || 'Unfinished';
+            const currentEntry = allStatuses.find(s => s.value === currentStatus) || allStatuses[0];
+
+            const entryInnerHTML = (entry) =>
+                `<span class="status-trigger-label">${entry.label}</span><span class="status-trigger-code" aria-hidden="true">${entry.code}</span>`;
 
             const trigger = document.createElement('button');
             trigger.type = 'button';
             trigger.className = `status-dropdown-trigger ${pillClass}`;
-            trigger.textContent = currentLabel;
+            trigger.setAttribute('aria-label', `Scene status: ${currentEntry.label}. Tap to change.`);
+            trigger.innerHTML = entryInnerHTML(currentEntry);
             trigger.onclick = (e) => {
                 e.stopPropagation();
                 wrapper.classList.toggle('open');
@@ -5220,7 +5353,9 @@
             otherEntries.forEach(entry => {
                 const optionEl = document.createElement('div');
                 optionEl.className = `status-dropdown-option ${entry.pillClass}`;
-                optionEl.textContent = entry.label;
+                optionEl.setAttribute('role', 'button');
+                optionEl.setAttribute('aria-label', `Set scene status to ${entry.label}`);
+                optionEl.innerHTML = entryInnerHTML(entry);
                 optionEl.onclick = (e) => {
                     e.stopPropagation();
                     wrapper.classList.remove('open');
@@ -5237,6 +5372,28 @@
         document.addEventListener('click', () => {
             document.querySelectorAll('.status-dropdown-wrapper.open').forEach(w => w.classList.remove('open'));
         });
+
+        /**
+         * Mobile-only: the dropdown-arrow tab beneath the circular status
+         * button opens/closes the Save/Draft Log/Sammy action bank, kept
+         * separate from the status circle's own open/close (that one picks
+         * a new status; this one just reveals buttons that already existed
+         * on the control arm before this redesign).
+         */
+        function toggleStatusActionsBank() {
+            const bar = document.getElementById('scene-status-bar');
+            const btn = document.getElementById('status-actions-toggle');
+            if (!bar) return;
+            const nowOpen = bar.classList.toggle('actions-open');
+            if (btn) btn.setAttribute('aria-expanded', String(nowOpen));
+        }
+
+        function resetStatusActionsBank() {
+            const bar = document.getElementById('scene-status-bar');
+            const btn = document.getElementById('status-actions-toggle');
+            if (bar) bar.classList.remove('actions-open');
+            if (btn) btn.setAttribute('aria-expanded', 'false');
+        }
 
         /**
          * Handles when the user changes the status via the dropdown.
@@ -5719,6 +5876,39 @@
         }
 
         /**
+         * Mobile-only: copies a guidance drawer's rendered text to the
+         * clipboard so Erica can paste guidance into Sammy/notes elsewhere
+         * without retyping. Reads the already-populated DOM text (not the
+         * raw scene field) so it matches exactly what's on screen, list
+         * formatting included.
+         */
+        async function copyGuidanceCardText(key, btn) {
+            const el = document.getElementById(`guidance-${key}`);
+            if (!el) return;
+            const text = el.innerText.trim();
+            if (!text) return;
+            try {
+                await navigator.clipboard.writeText(text);
+                flashGuidanceCopyButton(btn);
+            } catch (err) {
+                console.warn('[Guidance] Copy to clipboard failed:', err);
+            }
+        }
+
+        function flashGuidanceCopyButton(btn) {
+            if (!btn) return;
+            const icon = btn.querySelector('i');
+            if (!icon) return;
+            const original = icon.className;
+            icon.className = 'fa-solid fa-check';
+            btn.classList.add('copy-flash');
+            setTimeout(() => {
+                icon.className = original;
+                btn.classList.remove('copy-flash');
+            }, 1200);
+        }
+
+        /**
          * Entry point for clicking a scene in the outline.
          * If the currently open scene is still flagged "review" and the user is
          * navigating away without having changed its status, confirm they meant
@@ -5887,6 +6077,7 @@
                 const ok = await verifyPassword(pw, user.salt, user.hash);
                 if (!ok) return fail();
                 setSession(user.username, user.role, user.canSyncCanon, true);
+                if (typeof resetGuidanceRailPosition === 'function') resetGuidanceRailPosition();
                 hideLoginModal();
                 refreshAccountButton();
                 applyRoleGating();
@@ -6834,6 +7025,101 @@
                 tab.classList.toggle('active', tab.dataset.railKey === mobileOpenDrawerKey);
             });
         }
+
+        // ---- Guidance rail: tap-and-hold to drag reposition (2026-07-25) ----
+        // The rail defaults to vertically centered (CSS top:50%). A 1s
+        // press-and-hold on the rail arms dragging; a plain tap still opens
+        // a drawer as before. Position is tracked only in an inline style on
+        // the live element - nothing is persisted to localStorage - so a
+        // fresh page load (i.e. a real login) always starts back at center
+        // with no extra code needed, per Aaron's "reset to middle upon
+        // login" spec.
+        (function setupGuidanceRailDrag() {
+            const LONG_PRESS_MS = 1000;
+            const MOVE_CANCEL_PX = 10; // pre-arm movement this large cancels the long-press (treat as a scroll/tap, not a drag)
+            let pressTimer = null;
+            let dragging = false;
+            let didDrag = false;
+            let startY = 0;
+            let startTop = 0;
+            let railEl = null;
+
+            function clampTop(top, rail) {
+                const cs = getComputedStyle(document.body);
+                const headerH = parseFloat(cs.getPropertyValue('--mobile-header-h')) || 56;
+                const navClear = parseFloat(cs.getPropertyValue('--mobile-nav-clear')) || 56;
+                const minTop = headerH + 8;
+                const maxTop = Math.max(minTop, window.innerHeight - navClear - rail.offsetHeight - 8);
+                return Math.min(Math.max(top, minTop), maxTop);
+            }
+
+            function armDrag() {
+                dragging = true;
+                railEl.classList.add('rail-dragging');
+                const rect = railEl.getBoundingClientRect();
+                railEl.style.transform = 'none';
+                railEl.style.top = clampTop(rect.top, railEl) + 'px';
+            }
+
+            function onPointerDown(e) {
+                if (e.pointerType === 'mouse' && e.button !== 0) return;
+                if (!isMobileMode()) return;
+                const rail = document.getElementById('mobile-guidance-rail');
+                if (!rail || !rail.contains(e.target)) return;
+                railEl = rail;
+                didDrag = false;
+                startY = e.clientY;
+                startTop = railEl.getBoundingClientRect().top;
+                clearTimeout(pressTimer);
+                pressTimer = setTimeout(armDrag, LONG_PRESS_MS);
+                document.addEventListener('pointermove', onPointerMove);
+                document.addEventListener('pointerup', onPointerUp, { once: true });
+                document.addEventListener('pointercancel', onPointerUp, { once: true });
+            }
+
+            function onPointerMove(e) {
+                if (dragging) {
+                    didDrag = true;
+                    railEl.style.top = clampTop(startTop + (e.clientY - startY), railEl) + 'px';
+                    e.preventDefault();
+                } else if (pressTimer && Math.abs(e.clientY - startY) > MOVE_CANCEL_PX) {
+                    clearTimeout(pressTimer);
+                    pressTimer = null;
+                }
+            }
+
+            function onPointerUp() {
+                clearTimeout(pressTimer);
+                pressTimer = null;
+                if (dragging) {
+                    dragging = false;
+                    railEl.classList.remove('rail-dragging');
+                }
+                document.removeEventListener('pointermove', onPointerMove);
+            }
+
+            document.addEventListener('pointerdown', onPointerDown);
+
+            // A long-press-then-drag ends with a pointerup over a rail-tab,
+            // which would otherwise also fire that tab's click and pop a
+            // drawer open right after the user finishes repositioning the
+            // rail. Swallow exactly that one click.
+            document.addEventListener('click', (e) => {
+                if (didDrag) {
+                    didDrag = false;
+                    e.stopPropagation();
+                    e.preventDefault();
+                }
+            }, true);
+
+            window.resetGuidanceRailPosition = function resetGuidanceRailPosition() {
+                const rail = document.getElementById('mobile-guidance-rail');
+                if (!rail) return;
+                rail.classList.remove('rail-dragging');
+                rail.style.top = '';
+                rail.style.transform = '';
+            };
+        })();
 
         // ---- Bottom navigation ----
         function mobileNav(what) {

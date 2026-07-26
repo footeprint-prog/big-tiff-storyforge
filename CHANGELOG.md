@@ -2,6 +2,95 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-07-25] – Guidance Copy, Rail Drag, Circular Status (sixth review)
+
+Four requests: a copy button on each guidance drawer, larger guidance-rail
+icons, a draggable rail, and a full redesign of the mobile status control
+from a pill to a circle. All mobile-only; desktop untouched.
+
+### Added
+- **Copy-to-clipboard button** (`.guidance-copy-btn`) in each of the six
+  guidance drawers (Purpose/Canon/Emotional/Beats/Setting/Success), next to
+  where the desktop-only minimize/expand icons would be. Reads the drawer's
+  already-rendered text via `innerText` (so list formatting matches what's
+  on screen) and writes it with `navigator.clipboard.writeText()`. The icon
+  flashes to a checkmark for 1.2s on success (`copyGuidanceCardText()` /
+  `flashGuidanceCopyButton()`).
+- **Guidance rail drag-to-reposition.** A 1-second press-and-hold on the
+  rail arms dragging (visible gold glow cue via `.rail-dragging`); a
+  subsequent drag moves the whole rail up/down the right edge, clamped
+  between the header and bottom-nav clearance
+  (`setupGuidanceRailDrag()` in an IIFE near `updateRailActiveState`). A
+  plain tap under 1s still opens a drawer as before — the drag-arming click
+  is swallowed via a capturing click listener keyed on whether a drag
+  actually happened. Position is **never persisted** (no localStorage) — it
+  lives only in an inline `top` style on the live element, so a fresh page
+  load (a real login) always starts centered with zero extra reset code.
+  `submitLogin()` also calls `resetGuidanceRailPosition()` explicitly, for
+  the case where a session is already loaded and a different account logs
+  in without a full page reload.
+
+### Changed
+- **Guidance rail icons enlarged** from 44×44px to 56×56px (icon glyph
+  1rem → 1.375rem), staying a single touching "connected bank" (one shared
+  strip border, no per-icon borders) rather than becoming separate spaced
+  buttons like the Sammy/Draft Log/Save bank. **Flagged, not fully
+  settled:** the rail icons and the action-bank buttons were already
+  pixel-identical at 44×44 before this change — Aaron's brief presupposed a
+  size gap that didn't exist in code. Asked which axis he actually meant
+  (bump size, add per-icon borders, or match the old 88px pill width) and
+  got no reply before continuing, so this went with the plainest reading —
+  make them visibly bigger, keep the connected layout — as a placeholder.
+  Revisit if 56px isn't what he had in mind.
+- **Mobile status pill replaced with a circular status button.** The outer
+  green-arm / 2px-gold-border shape (`#scene-status-bar`) is unchanged;
+  only what sits inside it changed. The trigger is now a 56px circle with a
+  1px gold border showing a single status code — **R** (Review), **UF**
+  (Unfinished), **C** (Complete) — instead of the full word, sized to match
+  the enlarged rail icons. `updateStatusSelector()` now renders both a
+  `.status-trigger-label` (full word, shown on desktop) and a
+  `.status-trigger-code` (short code, shown on mobile) per option, so
+  desktop kept its original pill unchanged.
+- **Status options slide out horizontally** instead of dropping down
+  beneath the trigger (mobile only) — the circle sits flush against the
+  left screen edge, so a horizontal reveal to the right made more sense
+  than down-and-under. Same alternate-status logic as before (current
+  status excluded, Review only offered if already active).
+- **Sammy / Draft Log / Save now collapse behind a new dropdown-arrow tab**
+  (`#status-actions-toggle`, `toggleStatusActionsBank()`), starting closed
+  on every scene load. The three buttons were re-wrapped in their own
+  `.status-actions-bank` div, separate from the row that also holds
+  `#auto-save-status` — collapsing that row directly would have hidden the
+  auto-save indicator too, since `display:none` on an ancestor hides a
+  `position:fixed` descendant regardless of its own positioning. The arrow
+  tab itself is 56×30px (chrome-tier `--tap-sm` floor, not a new
+  below-floor size) — initially built it at 22px tall before catching that
+  it violated the touch-target floor and fixing it in the same pass.
+
+### Verification notes
+All four checked at 440×956 via `setMobilePreview(true)` / synthetic
+`PointerEvent` sequences (real touch hardware not available in this
+environment — see the "not verified" list this doc already carries
+forward from the original mobile port). Copy button: present in all six
+drawers, click fires with no console errors, icon swaps to a checkmark.
+Drag: long-press (1100ms) arms `.rail-dragging` and a following
+`pointermove` repositions the rail by the exact delta; a short tap (150ms)
+still opens the correct drawer and never arms dragging; an extreme drag
+(+5000px) clamps to `railBottom < viewport height`, never off-screen;
+`resetGuidanceRailPosition()` restores the exact original centered
+position. Circular status: 56×56 circle, `border-radius: 50%`, correct
+code per status (R/UF/C), full label present but `display:none`; clicking
+opens a horizontal menu with only the valid alternate status, clicking it
+changes `currentScene.status` and closes the menu; arrow tab opens/closes
+the action bank without affecting `#auto-save-status`'s visibility, and
+resets to closed on every new scene load. Full-open-state audit (drawer +
+action bank + status menu all open at once): **0** interactive elements
+under 30px anywhere in the scene view, no layout overlap between the
+status arm, guidance rail, drawer, and status menu. Desktop re-verified
+unchanged: pill still `border-radius: 9999px` showing the full word, arrow
+tab and copy buttons both `display:none`, action bank always visible
+(never collapses), rail hidden.
+
 ## [2026-07-25] – Control Sizing Corrections (fifth review)
 
 ### Fixed
