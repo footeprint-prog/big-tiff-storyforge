@@ -1,5 +1,14 @@
 # Big Tiff StoryForge — Project Governance & Protocols
 
+> **⚠ PARTIALLY SUPERSEDED (noted 2026-07-26).** The multi-agent structure
+> below (Grok as Orchestrator, "Webcraft Master Dom" building the tool) is
+> historical — tool development now happens via Claude Code with direct
+> git access, not a Grok Project persona. The **content-side rules**
+> (Sammy owns canon JSON, Draft Protection, the review-status workflow,
+> the Standardized Scene Prompt Template) are still accurate and still in
+> force — those haven't changed. For the current tool-development
+> workflow, see `AGENTS.md` instead of the Dom-specific sections below.
+
 **Created:** June 18, 2026  
 **Last Updated:** June 19, 2026  
 **Purpose:** This document is the single highest-level reference for how the entire Big Tiff StoryForge system should operate. It covers agent roles, file ownership, core protocols, the “Update webtool” command, Library and Outline management, version control guardrails, and alignment between Aaron’s and Erica’s Grok instances.

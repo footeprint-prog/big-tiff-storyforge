@@ -48,6 +48,18 @@ project except Sammy, and only on an explicit "Update webtool" command.
 - **This is a gift for Erica, who has ADD.** Every design choice should
   reduce decisions and friction for her, not add steps. When in doubt
   between a more "correct" flow and a calmer one, prefer calmer.
+- **Mobile UI work has a fast-iteration loop that stops short of the real
+  site, on purpose.** Commit + push to `claude/mobile-port` only; that
+  branch's GitHub Pages preview auto-rebuilds in ~1 min. **Never** promote
+  to `bigtiffsworld.com` / the `big_tiff_launchpage` repo as part of that
+  loop — promotion is a separate, explicit step Aaron requests only after
+  approving changes on the preview URL. Full detail, current deployment
+  status, and mobile architecture notes: `Mobile_Port_Handoff.md`.
+- **The achievements/usage-tracking engine (188 achievements, encrypted
+  `progress.json`) shipped 2026-07-26 — UI (icons, achievement book,
+  trophy shelves) has not.** Don't assume the engine needs building if a
+  request sounds like it's asking for achievement logic; check
+  `CHANGELOG.md`'s 2026-07-26 entries and `getAchievementBook()` first.
 
 ## Where things actually live
 | What | Where | Who writes it |

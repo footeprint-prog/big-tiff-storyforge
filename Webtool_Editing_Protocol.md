@@ -1,5 +1,13 @@
 # Big Tiff StoryForge — Webtool Editing Protocol
 
+> **⚠ SUPERSEDED (noted 2026-07-26).** Written for a Grok-Project workflow
+> (`edit_file`/`render_file`, delivering the file via chat each session).
+> The underlying *principle* — verify before claiming done, atomic changes,
+> real in-browser testing over reading code — is still exactly right and
+> is restated in `AGENTS.md`'s "If you're about to say something is
+> fixed/working/done" section. The specific tool names and delivery
+> mechanism below are obsolete; ignore those parts.
+
 **Created:** June 17, 2026  
 **Last Updated:** June 17, 2026  
 **Purpose:** This protocol ensures that edits to large or complex files (especially `writing.html`) are made reliably, accurately, and with proper verification. It exists to prevent hallucinated progress while keeping development practical and aligned with the project’s calm, supportive values.

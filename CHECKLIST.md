@@ -96,6 +96,41 @@ they aren't lost now that the old document is marked historical.
       real iOS Safari**, so the iOS-specific items (keyboard/caret behaviour,
       safe-area insets, real Page Zoom) still want a pass on Erica's actual
       phone before this is considered closed in the strict sense.
+      **UPDATE 2026-07-26:** several further refinement rounds landed on
+      `claude/mobile-port` (not yet re-promoted to bigtiffsworld.com — see
+      `Mobile_Port_Handoff.md`'s Deployment facts table): the scene-status
+      pill became a circular R/UF/C button with a horizontal slide-out
+      option drawer and a collapsible action-button bank; the guidance rail
+      gained drag-to-reposition, a collapse toggle, and drag-to-switch
+      between open drawers; each guidance drawer gained a copy-to-clipboard
+      button. `Mobile_Port_Handoff.md` was rewritten 2026-07-26 to cover all
+      of this — read that doc, not just this entry, before further mobile
+      work. The "nothing tested on real iOS Safari" caveat above still
+      applies in full, and now additionally covers the new drag/collapse/
+      scrub gestures, none of which have been touched by a real finger.
+- [x] **Achievements & usage-tracking data layer.** DONE 2026-07-26 — 188
+      achievements embedded with machine-readable rules (cross-checked
+      against the source JSON, 0 mismatches), an AES-encrypted
+      `progress.json` synced alongside drafts/checkpoints/stats (counters,
+      per-day buckets, hour-of-day histogram, personal bests, per-scene
+      records, streaks, unlock log), ~25 named `trackEvent()` call sites, a
+      writing-session concept (15min idle timeout, resumes across a
+      refresh), and the achievement-evaluation engine
+      (`deriveFacts`/`evaluateAchievements`/`getAchievementBook`). Merge
+      logic is a verified join-semilattice (commutative/associative/
+      idempotent). `stats.json` bumped to schemaVersion 2, draining a
+      2000-entry PLAINTEXT activity log that had been publishing when Erica
+      writes to the public data repo — that leak predates this work and is
+      now closed. `full-outline-clear` is human-confirmed (prompts once
+      every scene is Complete with no review flags, at most once/day, per
+      Aaron: "unfinished" is a scene's natural resting state, so no
+      automatic reading of the outline can prove the book is actually
+      done). See the CHANGELOG entries dated 2026-07-26 for full
+      verification detail (boundary thresholds, streak edge cases, a
+      sabotage test proving the analytics layer can never break the
+      editor, write-amplification measurement of 1 commit per 120 typing
+      events). **This is the engine only** — see the next item for the
+      remaining presentation work.
 - [ ] **Achievements — UI phase.** The data layer shipped 2026-07-26
       (188 achievements, encrypted `progress.json`, usage tracking, the
       engine, and the human-confirmed Full Outline Clear gate). Everything

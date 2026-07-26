@@ -1,5 +1,16 @@
 # WORKFLOW.md — Big Tiff StoryForge Writing Tool
 
+> **⚠ SUPERSEDED (noted 2026-07-26).** This document describes a Grok-era
+> workflow (`edit_file`/`render_file` tools, feature branches per session,
+> manual delivery of the file each time) that predates the switch to
+> Claude Code direct git access. Aaron decided 2026-06-22 to stop using
+> sandboxed Grok Projects entirely for exactly this reason — see
+> `AGENTS.md`. Kept for historical reference only; **do not follow this
+> document's specific tool/branching instructions.** For current practice,
+> see `AGENTS.md` (hard rules), `CHECKLIST.md`/`CHANGELOG.md` (current
+> state and verification pattern), and `Mobile_Port_Handoff.md` (the
+> fast-iteration commit/push loop actually in use now).
+
 **Purpose**  
 This document defines the required workflow for any agent (Grok or future agents) when making changes to `writing.html` and related files. It emphasizes safe Git-based version control and backup.
 

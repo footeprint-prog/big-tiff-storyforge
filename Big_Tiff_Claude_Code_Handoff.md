@@ -4,6 +4,21 @@
 ## From: Claude (web session, 2026-06-22), at Aaron's direction
 ## Date: 2026-06-22
 
+> **⚠ STALE POINT-IN-TIME SNAPSHOT (noted 2026-07-26).** This is a
+> from-scratch project brief written when Claude Code first picked up the
+> tool — the "What's already built," "What's still open," and numbered
+> "next steps" sections below are now over a month out of date. Since this
+> was written: the accounts/login system, real GitHub-native persistence
+> (Phase 1 + 2), the full mobile port, and the achievements/usage-tracking
+> engine (188 achievements, encrypted `progress.json`) have all shipped —
+> none of that is reflected below. **For current state, use `AGENTS.md`
+> (orientation), `CHECKLIST.md` (what's done/open right now), `CHANGELOG.md`
+> (verified change history), and `Mobile_Port_Handoff.md` (mobile-specific
+> architecture).** The architecture/philosophy sections below (single-file
+> design, Sammy's role, Draft Protection, "calm over correct" for Erica's
+> ADD) are still accurate as general orientation — just don't trust the
+> feature inventory or task list as current.
+
 ---
 
 ## What this project is
