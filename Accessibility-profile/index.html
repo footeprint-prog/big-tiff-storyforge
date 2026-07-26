@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Erica's iPhone Accessibility Settings</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 16px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 24px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 26px;
+            margin-bottom: 6px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 3px;
+            background: rgba(255,255,255,0.3);
+            margin-top: 12px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: white;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .content {
+            padding: 24px 20px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .step-number {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 32px;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
+        .question-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+        }
+
+        .how-to-find {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 14px;
+            margin-bottom: 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #555;
+        }
+
+        .how-to-find strong {
+            color: #333;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .how-to-find code {
+            background: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        .question-group {
+            margin-bottom: 20px;
+            padding: 14px;
+            background: #f9f9f9;
+            border-radius: 6px;
+        }
+
+        .question-label {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .answer-group {
+            margin-top: 16px;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .radio-option {
+            position: relative;
+        }
+
+        .radio-option input[type="radio"] {
+            display: none;
+        }
+
+        .radio-label {
+            display: inline-block;
+            padding: 10px 18px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .radio-option input[type="radio"]:checked + .radio-label {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        /* Slider */
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .slider {
+            flex: 1;
+            min-width: 150px;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .slider-value {
+            min-width: 60px;
+            text-align: center;
+            font-weight: 600;
+            color: #667eea;
+            font-size: 14px;
+        }
+
+        /* Text Input */
+        .text-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            margin-top: 8px;
+        }
+
+        .text-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        /* Conditional fields */
+        .conditional {
+            display: none;
+            margin-top: 16px;
+            padding: 14px;
+            background: #f9f9f9;
+            border-radius: 6px;
+        }
+
+        .conditional.show {
+            display: block;
+        }
+
+        /* Navigation */
+        .nav-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #ddd;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            min-width: 90px;
+        }
+
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #d0d0d0;
+        }
+
+        .btn-secondary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        /* Review Section */
+        .review-section {
+            background: #f0f9ff;
+            border: 2px solid #667eea;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .review-section h3 {
+            color: #667eea;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .review-item {
+            margin-bottom: 8px;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .review-item strong {
+            color: #333;
+        }
+
+        .step-indicator {
+            text-align: center;
+            padding: 10px;
+            color: #666;
+            font-size: 13px;
+        }
+
+        .section-counter {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 16px;
+            background: #f8f9fa;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .success-msg {
+            background: #d4edda;
+            color: #155724;
+            padding: 14px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: none;
+            font-size: 14px;
+        }
+
+        .success-msg.show {
+            display: block;
+        }
+
+        .url-display {
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 12px;
+            word-break: break-all;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+            color: #555;
+            line-height: 1.4;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 22px;
+            }
+
+            .nav-buttons {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .question-group {
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📱 Your iPhone Settings, Erica</h1>
+            <p style="font-size: 15px; margin-bottom: 4px;">Because I love you, and I want StoryForge to be perfect for your eyes 👀💜</p>
+            <p style="font-size: 12px; opacity: 0.85;">(No judgment on the text size. Much.)</p>
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+        </div>
+
+        <div class="step-indicator">
+            <span class="section-counter">Step <span class="current-step">1</span> of 17</span>
+        </div>
+
+        <div class="content">
+            <!-- SECTION 1 -->
+            <div class="section active" data-section="1">
+                <div class="step-number">1</div>
+                <div class="question-title">Dark Mode or Light?</div>
+                
+                <div class="how-to-find">
+                    <strong>How to find this:</strong>
+                    Open <code>Settings</code> → <code>Display & Brightness</code><br>
+                    Look at the top where it says "Light" or "Dark"
+                </div>
+
+                <div class="answer-group">
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="dark-light" name="dark-mode" value="light" checked>
+                            <label for="dark-light" class="radio-label">Light</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="dark-dark" name="dark-mode" value="dark">
+                            <label for="dark-dark" class="radio-label">Dark</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 2 -->
+            <div class="section" data-section="2">
+                <div class="step-number">2</div>
+                <div class="question-title">Text Size 👀</div>
+                
+                <div class="how-to-find">
+                    <strong>How to find this:</strong>
+                    Open <code>Settings</code> → <code>Display & Brightness</code> → <code>Text Size</code><br>
+                    You'll see a slider with "A" on the left and "A" on the right. Move the slider to match your setting.
+                </div>
+
+                <div class="how-to-find" style="background: #fff9e6; border-color: #ffd700;">
+                    <strong>💜 From Aaron:</strong> Honestly, I don't care if you need it at "Extra Large"—you're beautiful at any text size. Just tell me the truth so I can make StoryForge easy on those eyes of yours.
+                </div>
+
+                <div class="answer-group">
+                    <div class="slider-container">
+                        <span style="font-size: 12px;">A</span>
+                        <input type="range" min="0" max="100" value="50" class="slider" id="text-size-slider">
+                        <span style="font-size: 20px;">A</span>
+                        <div class="slider-value"><span id="text-size-value">Medium</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 3 -->
+            <div class="section" data-section="3">
+                <div class="step-number">3</div>
+                <div class="question-title">Bold Text</div>
+                
+                <div class="how-to-find">
+                    <strong>What this is:</strong>
+                    Bold Text makes all fonts thicker and heavier throughout your phone. We're asking because thicker fonts help with text hierarchy and reading clarity in the webtool.
+                </div>
+
+                <div class="how-to-find">
+                    <strong>How to find this:</strong>
+                    Open <code>Settings</code> → <code>Accessibility</code> → <code>Display & Text Size</code><br>
+                    Look for "Bold Text" toggle
+                </div>
+
+                <div class="how-to-find" style="background: #fff3cd; border-color: #ffc107;">
+                    <strong>⚠️ Note:</strong> If you want to test this setting, enable it and try it. Just answer based on whether it's actually on right now.
+                </div>
+
+                <div class="answer-group">
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="bold-on" name="bold-text" value="yes">
+                            <label for="bold-on" class="radio-label">Yes, On</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="bold-off" name="bold-text" value="no" checked>
+                            <label for="bold-off" class="radio-label">No, Off</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 4 -->
+            <div class="section" data-section="4">
+                <div class="step-number">4</div>
+                <div class="question-title">Letter & Line Spacing 📝</div>
+                
+                <div class="how-to-find">
+                    <strong>What these are:</strong>
+                    Letter Spacing adds space between individual letters. Line Spacing adds space between lines of text. Both help reduce visual overwhelm and improve reading flow—especially important for longer passages of writing.
+                </div>
+
+                <div class="how-to-find">
+                    <strong>How to find these:</strong>
+                    Open <code>Settings</code> → <code>Accessibility</code> → <code>Display & Text Size</code><br>
+                    Look for "Letter Spacing" and "Line Spacing" toggles
+                </div>
+
+                <div class="how-to-find" style="background: #fff9e6; border-color: #ffd700;">
+                    <strong>💜 From Aaron:</strong> I know how important breathing room is for you. These settings help your eyes follow along without getting overwhelmed. I'll make StoryForge feel spacious and calm, just like you deserve.
+                </div>
+
+                <div class="question-group">
+                    <div class="question-label">Is Letter Spacing on?</div>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="letter-on" name="letter-spacing" value="yes">
+                            <label for="letter-on" class="radio-label">Yes</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="letter-off" name="letter-spacing" value="no" checked>
+                            <label for="letter-off" class="radio-label">No</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="question-group">
+                    <div class="question-label">Is Line Spacing on?</div>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="line-on" name="line-spacing" value="yes">
+                            <label for="line-on" class="radio-label">Yes</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="line-off" name="line-spacing" value="no" checked>
+                            <label for="line-off" class="radio-label">No</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="how-to-find" style="background: #fff3cd; border-color: #ffc107; margin-top: 16px;">
+                    <strong>⚠️ Note:</strong> If you're testing either of these, remember to answer based on what's actually on right now.
+                </div>
+            </div>
+
+            <!-- SECTION 5 -->
+            <div class="section" data-section="5">
+                <div class="step-number">5</div>
+                <div class="question-title">Display Zoom 📏</div>
+                
+                <div class="how-to-find">
+                    <strong>What this is:</strong>
+                    Display Zoom enlarges the entire interface—all icons, text, buttons, and everything else proportionally. We're asking because it affects how we'll layout the webtool and its spacing.
+                </div>
+
+                <div class="how-to-find">
+                    <strong>How to find this:</strong>
+                    Open <code>Settings</code> → <code>Display & Brightness</code> → <code>Display Zoom</code><br>
+                    Choose between "Standard" or "Zoomed" at the bottom
+                </div>
+
+                <div class="how-to-find" style="background: #fff9e6; border-color: #ffd700;">
+                    <strong>💜 From Aaron:</strong> Getting wiser with age, eh? No shame in the Zoom game. You're aging like fine wine, and I'll make StoryForge work beautifully for you at any zoom level.
+                </div>
+
+                <div class="answer-group">
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="zoom-standard" name="display-zoom" value="standard" checked>
+                            <label for="zoom-standard" class="radio-label">Standard</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="zoom-zoomed" name="display-zoom" value="zoomed">
+                            <label for="zoom-zoomed" class="radio-label">Zoomed</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 6 -->
+            <div class="section" data-section="6">
+                <div class="step-number">6</div>
+                <div class="question-title">Reduce Motion ✨</div>
+                
+                <div class="how-to-find">
+                    <strong>What this is:</strong>
+                    Reduce Motion minimizes animations and transitions throughout your phone. We're asking because if this is on, we'll design the webtool without distracting animations.
+                </div>
+
+                <div class="how-to-find">
+                    <strong>How to find this:</strong>
+                    Open <code>Settings</code> → <code>Accessibility</code> → <code>Motion</code><br>
+                    Look for "Reduce Motion" toggle
+                </div>
+
+                <div class="how-to-find" style="background: #fff9e6; border-color: #ffd700;">
+                    <strong>💜 From Aaron:</strong> Calm, focused, and peaceful—that's what I want StoryForge to feel like for you. Whatever you need to feel grounded, I'll build it that way.
+                </div>
+
+                <div class="answer-group">
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="reduce-motion-on" name="reduce-motion" value="yes">
+                            <label for="reduce-motion-on" class="radio-label">Yes, On</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="reduce-motion-off" name="reduce-motion" value="no" checked>
+                            <label for="reduce-motion-off" class="radio-label">No, Off</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 7 -->
+            <div class="section" data-section="7">
+                <div class="step-number">7</div>
+                <div class="question-title">High Contrast</div>
+                
+                <div class="how-to-find">
+                    <strong>What this is:</strong>
+                    High Contrast makes text and interface elements stand out more sharply. We're asking because it affects the color choices and contrast ratios we'll use in the webtool.
+                </div>
+
+                <div class="how-to-find">
+                    <strong>How to find this:</strong>
+                    Open <code>Settings</code> → <code>Accessibility</code> → <code>Display & Text Size</code><br>
+                    Look for "Increase Contrast" toggle
+                </div>
+
+                <div class="answer-group">
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="contrast-on" name="high-contrast" value="yes">
+                            <label for="contrast-on" class="radio-label">Yes, On</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="contrast-off" name="high-contrast" value="no" checked>
+                            <label for="contrast-off" class="radio-label">No, Off</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 8 -->
+            <div class="section" data-section="8">
+                <div class="step-number">8</div>
+                <div class="question-title">Button Shapes & On/Off Labels</div>
+                
+                <div class="how-to-find">
+                    <strong>What these are:</strong>
+                    Button Shapes adds visible outlines to buttons to make them more distinct. On/Off Labels shows text labels on toggle switches instead of just a visual indicator. We're asking because both help with button visibility and clarity in the webtool.
+                </div>
+
+                <div class="how-to-find">
+                    <strong>How to find these:</strong>
+                    Open <code>Settings</code> → <code>Accessibility</code> → <code>Display & Text Size</code><br>
+                    Look for "Button Shapes" and "On/Off Labels" toggles
+                </div>
+
+                <div class="question-group">
+                    <div class="question-label">Is Button Shapes on?</div>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="buttons-on" name="button-shapes" value="yes">
+                            <label for="buttons-on" class="radio-label">Yes</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="buttons-off" name="button-shapes" value="no" checked>
+                            <label for="buttons-off" class="radio-label">No</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="question-group">
+                    <div class="question-label">Is On/Off Labels on?</div>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="labels-on" name="onoff-labels" value="yes">
+                            <label for="labels-on" class="radio-label">Yes</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="labels-off" name="onoff-labels" value="no" checked>
+                            <label for="labels-off" class="radio-label">No</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 9 -->
+            <div class="section" data-section="9">
+                <div class="step-number">9</div>
+                <div class="question-title">Reduce Transparency</div>
+                
+                <div class="how-to-find">
+                    <strong>What this is:</strong>
+                    Reduce Transparency removes blurred or see-through effects and makes backgrounds solid instead. We're asking because it affects whether we use blurred/frosted glass effects in the webtool design.
+                </div>
+
+                <div class="how-to-find">
+                    <strong>How to find this:</strong>
+                    Open <code>Settings</code> → <code>Accessibility</code> → <code>Display & Text Size</code><br>
+                    Look for "Reduce Transparency" toggle
+                </div>
+
+                <div class="answer-group">
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="transparency-on" name="reduce-transparency" value="yes">
+                            <label for="transparency-on" class="radio-label">Yes, On</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="transparency-off" name="reduce-transparency" value="no" checked>
+                            <label for="transparency-off" class="radio-label">No, Off</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 10 -->
+            <div class="section" data-section="10">
+                <div class="step-number">10</div>
+                <div class="question-title">Color Filters</div>
+                
+                <div class="how-to-find">
+                    <strong>What this is:</strong>
+                    Color Filters adjust the color palette of your screen. We're asking because the webtool needs to look correct with your filter active.
+                </div>
+
+                <div class="how-to-find">
+                    <strong>How to find this:</strong>
+                    Open <code>Settings</code> → <code>Accessibility</code> → <code>Display & Text Size</code> → <code>Color Filters</code>
+                </div>
+
+                <div class="answer-group">
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="filters-on" name="color-filters" value="yes" onchange="showFilterType()">
+                            <label for="filters-on" class="radio-label">Yes, On</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="filters-off" name="color-filters" value="no" checked onchange="hideFilterType()">
+                            <label for="filters-off" class="radio-label">No, Off</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="conditional" id="filter-type-conditional">
+                    <div class="question-label">Which filter? (e.g., Grayscale, Red/Green)</div>
+                    <input type="text" class="text-input" id="filter-type" placeholder="Type filter name">
+                </div>
+            </div>
+
+            <!-- SECTION 11 -->
+            <div class="section" data-section="11">
+                <div class="step-number">11</div>
+                <div class="question-title">VoiceOver (Screen Reader)</div>
+                
+                <div class="how-to-find">
+                    <strong>What this is:</strong>
+                    VoiceOver is a screen reader that speaks everything on your screen aloud. We're asking because if you use it, the webtool needs to be built with specific accessibility features for screen readers to work properly.
+                </div>
+
+                <div class="how-to-find">
+                    <strong>How to find this:</strong>
+                    Open <code>Settings</code> → <code>Accessibility</code> → <code>VoiceOver</code><br>
+                    Look for the toggle at the top
+                </div>
+
+                <div class="answer-group">
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="voiceover-on" name="voiceover" value="yes">
+                            <label for="voiceover-on" class="radio-label">Yes, On</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="voiceover-off" name="voiceover" value="no" checked>
+                            <label for="voiceover-off" class="radio-label">No, Off</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 12 -->
+            <div class="section" data-section="12">
+                <div class="step-number">12</div>
+                <div class="question-title">Full Keyboard Access</div>
+                
+                <div class="how-to-find">
+                    <strong>What this is:</strong>
+                    Full Keyboard Access lets you navigate and control your entire phone using only a connected keyboard. We're asking because it affects tab order and keyboard navigation in the webtool.
+                </div>
+
+                <div class="how-to-find">
+                    <strong>How to find this:</strong>
+                    Open <code>Settings</code> → <code>Accessibility</code> → <code>Keyboards</code><br>
+                    Look for "Full Keyboard Access" toggle
+                </div>
+
+                <div class="answer-group">
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="keyboard-on" name="full-keyboard" value="yes">
+                            <label for="keyboard-on" class="radio-label">Yes, On</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="keyboard-off" name="full-keyboard" value="no" checked>
+                            <label for="keyboard-off" class="radio-label">No, Off</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 13 -->
+            <div class="section" data-section="13">
+                <div class="step-number">13</div>
+                <div class="question-title">Shake to Undo</div>
+                
+                <div class="how-to-find">
+                    <strong>What this is:</strong>
+                    Shake to Undo lets you shake your phone to undo an action. We're asking because it relates to gesture preferences and how we design undo/recovery features in the webtool.
+                </div>
+
+                <div class="how-to-find">
+                    <strong>How to find this:</strong>
+                    Open <code>Settings</code> → <code>Accessibility</code> → <code>Keyboards</code><br>
+                    Look for "Shake to Undo" toggle
+                </div>
+
+                <div class="answer-group">
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="shake-on" name="shake-undo" value="yes" checked>
+                            <label for="shake-on" class="radio-label">Yes, On</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="shake-off" name="shake-undo" value="no">
+                            <label for="shake-off" class="radio-label">No, Off</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 14 -->
+            <div class="section" data-section="14">
+                <div class="step-number">14</div>
+                <div class="question-title">Safari Text Size</div>
+                
+                <div class="how-to-find">
+                    <strong>How to find this:</strong>
+                    Open <code>Safari</code> → tap the <code>Aa</code> icon in the toolbar<br>
+                    Move the slider to match your setting
+                </div>
+
+                <div class="answer-group">
+                    <div class="slider-container">
+                        <span style="font-size: 12px;">A</span>
+                        <input type="range" min="0" max="100" value="50" class="slider" id="safari-text-slider">
+                        <span style="font-size: 20px;">A</span>
+                        <div class="slider-value"><span id="safari-text-value">Medium</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 15 -->
+            <div class="section" data-section="15">
+                <div class="step-number">15</div>
+                <div class="question-title">Low Power Mode Threshold</div>
+                
+                <div class="how-to-find">
+                    <strong>How to find this:</strong>
+                    Open <code>Settings</code> → <code>Battery</code><br>
+                    At what battery % do you usually turn on Low Power Mode? Adjust the slider to that number.
+                </div>
+
+                <div class="answer-group">
+                    <div class="slider-container">
+                        <span style="font-size: 14px;">🔋</span>
+                        <input type="range" min="0" max="100" value="20" class="slider" id="low-power-slider">
+                        <div class="slider-value"><span id="low-power-value">20</span>%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECTION 16 -->
+            <div class="section" data-section="16">
+                <div class="step-number">16</div>
+                <div class="question-title">Review Your Answers ✨</div>
+
+                <div class="how-to-find" style="background: #fff9e6; border-color: #ffd700; margin-bottom: 20px;">
+                    <strong>💜 From Aaron:</strong> I built this form because every detail about how you experience your phone matters to me. I want StoryForge to feel effortless and joyful for you—no squinting, no frustration, just writing. These settings are the key to making that happen. I love you, and that's why I'm asking all these questions.
+                </div>
+
+                <div class="review-section">
+                    <h3>Display & Text</h3>
+                    <div class="review-item"><strong>Mode:</strong> <span id="review-dark-mode">Light</span></div>
+                    <div class="review-item"><strong>Text Size:</strong> <span id="review-text-size">Medium</span></div>
+                    <div class="review-item"><strong>Bold Text:</strong> <span id="review-bold-text">Off</span></div>
+                    <div class="review-item"><strong>Letter Spacing:</strong> <span id="review-letter-spacing">Off</span></div>
+                    <div class="review-item"><strong>Line Spacing:</strong> <span id="review-line-spacing">Off</span></div>
+                    <div class="review-item"><strong>Display Zoom:</strong> <span id="review-display-zoom">Standard</span></div>
+                </div>
+
+                <div class="review-section">
+                    <h3>Accessibility & Interaction</h3>
+                    <div class="review-item"><strong>Reduce Motion:</strong> <span id="review-reduce-motion">Off</span></div>
+                    <div class="review-item"><strong>High Contrast:</strong> <span id="review-high-contrast">Off</span></div>
+                    <div class="review-item"><strong>Button Shapes:</strong> <span id="review-button-shapes">Off</span></div>
+                    <div class="review-item"><strong>On/Off Labels:</strong> <span id="review-onoff-labels">Off</span></div>
+                    <div class="review-item"><strong>Reduce Transparency:</strong> <span id="review-reduce-transparency">Off</span></div>
+                    <div class="review-item"><strong>Color Filters:</strong> <span id="review-color-filters">Off</span></div>
+                    <div class="review-item"><strong>VoiceOver:</strong> <span id="review-voiceover">Off</span></div>
+                    <div class="review-item"><strong>Full Keyboard Access:</strong> <span id="review-full-keyboard">Off</span></div>
+                    <div class="review-item"><strong>Shake to Undo:</strong> <span id="review-shake-undo">On</span></div>
+                </div>
+
+                <div class="review-section">
+                    <h3>Apps & Battery</h3>
+                    <div class="review-item"><strong>Safari Text Size:</strong> <span id="review-safari-text">Medium</span></div>
+                    <div class="review-item"><strong>Low Power Mode Threshold:</strong> <span id="review-low-power">20%</span></div>
+                </div>
+
+                <button class="btn btn-primary" onclick="previousSection()" style="width: 100%; margin-bottom: 12px;">← Edit My Answers</button>
+            </div>
+
+            <!-- SECTION 17 -->
+            <div class="section" data-section="17">
+                <div class="step-number">17</div>
+                <div class="question-title">Capture Your Profile 🎯</div>
+
+                <div class="success-msg" id="success-msg" style="display: block;">
+                    ✓ Your settings have been captured and encoded
+                </div>
+
+                <div class="how-to-find" style="background: #fff9e6; border-color: #ffd700;">
+                    <strong>💜 Ready!</strong> Your accessibility profile is locked in. The URL below contains everything I need to make StoryForge work perfectly for you. Copy it and send it my way. I can't wait to build this with your settings in mind.
+                </div>
+
+                <div class="review-section" style="background: #f0f4ff; border-color: #10b981;">
+                    <h3 style="color: #10b981;">Your Personalized Settings URL</h3>
+                    <div class="url-display" id="shareUrl"></div>
+                    <button class="btn btn-success" onclick="copyUrl()" style="margin-top: 12px; width: 100%;">📋 Copy URL</button>
+                </div>
+
+                <p style="text-align: center; margin-top: 24px; font-size: 13px; color: #666; line-height: 1.5;">
+                    Just text this URL to Aaron, and he'll have everything he needs to make StoryForge amazing for you. 💜
+                </p>
+            </div>
+        </div>
+
+        <div class="nav-buttons">
+            <button class="btn btn-secondary" id="prev-btn" onclick="previousSection()" disabled>← Back</button>
+            <button class="btn btn-primary" id="next-btn" onclick="nextSection()">Next →</button>
+            <button class="btn btn-success" id="done-btn" onclick="submitForm()" style="display:none;">✓ Done</button>
+        </div>
+
+        <div class="footer">
+            <p>💜 Filling this out out of love for you, Erica. Every detail matters to me.</p>
+        </div>
+    </div>
+
+    <script>
+        const totalSections = 17;
+        let currentSection = 1;
+
+        function getTextSizeLabel(value) {
+            if (value <= 25) return 'Small';
+            if (value <= 50) return 'Medium';
+            if (value <= 75) return 'Large';
+            return 'Extra Large';
+        }
+
+        function showSection(section) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelector(`[data-section="${section}"]`).classList.add('active');
+            
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const doneBtn = document.getElementById('done-btn');
+
+            prevBtn.disabled = section === 1;
+            
+            if (section === totalSections) {
+                nextBtn.style.display = 'none';
+                doneBtn.style.display = 'block';
+                updateReview();
+            } else {
+                nextBtn.style.display = 'block';
+                doneBtn.style.display = 'none';
+            }
+
+            document.querySelector('.current-step').textContent = section;
+            document.querySelector('.progress-fill').style.width = (section / totalSections * 100) + '%';
+            
+            window.scrollTo(0, 0);
+        }
+
+        function nextSection() {
+            if (currentSection < totalSections) {
+                currentSection++;
+                showSection(currentSection);
+                if (currentSection === totalSections) {
+                    // Generate URL when reaching final section
+                    const shareUrl = generateShareUrl();
+                    document.getElementById('shareUrl').textContent = shareUrl;
+                }
+            }
+        }
+
+        function previousSection() {
+            if (currentSection > 1) {
+                currentSection--;
+                showSection(currentSection);
+            }
+        }
+
+        function showFilterType() {
+            document.getElementById('filter-type-conditional').classList.add('show');
+        }
+
+        function hideFilterType() {
+            document.getElementById('filter-type-conditional').classList.remove('show');
+        }
+
+        document.getElementById('text-size-slider').addEventListener('input', function() {
+            document.getElementById('text-size-value').textContent = getTextSizeLabel(this.value);
+        });
+
+        document.getElementById('safari-text-slider').addEventListener('input', function() {
+            document.getElementById('safari-text-value').textContent = getTextSizeLabel(this.value);
+        });
+
+        document.getElementById('low-power-slider').addEventListener('input', function() {
+            document.getElementById('low-power-value').textContent = this.value;
+        });
+
+        function updateReview() {
+            const darkMode = document.querySelector('input[name="dark-mode"]:checked')?.value || 'light';
+            document.getElementById('review-dark-mode').textContent = darkMode.charAt(0).toUpperCase() + darkMode.slice(1);
+            
+            const textSizeValue = document.getElementById('text-size-slider').value;
+            document.getElementById('review-text-size').textContent = getTextSizeLabel(textSizeValue);
+            
+            document.getElementById('review-bold-text').textContent = (document.querySelector('input[name="bold-text"]:checked')?.value === 'yes') ? 'On' : 'Off';
+            document.getElementById('review-letter-spacing').textContent = (document.querySelector('input[name="letter-spacing"]:checked')?.value === 'yes') ? 'On' : 'Off';
+            document.getElementById('review-line-spacing').textContent = (document.querySelector('input[name="line-spacing"]:checked')?.value === 'yes') ? 'On' : 'Off';
+            document.getElementById('review-display-zoom').textContent = (document.querySelector('input[name="display-zoom"]:checked')?.value || 'standard').charAt(0).toUpperCase() + (document.querySelector('input[name="display-zoom"]:checked')?.value || 'standard').slice(1);
+            
+            document.getElementById('review-reduce-motion').textContent = (document.querySelector('input[name="reduce-motion"]:checked')?.value === 'yes') ? 'On' : 'Off';
+            document.getElementById('review-high-contrast').textContent = (document.querySelector('input[name="high-contrast"]:checked')?.value === 'yes') ? 'On' : 'Off';
+            document.getElementById('review-button-shapes').textContent = (document.querySelector('input[name="button-shapes"]:checked')?.value === 'yes') ? 'On' : 'Off';
+            document.getElementById('review-onoff-labels').textContent = (document.querySelector('input[name="onoff-labels"]:checked')?.value === 'yes') ? 'On' : 'Off';
+            document.getElementById('review-reduce-transparency').textContent = (document.querySelector('input[name="reduce-transparency"]:checked')?.value === 'yes') ? 'On' : 'Off';
+            document.getElementById('review-color-filters').textContent = (document.querySelector('input[name="color-filters"]:checked')?.value === 'yes') ? 'On' : 'Off';
+            document.getElementById('review-voiceover').textContent = (document.querySelector('input[name="voiceover"]:checked')?.value === 'yes') ? 'On' : 'Off';
+            document.getElementById('review-full-keyboard').textContent = (document.querySelector('input[name="full-keyboard"]:checked')?.value === 'yes') ? 'On' : 'Off';
+            document.getElementById('review-shake-undo').textContent = (document.querySelector('input[name="shake-undo"]:checked')?.value === 'yes') ? 'On' : 'Off';
+            
+            const safariTextValue = document.getElementById('safari-text-slider').value;
+            document.getElementById('review-safari-text').textContent = getTextSizeLabel(safariTextValue);
+            
+            const lowPower = document.getElementById('low-power-slider').value;
+            document.getElementById('review-low-power').textContent = lowPower + '%';
+        }
+
+        function generateShareUrl() {
+            const params = new URLSearchParams();
+            params.set('dark_mode', document.querySelector('input[name="dark-mode"]:checked')?.value || 'light');
+            params.set('text_size', getTextSizeLabel(document.getElementById('text-size-slider').value).toLowerCase());
+            params.set('bold_text', (document.querySelector('input[name="bold-text"]:checked')?.value === 'yes') ? 'yes' : 'no');
+            params.set('letter_spacing', (document.querySelector('input[name="letter-spacing"]:checked')?.value === 'yes') ? 'yes' : 'no');
+            params.set('line_spacing', (document.querySelector('input[name="line-spacing"]:checked')?.value === 'yes') ? 'yes' : 'no');
+            params.set('display_zoom', document.querySelector('input[name="display-zoom"]:checked')?.value || 'standard');
+            params.set('reduce_motion', (document.querySelector('input[name="reduce-motion"]:checked')?.value === 'yes') ? 'yes' : 'no');
+            params.set('high_contrast', (document.querySelector('input[name="high-contrast"]:checked')?.value === 'yes') ? 'yes' : 'no');
+            params.set('button_shapes', (document.querySelector('input[name="button-shapes"]:checked')?.value === 'yes') ? 'yes' : 'no');
+            params.set('onoff_labels', (document.querySelector('input[name="onoff-labels"]:checked')?.value === 'yes') ? 'yes' : 'no');
+            params.set('reduce_transparency', (document.querySelector('input[name="reduce-transparency"]:checked')?.value === 'yes') ? 'yes' : 'no');
+            params.set('color_filters', (document.querySelector('input[name="color-filters"]:checked')?.value === 'yes') ? 'yes' : 'no');
+            
+            if (document.querySelector('input[name="color-filters"]:checked')?.value === 'yes') {
+                params.set('color_filter_type', document.getElementById('filter-type').value || 'unknown');
+            }
+            
+            params.set('voiceover', (document.querySelector('input[name="voiceover"]:checked')?.value === 'yes') ? 'yes' : 'no');
+            params.set('full_keyboard', (document.querySelector('input[name="full-keyboard"]:checked')?.value === 'yes') ? 'yes' : 'no');
+            params.set('shake_undo', (document.querySelector('input[name="shake-undo"]:checked')?.value === 'yes') ? 'yes' : 'no');
+            params.set('safari_text_size', getTextSizeLabel(document.getElementById('safari-text-slider').value).toLowerCase());
+            params.set('low_power_threshold', document.getElementById('low-power-slider').value);
+            
+            const baseUrl = window.location.href.split('?')[0];
+            return baseUrl + '?' + params.toString();
+        }
+
+        function submitForm() {
+            // URL is already generated when arriving at this section
+            // This confirms completion
+            console.log('Profile submitted');
+        }
+
+        function copyUrl() {
+            const url = document.getElementById('shareUrl').textContent;
+            navigator.clipboard.writeText(url).then(() => {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✓ Copied!';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            });
+        }
+
+        showSection(1);
+    </script>
+</body>
+</html>
