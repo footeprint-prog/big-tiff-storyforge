@@ -1101,8 +1101,11 @@
                round was a typo for 4px - reverted 2026-07-26).
                --arm-pad-r is shared with the options drawer below so the two
                can never drift apart. */
+            /* Item 1 (2026-07-26): bottom padding halved (4px -> 2px) so
+               there's less green below the arrow tab before the arm's own
+               border. Top/left/right stay 4px - unrelated to this ask. */
             --arm-pad-r: 4px;
-            padding: 4px var(--arm-pad-r) 4px 4px; margin: 0;
+            padding: 4px var(--arm-pad-r) 2px 4px; margin: 0;
             display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
         }
         /* The pill is now a plain child of that single shape - no background
@@ -1173,8 +1176,10 @@
         body.mobile-layout #scene-status-bar .status-dropdown-option {
             width: 2.75rem; height: 2.75rem; min-width: 2.75rem; min-height: 0;
             border-radius: 50%;
-            /* Item 2 (2026-07-26): same 2px gold ring as the status circle. */
-            border: 2px solid #D4AF37;
+            /* Item 2 (2026-07-26 round 2): thinned to 1px per Aaron - the
+               options are secondary to the circle, so a lighter ring
+               differentiates them. */
+            border: 1px solid #D4AF37;
             box-sizing: border-box;
             display: flex; align-items: center; justify-content: center;
             font-size: 0.8rem; font-weight: 700; padding: 0; flex-shrink: 0;
@@ -1199,10 +1204,16 @@
            on both sides, closing the VISUAL space without shrinking the tap
            height - the target stays 30px tall and full arm width. */
         body.mobile-layout #scene-status-bar .status-actions-toggle {
-            display: flex; align-items: center; justify-content: center;
+            display: flex; align-items: flex-start; justify-content: center;
             width: 100%; min-height: var(--tap-sm); height: var(--tap-sm);
             background: none; border: none; color: #D4AF37; font-size: 0.7rem;
-            padding: 0;
+            /* Item 1 (2026-07-26): the glyph was centered in this 30px box,
+               leaving ~9px of air above it before the circle even though the
+               box itself already sits flush (margins below cancel the arm's
+               flex gap). align-items:flex-start + a small top pad puts the
+               VISIBLE arrow about half that distance from the circle instead,
+               without shrinking the 30px tap target itself. */
+            padding: 4px 0 0 0;
             margin-top: -4px; margin-bottom: -4px;
             line-height: 1;
         }
@@ -1319,6 +1330,25 @@
             color: #D4AF37;
         }
         body.mobile-layout #mobile-guidance-rail .rail-tab:last-child { border-bottom: none; }
+        /* Item 3 (2026-07-26): the rail collapses to just this arrow when
+           docked, saving screen space; a plain tap expands it back to the
+           full 6-icon strip. Chrome-tier size (30px), matching the scene-
+           status arrow tab's own visual language on the opposite edge. */
+        .rail-collapse-toggle { display: none; }
+        body.mobile-layout.scene-open #mobile-guidance-rail .rail-collapse-toggle {
+            display: flex; align-items: center; justify-content: center;
+            width: 3.5rem; height: var(--tap-sm); min-height: var(--tap-sm);
+            background: none; border: none; color: #D4AF37; font-size: 0.85rem;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+            flex-shrink: 0;
+        }
+        body.mobile-layout #mobile-guidance-rail.rail-collapsed .rail-collapse-toggle {
+            border-bottom: none;
+        }
+        body.mobile-layout #mobile-guidance-rail.rail-collapsed .rail-collapse-toggle i {
+            transform: rotate(180deg);
+        }
+        body.mobile-layout #mobile-guidance-rail.rail-collapsed .rail-tab { display: none; }
         /* Glyph enlarged (2026-07-26) to squeeze the dead space around each
            icon. The 3.5rem tap area is unchanged - only the padding shrinks,
            so the touch target never regresses. */
@@ -1346,10 +1376,30 @@
             background: transparent; border: none; padding: 0; border-radius: 0;
         }
         body.mobile-layout .guidance-float-body .text-xs { font-size: 1rem; }
-        /* Separator between the title row and the text block. */
+        /* Separator between the title row and the text block. Item 6
+           (2026-07-26): both gaps halved (8->4, 10->5) to tighten the
+           title-to-line spacing. */
         body.mobile-layout .guidance-float-body .guidance-card > div:first-child {
             border-bottom: 1px solid rgba(212, 175, 55, 0.35);
-            padding-bottom: 8px; margin-bottom: 10px;
+            padding-bottom: 4px; margin-bottom: 5px;
+        }
+        /* Item 5 (2026-07-26): the header row is Tailwind's justify-between
+           across THREE children (title, icon cluster, X - the X is appended
+           by ensureDrawerCloseButton as a third child of this same row).
+           space-between put the icon cluster at the row's exact midpoint,
+           stranding the copy button far from the X instead of next to it.
+           Switching to flex-start + letting the title grow keeps title on
+           the left and clusters copy+X together on the right, with only a
+           small gap between them. !important beats the inline Tailwind
+           utility class. */
+        body.mobile-layout .guidance-float-body .guidance-card > div:first-child {
+            justify-content: flex-start !important;
+        }
+        body.mobile-layout .guidance-float-body .guidance-card > div:first-child > div:first-child {
+            flex: 1 1 auto; min-width: 0;
+        }
+        body.mobile-layout .guidance-float-body .guidance-card > div:first-child > div:nth-child(2) {
+            margin-right: 2px;
         }
         .m-drawer-close { display: none; background: none; border: none; color: #D4AF37; cursor: pointer; }
         body.mobile-layout .guidance-float-body .m-drawer-close { display: inline-flex; align-items: center; justify-content: center; min-width: var(--tap-sm); min-height: var(--tap-sm); font-size: 1.15rem; }
@@ -2539,6 +2589,7 @@
     <!-- All six guidance tabs stacked on the right edge, icon-only, touching
          (Aaron, 2026-07-24). Drawers open to the left, toward the editor. -->
     <div id="mobile-guidance-rail" class="mobile-rail" aria-label="Scene guidance drawers">
+        <button type="button" id="mobile-rail-toggle" class="rail-collapse-toggle" aria-label="Collapse guidance tabs" aria-expanded="true" onclick="toggleGuidanceRailCollapsed()"><i class="fa-solid fa-chevron-right"></i></button>
         <button type="button" class="rail-tab" data-rail-key="purpose" aria-label="Purpose" title="Purpose" onclick="mobileToggleGuidanceDrawer('purpose')"><i class="fa-solid fa-bullseye"></i></button>
         <button type="button" class="rail-tab" data-rail-key="canon" aria-label="Key Canon to Honor" title="Key Canon to Honor" onclick="mobileToggleGuidanceDrawer('canon')"><i class="fa-solid fa-gem"></i></button>
         <button type="button" class="rail-tab" data-rail-key="emotional" aria-label="Emotional State" title="Emotional State" onclick="mobileToggleGuidanceDrawer('emotional')"><i class="fa-solid fa-heart-pulse"></i></button>
@@ -8383,6 +8434,14 @@
         function mobileToggleGuidanceDrawer(key) {
             if (!isMobileMode()) return;
             if (mobileOpenDrawerKey === key) { mobileCloseGuidanceDrawer(); return; }
+            _openGuidanceDrawer(key);
+        }
+
+        // Item 4 (2026-07-26): the drag-to-switch gesture below needs "make
+        // this the open drawer" without the toggle-closed-if-same-key check
+        // a plain tap needs - split out so both call one path with no
+        // duplicated logic to drift apart.
+        function _openGuidanceDrawer(key) {
             mobileCloseEverything('guidance-drawer');
             mobileCloseGuidanceDrawer();
             const card = document.getElementById(`guidance-card-${key}`);
@@ -8396,7 +8455,23 @@
             floatWindow.classList.remove('hidden');
             floatWindow.style.display = 'flex';
             mobileOpenDrawerKey = key;
+            // Item 3 (2026-07-26): opening a drawer always expands the rail -
+            // a collapsed rail would hide the very tabs needed to tap/drag to
+            // a different one.
+            const rail = document.getElementById('mobile-guidance-rail');
+            if (rail) rail.classList.remove('rail-collapsed');
             updateRailActiveState();
+        }
+
+        // Item 4 (2026-07-26): dragging across the rail while a drawer is
+        // open switches to whichever tab is under the finger, instead of
+        // requiring a tap per tab. Only actually switches (see
+        // setupGuidanceRailDrag below) once the finger has crossed into a
+        // different tab - a plain tap on an already-open tab must still
+        // close it via mobileToggleGuidanceDrawer, not this.
+        function mobileSwitchGuidanceDrawer(key) {
+            if (!isMobileMode() || !key || mobileOpenDrawerKey === key) return;
+            _openGuidanceDrawer(key);
         }
 
         function mobileCloseGuidanceDrawer() {
@@ -8411,20 +8486,38 @@
             });
         }
 
-        // ---- Guidance rail: tap-and-hold to drag reposition (2026-07-25) ----
-        // The rail defaults to vertically centered (CSS top:50%). A 1s
-        // press-and-hold on the rail arms dragging; a plain tap still opens
-        // a drawer as before. Position is tracked only in an inline style on
-        // the live element - nothing is persisted to localStorage - so a
-        // fresh page load (i.e. a real login) always starts back at center
-        // with no extra code needed, per Aaron's "reset to middle upon
-        // login" spec.
+        // Item 3 (2026-07-26): manual collapse/expand for the rail bank.
+        function toggleGuidanceRailCollapsed() {
+            const rail = document.getElementById('mobile-guidance-rail');
+            if (!rail) return;
+            const toggle = document.getElementById('mobile-rail-toggle');
+            const collapsed = rail.classList.toggle('rail-collapsed');
+            if (toggle) toggle.setAttribute('aria-expanded', String(!collapsed));
+        }
+
+        // ---- Guidance rail: tap-and-hold to drag reposition (2026-07-25),
+        // drag-across-tabs to switch drawers once one is open (2026-07-26) ----
+        // The rail defaults to vertically centered (CSS top:50%). A 300ms
+        // press-and-hold on the rail (when NO drawer is open) arms
+        // repositioning; a plain tap still opens a drawer as before. Position
+        // is tracked only in an inline style on the live element - nothing is
+        // persisted to localStorage - so a fresh page load (i.e. a real
+        // login) always starts back at center with no extra code needed, per
+        // Aaron's "reset to middle upon login" spec.
+        //
+        // Item 4 (2026-07-26): when a drawer IS already open, a press on a
+        // .rail-tab starts SCRUBBING instead - no delay, since the rail is
+        // already in active use. Dragging the finger up/down switches to
+        // whichever tab it crosses. This intentionally supersedes
+        // repositioning while a drawer is open; reposition it when idle.
         (function setupGuidanceRailDrag() {
             const LONG_PRESS_MS = 300;   // Aaron, 2026-07-26: 1000ms felt sluggish
             const MOVE_CANCEL_PX = 10; // pre-arm movement this large cancels the long-press (treat as a scroll/tap, not a drag)
             let pressTimer = null;
             let dragging = false;
             let didDrag = false;
+            let scrubbing = false;
+            let didScrub = false;
             let startY = 0;
             let startTop = 0;
             let railEl = null;
@@ -8446,6 +8539,26 @@
                 railEl.style.top = clampTop(rect.top, railEl) + 'px';
             }
 
+            // Hit-tests e.clientY against the visible .rail-tab elements and
+            // switches to whichever one it falls within, if different from
+            // what's currently open. Only sets didScrub once an actual
+            // cross-tab switch happens, so a finger that never leaves its
+            // starting tab still falls through to a normal tap/click.
+            function scrubMove(e) {
+                const tabs = railEl.querySelectorAll('.rail-tab');
+                for (const tab of tabs) {
+                    const r = tab.getBoundingClientRect();
+                    if (e.clientY >= r.top && e.clientY <= r.bottom) {
+                        const key = tab.dataset.railKey;
+                        if (key && key !== mobileOpenDrawerKey) {
+                            mobileSwitchGuidanceDrawer(key);
+                            didScrub = true;
+                        }
+                        break;
+                    }
+                }
+            }
+
             function onPointerDown(e) {
                 if (e.pointerType === 'mouse' && e.button !== 0) return;
                 if (!isMobileMode()) return;
@@ -8454,16 +8567,29 @@
                 railEl = rail;
                 didDrag = false;
                 startY = e.clientY;
-                startTop = railEl.getBoundingClientRect().top;
-                clearTimeout(pressTimer);
-                pressTimer = setTimeout(armDrag, LONG_PRESS_MS);
+
+                if (mobileOpenDrawerKey && e.target.closest('.rail-tab')) {
+                    // A window is already open: dragging switches between
+                    // tabs, immediately, no hold delay. Reposition is not
+                    // available in this state - see file header comment.
+                    scrubbing = true;
+                    didScrub = false;
+                } else {
+                    scrubbing = false;
+                    startTop = railEl.getBoundingClientRect().top;
+                    clearTimeout(pressTimer);
+                    pressTimer = setTimeout(armDrag, LONG_PRESS_MS);
+                }
                 document.addEventListener('pointermove', onPointerMove);
                 document.addEventListener('pointerup', onPointerUp, { once: true });
                 document.addEventListener('pointercancel', onPointerUp, { once: true });
             }
 
             function onPointerMove(e) {
-                if (dragging) {
+                if (scrubbing) {
+                    scrubMove(e);
+                    e.preventDefault();
+                } else if (dragging) {
                     didDrag = true;
                     railEl.style.top = clampTop(startTop + (e.clientY - startY), railEl) + 'px';
                     e.preventDefault();
@@ -8476,6 +8602,7 @@
             function onPointerUp() {
                 clearTimeout(pressTimer);
                 pressTimer = null;
+                scrubbing = false;
                 if (dragging) {
                     dragging = false;
                     railEl.classList.remove('rail-dragging');
@@ -8485,13 +8612,16 @@
 
             document.addEventListener('pointerdown', onPointerDown);
 
-            // A long-press-then-drag ends with a pointerup over a rail-tab,
-            // which would otherwise also fire that tab's click and pop a
-            // drawer open right after the user finishes repositioning the
-            // rail. Swallow exactly that one click.
+            // A long-press-then-drag, or a scrub that actually switched
+            // tabs, ends with a pointerup over a rail-tab - which would
+            // otherwise also fire that tab's own click (reposition: popping
+            // a drawer open right after moving the rail; scrub: closing
+            // whichever tab the finger ended on, since it's now the "open"
+            // one). Swallow exactly that one click in both cases.
             document.addEventListener('click', (e) => {
-                if (didDrag) {
+                if (didDrag || didScrub) {
                     didDrag = false;
+                    didScrub = false;
                     e.stopPropagation();
                     e.preventDefault();
                 }
