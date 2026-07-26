@@ -1080,9 +1080,14 @@
             border: 2px solid #D4AF37 !important;
             border-left: none !important;
             border-radius: 0 14px 14px 0 !important;
-            /* Equal margin of green on every side of the controls, kept tight
-               so they sit close to the window edge. */
-            padding: 4px; margin: 0;
+            /* Item 3 (2026-07-26): ONE continuous green shape whose RIGHT
+               edge stands off the controls by 4x the original 4px margin.
+               Left/top/bottom stay at 4px so the buttons keep sitting the
+               same short distance from the window edge, exactly as before.
+               --arm-pad-r is shared with the options drawer below so the two
+               can never drift apart. */
+            --arm-pad-r: 16px;
+            padding: 4px var(--arm-pad-r) 4px 4px; margin: 0;
             display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
         }
         /* The pill is now a plain child of that single shape - no background
@@ -1105,7 +1110,9 @@
             border-radius: 50%;
             border: 1px solid #D4AF37;
             padding: 0;
-            font-size: 0.95rem; font-weight: 700; line-height: 1;
+            /* Item 5 (2026-07-26): larger status letter. 1.5rem keeps the
+               two-character "UF" comfortably inside the 3.5rem circle. */
+            font-size: 1.5rem; font-weight: 700; line-height: 1;
             display: flex; align-items: center; justify-content: center;
             /* the desktop chevron-in-background doesn't read on a circle -
                tapping the whole circle is the affordance instead */
@@ -1119,18 +1126,31 @@
            sits flush against the left screen edge now, so down-and-under
            has nowhere comfortable to go. Same two alternate statuses,
            same click targets, just a sideways reveal. */
+        /* Item 6 (2026-07-26): the drawer reads as sliding out from BEHIND
+           the arm's 2px gold edge. It is positioned just past that edge -
+           the arm's right padding plus its own 2px border - so the gold
+           line stays unbroken and acts as the cap the drawer emerges from.
+           Same green, its own 1px gold outline, and no left border so the
+           two shapes read as one continuous piece. */
         body.mobile-layout #scene-status-bar .status-dropdown-menu {
-            top: 0; left: 100%; right: auto; bottom: auto;
-            margin-left: 8px;
+            top: 0; right: auto; bottom: auto;
+            left: calc(100% + var(--arm-pad-r) + 2px);
+            margin-left: 0;
+            box-sizing: border-box;
             display: flex; flex-direction: row; align-items: center; gap: 6px;
             max-height: none; height: 3.5rem;
             width: 0; opacity: 0;
-            border: none; border-radius: 9999px;
+            background-color: #1E6B5F;
+            border: 1px solid #D4AF37; border-left: none;
+            border-radius: 0 12px 12px 0;
+            box-shadow: none;
+            padding: 0;
             overflow: hidden;
-            transition: width 0.18s ease, opacity 0.15s ease;
+            transition: width 0.18s ease, opacity 0.15s ease, padding 0.18s ease;
         }
         body.mobile-layout #scene-status-bar .status-dropdown-wrapper.open .status-dropdown-menu {
             width: auto; opacity: 1;
+            padding: 0 8px 0 6px;
         }
         body.mobile-layout #scene-status-bar .status-dropdown-option {
             width: 2.75rem; height: 2.75rem; min-width: 2.75rem; min-height: 0;
@@ -1152,12 +1172,18 @@
         .status-actions-toggle { display: none; }
         /* Chrome-tier (--tap-sm, 30px floor) like other set-once toggles
            (drawer-close, panel headers) - not below it, matching the
-           project's touch-target floor rather than inventing a smaller one. */
+           project's touch-target floor rather than inventing a smaller one.
+           Item 4 (2026-07-26): the arrow sat too far off the circle above and
+           the bank below. The negative margins cancel the arm's 4px flex gaps
+           on both sides, closing the VISUAL space without shrinking the tap
+           height - the target stays 30px tall and full arm width. */
         body.mobile-layout #scene-status-bar .status-actions-toggle {
             display: flex; align-items: center; justify-content: center;
             width: 100%; min-height: var(--tap-sm); height: var(--tap-sm);
             background: none; border: none; color: #D4AF37; font-size: 0.7rem;
             padding: 0;
+            margin-top: -4px; margin-bottom: -4px;
+            line-height: 1;
         }
         body.mobile-layout #scene-status-bar.actions-open .status-actions-toggle i {
             transform: rotate(180deg);
@@ -1272,7 +1298,10 @@
             color: #D4AF37;
         }
         body.mobile-layout #mobile-guidance-rail .rail-tab:last-child { border-bottom: none; }
-        body.mobile-layout .rail-tab i { font-size: 1.375rem; }
+        /* Glyph enlarged (2026-07-26) to squeeze the dead space around each
+           icon. The 3.5rem tap area is unchanged - only the padding shrinks,
+           so the touch target never regresses. */
+        body.mobile-layout .rail-tab i { font-size: 1.9rem; line-height: 1; }
         body.mobile-layout .rail-tab.active { background: #D4AF37; color: #3D2B1F; }
         /* Armed after a 1s press-and-hold (setupGuidanceRailDrag): a visible
            cue that the next finger movement now drags the whole bank rather
@@ -8370,7 +8399,7 @@
         // with no extra code needed, per Aaron's "reset to middle upon
         // login" spec.
         (function setupGuidanceRailDrag() {
-            const LONG_PRESS_MS = 1000;
+            const LONG_PRESS_MS = 300;   // Aaron, 2026-07-26: 1000ms felt sluggish
             const MOVE_CANCEL_PX = 10; // pre-arm movement this large cancels the long-press (treat as a scroll/tap, not a drag)
             let pressTimer = null;
             let dragging = false;
