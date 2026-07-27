@@ -1089,7 +1089,11 @@
             height: auto !important; min-height: 0;
             background-color: #1E6B5F !important;
             border: 2px solid #D4AF37 !important;
-            border-left: none !important;
+            /* Item (2026-07-27): the gold ring now wraps the full green
+               area - left, right, and bottom - rather than stopping short
+               on the left edge. Top stays borderless (below) so the shape
+               still reads as a tab hanging flush beneath the header's own
+               gold bottom border, not a separate boxed block. */
             /* Item 5 (2026-07-26): the arm is now a compound shape hanging
                off the header - square and flush at the top with NO top gold
                border (the header's own bottom edge caps it), rounded only at
@@ -1204,16 +1208,24 @@
            on both sides, closing the VISUAL space without shrinking the tap
            height - the target stays 30px tall and full arm width. */
         body.mobile-layout #scene-status-bar .status-actions-toggle {
-            display: flex; align-items: flex-start; justify-content: center;
+            display: flex; align-items: center; justify-content: center;
             width: 100%; min-height: var(--tap-sm); height: var(--tap-sm);
             background: none; border: none; color: #D4AF37; font-size: 0.7rem;
-            /* Item 1 (2026-07-26): the glyph was centered in this 30px box,
-               leaving ~9px of air above it before the circle even though the
-               box itself already sits flush (margins below cancel the arm's
-               flex gap). align-items:flex-start + a small top pad puts the
-               VISIBLE arrow about half that distance from the circle instead,
-               without shrinking the 30px tap target itself. */
-            padding: 4px 0 0 0;
+            /* Item 1 (2026-07-26): originally align-items:flex-start + a
+               top-only pad, to pull the glyph up close to the circle rather
+               than centered in the 30px box.
+               Item (2026-07-27): Aaron asked for the gap above the chevron
+               increased 50% (4px -> 6px) AND matched on the underside.
+               align-items:flex-start can't do that symmetrically - it
+               anchors the glyph to the top and dumps all the box's leftover
+               height as slack below, so equal top/bottom padding values
+               didn't render as an equal visual gap (measured: 6px above,
+               ~13px below). Switched to align-items:center, which by
+               definition splits any leftover box height evenly - confirmed
+               by measuring the glyph's rect against the circle above and
+               the box below after the change. Padding kept at 6px/6px as
+               the explicit +50% floor on top of that even split. */
+            padding: 6px 0 6px 0;
             margin-top: -4px; margin-bottom: -4px;
             line-height: 1;
         }
@@ -1236,7 +1248,10 @@
             width: 100%;
         }
         body.mobile-layout #scene-status-bar .status-actions-bank {
-            flex-direction: column; align-items: flex-start; gap: 4px;
+            /* Item (2026-07-27): centered (was flex-start) so the 44px
+               action buttons sit centered under the wider 56px status
+               circle above, instead of flush to the arm's left edge. */
+            flex-direction: column; align-items: center; gap: 4px;
             width: 100%;
             display: none;
         }
@@ -1244,8 +1259,6 @@
         body.mobile-layout #scene-status-bar .status-actions-bank > button {
             width: var(--tap); height: var(--tap); min-height: var(--tap);
             padding: 0; gap: 0;
-            /* left-aligned with the pill above so every control sits the same
-               short distance from the window edge */
             margin: 0;
             display: flex; align-items: center; justify-content: center;
             border-radius: 10px;
@@ -1351,8 +1364,13 @@
         body.mobile-layout #mobile-guidance-rail.rail-collapsed .rail-tab { display: none; }
         /* Glyph enlarged (2026-07-26) to squeeze the dead space around each
            icon. The 3.5rem tap area is unchanged - only the padding shrinks,
-           so the touch target never regresses. */
-        body.mobile-layout .rail-tab i { font-size: 1.9rem; line-height: 1; }
+           so the touch target never regresses.
+           Item (2026-07-27): reduced back down to 1rem per Aaron, to match
+           the editor toolbar icons (.text-tool-btn, 1rem) and the scene
+           status action-bank icons (.control-bar-item, 0.9375rem) - see
+           BUTTON_STYLE_GUIDE.md. The 3.5rem tap area is unchanged; only the
+           glyph shrinks. */
+        body.mobile-layout .rail-tab i { font-size: 1rem; line-height: 1; }
         body.mobile-layout .rail-tab.active { background: #D4AF37; color: #3D2B1F; }
         /* Armed after a 1s press-and-hold (setupGuidanceRailDrag): a visible
            cue that the next finger movement now drags the whole bank rather
