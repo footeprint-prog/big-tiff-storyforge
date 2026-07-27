@@ -2,6 +2,206 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-07-26] – Achievements & Usage Tracking (data layer)
+
+The engine behind 188 achievements plus the usage tracking that drives them.
+**No new UI yet** — the achievement book, toasts, icons, and creature
+animations are a separate later phase. The Stats window's existing 6-badge
+teaser now shows real data instead of the old hardcoded mock.
+
+### Added
+- **`progress.json`** — a new, **AES-encrypted** file in the data repo
+  holding all behavioural data: counters, per-day buckets, hour-of-day
+  histogram, personal bests, per-scene records, streaks, unlock log, and
+  weekly state. Same envelope shape as `state.json`, so it reuses the
+  existing encrypt/push/hydrate pattern.
+- **188 achievement definitions embedded inline** (~31 KB), generated from
+  `storyforge-achievements.json` v3.1.0 and cross-checked against the source
+  (0 mismatches on ids, titles, and every word threshold).
+- **Named-event tracking at ~25 call sites** — one line each
+  (`trackEvent('libraryOpen')`). Covers panel opens, notepad, draft pad,
+  snapshots create/restore, focus modes, proofreader run + apply, Sammy
+  sends, canon syncs, changelog, library search, guidance cards, mobile
+  drawers, scene selection, and status changes. **Not** a generic click log,
+  by choice.
+- **Writing sessions** (a genuinely new concept — none existed). 15-minute
+  idle timeout, ends on idle/unload/midnight, and *resumes* across a page
+  refresh so a 1,900-word session doesn't lose its shot at the 2,000-word
+  badge. Deliberately starts on **any** interaction, not just typing, so the
+  "zero-word session" achievements can actually fire.
+- **In-memory word index**, replacing the full-localStorage rescan that
+  `getStatsData()` and `syncStatsToRepo()` ran on every call — that was
+  O(scenes × draft length) and slow on a phone with 100+ scenes.
+- **`getAchievementBook()`** — returns all 188 with unlocked state, percent,
+  remaining, and a formatted label, plus hidden-achievement masking.
+  Everything the later book UI needs, measured at 1.8 ms.
+
+### Changed
+- **`stats.json` bumped to schemaVersion 2.** It no longer carries a
+  2,000-entry plaintext activity log. That log published a running record of
+  *when Erica writes* to a **public** repo — a real privacy leak that
+  predates this work. It is now drained on the first v2 write, and that
+  detail lives encrypted in `progress.json` instead. The dead
+  `achievementsUnlocked` array is replaced by an
+  `achievementsUnlockedCount` scalar, so a viewer profile can render
+  "13 / 188" without decrypting anything or leaking *which* badges.
+- **Stats window** now shows the real unlock count out of 188, and its six
+  tiles are drawn from actual engine state (unlocked first, then whatever is
+  closest to unlocking) rather than the previous hardcoded list, three of
+  whose entries were permanently `false`.
+
+### Fixed
+- **`initMobileMode` only wired `editor.blur`** despite the comment above
+  `mobileImmediateSave` promising blur/hide/pagehide. Backgrounding Safari
+  without blurring the editor skipped the immediate draft push. Now also
+  wired to `visibilitychange` and `pagehide`.
+
+### Design notes worth knowing
+- **Write amplification** was the main risk, since every push is a git
+  commit. Local-first: every mutation hits localStorage immediately; the
+  repo push is backup only, on a 90 s idle timer behind a hard 5-minute
+  floor. Measured: **120 typing events over 12 s produced exactly 1
+  progress commit.** That's quieter than the existing draft push, which
+  already commits every 2.5 s of typing pause.
+- **The merge is a join-semilattice** — every field merges by max, earliest,
+  or union, so two devices reconcile to the same result in either direction.
+  Verified commutative, associative, and idempotent.
+- **The analytics layer can never break the editor.** Every entry point is
+  wrapped; three failures trip a kill switch for the session. Verified by
+  sabotaging the layer mid-session and confirming typing, autosave, word
+  count, and all other localStorage keys were unaffected.
+
+### Resolved after review
+- **`full-outline-clear` is now human-confirmed** (Aaron, 2026-07-26). Its
+  original trigger ("every scene has a terminal status") read literally
+  counted `unfinished` — the *natural resting state* of a scene — as
+  terminal, so it unlocked on a brand-new project having done nothing.
+  Settled: **no automatic reading of the outline can prove the book is
+  finished; only Erica saying so can.** The engine's only job is deciding
+  when it's fair to *ask* — every scene Complete, nothing flagged for
+  review — and then it prompts. Declining leaves it locked. It asks at most
+  once per day, so a last scene that wobbles in and out of Complete can
+  never nag.
+
+### Flagged, not settled
+- **`manuscript-assembled` is currently unreachable** — it targets a
+  full-draft-assembly feature that doesn't exist. The `counter.assemblyRun`
+  metric ships at 0 so it works the day that feature lands.
+- **Weekly system is deferred** pending the full pool (the JSON has 13
+  entries; Aaron is sourcing more). The selection logic is pool-size
+  agnostic, so adding them is a data edit with no code change.
+
+### Verification notes
+Boundary thresholds asserted exactly (10,000 words fires `words-10000` but
+not `words-11000`; 9,999 fires neither; 3rd distinct day; 0.75 ratio but not
+0.74). Streaks verified including the day-3-vs-day-4 `streak-keeper`
+boundary and stale-streak reset. No double-unlock on repeat sweeps. Merge
+verified commutative/associative/idempotent with an order-insensitive
+comparison. Full 188-rule sweep measured at **0.1 ms**, dirty-subset sweep
+0.05 ms. Session resume across reload confirmed with no double-counted
+session. Mobile path exercised via `setMobilePreview(true)` at 440×956.
+Desktop re-verified unchanged: 100×19 pill at `9999px` radius showing the
+full word, arrow tab hidden, action bank always visible, copy buttons
+hidden, status bar `sticky`, guidance rail hidden. **0** console errors
+throughout.
+
+`full-outline-clear` gate tested across all five states: all-unfinished
+(not eligible, no prompt), partially complete (not eligible), all complete
+*with* a review flag (not eligible, no prompt), all complete with flags
+cleared (eligible, prompts once), declined (stays locked, fact stays 0,
+no nag on same-day re-check), and confirmed on a later day (unlocks, and
+the confirmation survives a merge in both directions). Fresh-project
+regression re-checked: still 0.
+
+## [2026-07-25] – Guidance Copy, Rail Drag, Circular Status (sixth review)
+
+Four requests: a copy button on each guidance drawer, larger guidance-rail
+icons, a draggable rail, and a full redesign of the mobile status control
+from a pill to a circle. All mobile-only; desktop untouched.
+
+### Added
+- **Copy-to-clipboard button** (`.guidance-copy-btn`) in each of the six
+  guidance drawers (Purpose/Canon/Emotional/Beats/Setting/Success), next to
+  where the desktop-only minimize/expand icons would be. Reads the drawer's
+  already-rendered text via `innerText` (so list formatting matches what's
+  on screen) and writes it with `navigator.clipboard.writeText()`. The icon
+  flashes to a checkmark for 1.2s on success (`copyGuidanceCardText()` /
+  `flashGuidanceCopyButton()`).
+- **Guidance rail drag-to-reposition.** A 1-second press-and-hold on the
+  rail arms dragging (visible gold glow cue via `.rail-dragging`); a
+  subsequent drag moves the whole rail up/down the right edge, clamped
+  between the header and bottom-nav clearance
+  (`setupGuidanceRailDrag()` in an IIFE near `updateRailActiveState`). A
+  plain tap under 1s still opens a drawer as before — the drag-arming click
+  is swallowed via a capturing click listener keyed on whether a drag
+  actually happened. Position is **never persisted** (no localStorage) — it
+  lives only in an inline `top` style on the live element, so a fresh page
+  load (a real login) always starts centered with zero extra reset code.
+  `submitLogin()` also calls `resetGuidanceRailPosition()` explicitly, for
+  the case where a session is already loaded and a different account logs
+  in without a full page reload.
+
+### Changed
+- **Guidance rail icons enlarged** from 44×44px to 56×56px (icon glyph
+  1rem → 1.375rem), staying a single touching "connected bank" (one shared
+  strip border, no per-icon borders) rather than becoming separate spaced
+  buttons like the Sammy/Draft Log/Save bank. **Flagged, not fully
+  settled:** the rail icons and the action-bank buttons were already
+  pixel-identical at 44×44 before this change — Aaron's brief presupposed a
+  size gap that didn't exist in code. Asked which axis he actually meant
+  (bump size, add per-icon borders, or match the old 88px pill width) and
+  got no reply before continuing, so this went with the plainest reading —
+  make them visibly bigger, keep the connected layout — as a placeholder.
+  Revisit if 56px isn't what he had in mind.
+- **Mobile status pill replaced with a circular status button.** The outer
+  green-arm / 2px-gold-border shape (`#scene-status-bar`) is unchanged;
+  only what sits inside it changed. The trigger is now a 56px circle with a
+  1px gold border showing a single status code — **R** (Review), **UF**
+  (Unfinished), **C** (Complete) — instead of the full word, sized to match
+  the enlarged rail icons. `updateStatusSelector()` now renders both a
+  `.status-trigger-label` (full word, shown on desktop) and a
+  `.status-trigger-code` (short code, shown on mobile) per option, so
+  desktop kept its original pill unchanged.
+- **Status options slide out horizontally** instead of dropping down
+  beneath the trigger (mobile only) — the circle sits flush against the
+  left screen edge, so a horizontal reveal to the right made more sense
+  than down-and-under. Same alternate-status logic as before (current
+  status excluded, Review only offered if already active).
+- **Sammy / Draft Log / Save now collapse behind a new dropdown-arrow tab**
+  (`#status-actions-toggle`, `toggleStatusActionsBank()`), starting closed
+  on every scene load. The three buttons were re-wrapped in their own
+  `.status-actions-bank` div, separate from the row that also holds
+  `#auto-save-status` — collapsing that row directly would have hidden the
+  auto-save indicator too, since `display:none` on an ancestor hides a
+  `position:fixed` descendant regardless of its own positioning. The arrow
+  tab itself is 56×30px (chrome-tier `--tap-sm` floor, not a new
+  below-floor size) — initially built it at 22px tall before catching that
+  it violated the touch-target floor and fixing it in the same pass.
+
+### Verification notes
+All four checked at 440×956 via `setMobilePreview(true)` / synthetic
+`PointerEvent` sequences (real touch hardware not available in this
+environment — see the "not verified" list this doc already carries
+forward from the original mobile port). Copy button: present in all six
+drawers, click fires with no console errors, icon swaps to a checkmark.
+Drag: long-press (1100ms) arms `.rail-dragging` and a following
+`pointermove` repositions the rail by the exact delta; a short tap (150ms)
+still opens the correct drawer and never arms dragging; an extreme drag
+(+5000px) clamps to `railBottom < viewport height`, never off-screen;
+`resetGuidanceRailPosition()` restores the exact original centered
+position. Circular status: 56×56 circle, `border-radius: 50%`, correct
+code per status (R/UF/C), full label present but `display:none`; clicking
+opens a horizontal menu with only the valid alternate status, clicking it
+changes `currentScene.status` and closes the menu; arrow tab opens/closes
+the action bank without affecting `#auto-save-status`'s visibility, and
+resets to closed on every new scene load. Full-open-state audit (drawer +
+action bank + status menu all open at once): **0** interactive elements
+under 30px anywhere in the scene view, no layout overlap between the
+status arm, guidance rail, drawer, and status menu. Desktop re-verified
+unchanged: pill still `border-radius: 9999px` showing the full word, arrow
+tab and copy buttons both `display:none`, action bank always visible
+(never collapses), rail hidden.
+
 ## [2026-07-25] – Control Sizing Corrections (fifth review)
 
 ### Fixed

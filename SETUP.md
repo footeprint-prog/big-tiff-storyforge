@@ -76,8 +76,11 @@ single, deliberate "dev → live" moment.
 - **Login** (launch page or tool) checks the entered password against the hashes
   in `accounts.json` — all in the browser.
 - **On load**, the tool auto-syncs: it reads `drafts.json` / `checkpoints.json` /
-  `stats.json` from `big-tiff-data` so every profile sees the same state, right
-  where Erica left off. No manual "Sync" needed for that.
+  `stats.json` / `progress.json` from `big-tiff-data` so every profile sees the
+  same state, right where Erica left off. No manual "Sync" needed for that.
+  `progress.json` (added 2026-07-26) holds the achievement-tracking data
+  (counters, streaks, unlock history) — it's encrypted the same way drafts
+  are and needs no separate setup; the same write token already covers it.
 - **As Erica writes**, her browser encrypts each draft and commits it back to
   `big-tiff-data` using her token. If the same scene was changed on another
   device, the tool shows a **compare-and-choose banner** instead of overwriting —

@@ -1,5 +1,13 @@
 # Big Tiff StoryForge — Quick Reference: Multi-Agent Handoff
 
+> **⚠ SUPERSEDED (noted 2026-07-26).** Describes the Grok-Project
+> multi-agent setup ("Webcraft Master Dom", "Refresh yourself" trigger,
+> `/home/workdir/artifacts/`) that Aaron moved away from 2026-06-22 in
+> favor of Claude Code with direct git access — see `AGENTS.md`. Kept for
+> historical reference; the "Refresh yourself" trigger and Dom persona no
+> longer apply to tool-dev work. Sammy's role (owns canon JSON, drafts
+> nothing user-facing) is still accurate.
+
 **Last Updated:** June 17, 2026
 
 ## File Locations

@@ -96,6 +96,78 @@ they aren't lost now that the old document is marked historical.
       real iOS Safari**, so the iOS-specific items (keyboard/caret behaviour,
       safe-area insets, real Page Zoom) still want a pass on Erica's actual
       phone before this is considered closed in the strict sense.
+      **UPDATE 2026-07-26:** several further refinement rounds landed on
+      `claude/mobile-port` (not yet re-promoted to bigtiffsworld.com — see
+      `Mobile_Port_Handoff.md`'s Deployment facts table): the scene-status
+      pill became a circular R/UF/C button with a horizontal slide-out
+      option drawer and a collapsible action-button bank; the guidance rail
+      gained drag-to-reposition, a collapse toggle, and drag-to-switch
+      between open drawers; each guidance drawer gained a copy-to-clipboard
+      button. `Mobile_Port_Handoff.md` was rewritten 2026-07-26 to cover all
+      of this — read that doc, not just this entry, before further mobile
+      work. The "nothing tested on real iOS Safari" caveat above still
+      applies in full, and now additionally covers the new drag/collapse/
+      scrub gestures, none of which have been touched by a real finger.
+- [x] **Achievements & usage-tracking data layer.** DONE 2026-07-26 — 188
+      achievements embedded with machine-readable rules (cross-checked
+      against the source JSON, 0 mismatches), an AES-encrypted
+      `progress.json` synced alongside drafts/checkpoints/stats (counters,
+      per-day buckets, hour-of-day histogram, personal bests, per-scene
+      records, streaks, unlock log), ~25 named `trackEvent()` call sites, a
+      writing-session concept (15min idle timeout, resumes across a
+      refresh), and the achievement-evaluation engine
+      (`deriveFacts`/`evaluateAchievements`/`getAchievementBook`). Merge
+      logic is a verified join-semilattice (commutative/associative/
+      idempotent). `stats.json` bumped to schemaVersion 2, draining a
+      2000-entry PLAINTEXT activity log that had been publishing when Erica
+      writes to the public data repo — that leak predates this work and is
+      now closed. `full-outline-clear` is human-confirmed (prompts once
+      every scene is Complete with no review flags, at most once/day, per
+      Aaron: "unfinished" is a scene's natural resting state, so no
+      automatic reading of the outline can prove the book is actually
+      done). See the CHANGELOG entries dated 2026-07-26 for full
+      verification detail (boundary thresholds, streak edge cases, a
+      sabotage test proving the analytics layer can never break the
+      editor, write-amplification measurement of 1 commit per 120 typing
+      events). **This is the engine only** — see the next item for the
+      remaining presentation work.
+- [ ] **Achievements — UI phase.** The data layer shipped 2026-07-26
+      (188 achievements, encrypted `progress.json`, usage tracking, the
+      engine, and the human-confirmed Full Outline Clear gate). Everything
+      below is presentation; the engine already emits
+      `bigtiff:achievement` / `bigtiff:progress-updated` events and
+      `getAchievementBook()` returns unlocked state, percent, remaining and
+      a formatted label for all 188, so none of this needs engine changes.
+      Added 2026-07-26 at Aaron's direction.
+      1. **Unique icons for each achievement.** Definitions already carry an
+         `ic` placeholder name per achievement; the Stats teaser currently
+         falls back to per-category FontAwesome icons. Needs a decision on
+         art style, source, and storage (sprite / inline SVG / image files).
+         **Discussion item first, not a build item.**
+      2. **Achievement book (bank)** showing completed achievements.
+      3. **Achievement window/list split** into achievements in progress
+         (with status) vs. not yet accomplished, showing a
+         completed/total count.
+      4. **Weekly achievements included but identified separately** from the
+         188 lifetime ones.
+      5. **Desktop header trophy shelf.** A visible bank in the header with
+         **5 empty slots** styled as empty trophy shelves — matching the 5
+         weeklies drawn each week. Completing a weekly places a unique
+         "live" animated creature GIF in a jar on that shelf. Two asset jobs:
+         generate the shelf artwork, then generate a bank of animated
+         creature GIFs. **Shelves empty on weekly reset.**
+      6. **Mobile achievements nav button + window.** Weeklies shown in a
+         lower-left collapsible bank of the same trophy shelf slots. Must
+         respect the existing mobile patterns (`mobileCloseEverything()`
+         one-at-a-time enforcement, `updateNavActiveState()` deriving
+         highlight from real open state, ≥44px targets) and must not collide
+         with the draggable guidance rail on the right edge.
+      - **Blocker for items 4-6:** the weekly pool is incomplete. The JSON
+        has 13 entries; Aaron is sourcing the rest toward 21. Selection
+        logic is pool-size agnostic, so adding them is a data edit — but the
+        weekly selection/reset itself still needs wiring (deterministic
+        seeded pick of 5 per ISO week, identical on every device and not
+        re-rollable by refreshing).
 - [ ] **Visual skinning of the tool.** Aaron is producing a fantasy-themed
       visual mockup separately; once complete, it will be broken down into
       individual elements to "skin" the existing functional tool. Directly
@@ -103,9 +175,12 @@ they aren't lost now that the old document is marked historical.
       polish" item below - this is the broader version of that same
       deferred work. Functional correctness takes priority until the
       mockup is ready. (Added 2026-06-22.)
-- [ ] **Full draft assembly function.** A function to assemble all
-      completed (or all, depending on design) per-scene drafts into one
-      complete manuscript document. Context: Aaron's original plan was for
+- [ ] **Full draft assembly function.** *(Also gates the
+      `manuscript-assembled` achievement, which ships unreachable until this
+      exists — its `counter.assemblyRun` metric is already in place and sits
+      at 0, so the achievement works the day this lands.)* A function to
+      assemble all completed (or all, depending on design) per-scene drafts
+      into one complete manuscript document. Context: Aaron's original plan was for
       the tool to assemble the complete draft, then bring that assembled
       document to Claude directly (outside this tool) for full-manuscript
       developmental/line editing - Grok has had difficulty with long text
@@ -204,4 +279,4 @@ rather than assuming the whole list is still live.
 
 ---
 
-*Last Updated: 2026-06-22*
+*Last Updated: 2026-07-26*
