@@ -10,13 +10,17 @@
 ##         retired from Project_Governance_and_Protocols.md) rode in the
 ##         same branch/PR. Live site was already re-promoted 2026-07-26
 ##         (commit `c071209` in `big_tiff_launchpage`), verified
-##         byte-identical against the actual domain. No confirmation has
-##         been received in any session that Aaron has completed a
-##         real-device pass on Erica's iPhone since the ORIGINAL 2026-07-25
-##         promotion — treat the "What is NOT verified" section below as
-##         still fully live until told otherwise; it was never about a
-##         specific promotion, it's about real touch hardware never having
-##         been used at all.
+##         byte-identical against the actual domain. **CORRECTED 2026-07-27:**
+##         every mobile UI round is in fact tested on a real device — Aaron
+##         confirmed directly he checks all changes on a real iPhone 15 Pro,
+##         iOS Safari, as a normal part of his workflow ("that is exactly
+##         what I test everything on"). The "What is NOT verified" section
+##         below had been carried forward with the wrong framing (implying
+##         NO real hardware had ever touched this) across several sessions —
+##         that framing is retired. What's still genuinely open: Aaron's own
+##         test device (15 Pro) differs from Erica's phone (16 Pro Max per
+##         her user profile) — a device-specific bug on her exact model
+##         isn't ruled out just because Aaron's 15 Pro checks look fine.
 ## Dev branch: `claude/mobile-port` — long-lived, kept around, not deleted,
 ##             still the working branch for ongoing mobile UI iteration
 ##             (its GitHub Pages config is what gives the ~1min preview
@@ -259,34 +263,39 @@ confirmation dialog (`confirm()`, a blocking browser dialog) can appear.
 
 ---
 
-## What is NOT verified — say this plainly to Aaron/Erica, don't let it get lost
+## Real-device testing status (corrected 2026-07-27)
 
-No session since the original 2026-07-25 promotion has received
-confirmation of a completed real-device pass. Treat everything below as
-still open, and add to it (don't just trust this exact wording) if you
-introduce new touch-specific interaction:
-- Whether `(hover: none) and (pointer: coarse)` actually fires as expected
-  on her iPhone (confirmed to *parse*; never observed *matching* in any
-  dev environment used so far, all of which are mouse-only).
+**Aaron confirmed directly (2026-07-27) that he tests every mobile round on
+a real iPhone 15 Pro, iOS Safari, as standard practice** — the framing this
+section used to carry ("nothing has ever touched real hardware / a real
+finger") was wrong and had been repeated across multiple sessions without
+being checked against him. Don't resurrect that framing.
+
+What's still a genuine, narrower gap: Aaron's test device (15 Pro) isn't
+necessarily Erica's own phone (16 Pro Max per her user profile) — a
+device-specific quirk unique to her exact model/iOS version isn't ruled out
+just because his 15 Pro checks look fine. If that distinction matters for a
+specific bug report, ask which device it was seen on rather than assuming.
+The items below are the specific technical behaviors worth double-checking
+on whichever device is in hand when touching related code — not a claim
+that they're all still unverified in the abstract:
+- Whether `(hover: none) and (pointer: coarse)` fires as expected — worth a
+  quick sanity check whenever detection logic changes.
 - `contenteditable` caret visibility and scroll-into-view with the
   on-screen keyboard up (historically buggy on iOS specifically).
 - `env(safe-area-inset-*)` behavior around the Dynamic Island / home
   indicator.
-- Real Safari Page Zoom (only its geometric equivalent — a narrower
-  viewport — was ever tested).
+- Real Safari Page Zoom behavior at high zoom levels.
 - Add to Home Screen / standalone launch.
 - `CSS.highlights` / Custom Highlight API support (Safari 17.2+; the
-  proofreader go-to arrow falls back gracefully if unsupported, but the
-  fallback's *feel* under a real finger was never checked).
-- **Real touch gesture behavior for the 2026-07-26 additions specifically**
-  — the rail's press-and-hold-to-drag, the drag-to-switch scrub gesture,
-  and the collapse tap were all driven with synthetic `PointerEvent`
-  sequences (`pointerType: 'touch'`) in a desktop browser, never a real
-  finger. The 300ms long-press threshold in particular is a feel judgment
-  that only a real thumb can confirm or refute.
+  proofreader go-to arrow falls back gracefully if unsupported).
+- **Feel/timing judgments** — the rail's and status-arm's press-and-hold
+  thresholds (300ms) are dev-tool-verified via synthetic `PointerEvent`
+  sequences for logic correctness; whether the exact delay *feels* right is
+  a real-thumb judgment call each round, worth asking about specifically.
 - The `confirm()` dialog used by the Full Outline Clear gate — native
-  browser confirm dialogs can render unpredictably across mobile browsers;
-  never checked on real iOS Safari.
+  browser confirm dialogs can render inconsistently across mobile browsers;
+  worth a specific look if that flow changes.
 
 ---
 
