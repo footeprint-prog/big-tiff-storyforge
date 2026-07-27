@@ -92,10 +92,14 @@ they aren't lost now that the old document is marked historical.
       Home/Outline/Library/Notepad/Focus. Full accessibility pass: no text
       below 12px, zero measured WCAG AA contrast failures, all touch targets
       ≥44×44. Desktop verified unchanged by direct measurement. See CHANGELOG
-      for what was and was not verified — **notably, nothing was tested on
-      real iOS Safari**, so the iOS-specific items (keyboard/caret behaviour,
-      safe-area insets, real Page Zoom) still want a pass on Erica's actual
-      phone before this is considered closed in the strict sense.
+      for what was and was not verified. **CORRECTED 2026-07-27:** earlier
+      versions of this entry said nothing was tested on real iOS Safari —
+      Aaron confirmed directly that he tests every mobile round on a real
+      iPhone 15 Pro as standard practice, so that framing was wrong and is
+      retired (see `Mobile_Port_Handoff.md`'s "Real-device testing status"
+      section). The narrower open point: his test device isn't necessarily
+      Erica's own phone (16 Pro Max), so a quirk unique to her exact model
+      isn't ruled out by his checks alone.
       **UPDATE 2026-07-26:** several further refinement rounds landed on
       `claude/mobile-port` (not yet re-promoted to bigtiffsworld.com — see
       `Mobile_Port_Handoff.md`'s Deployment facts table): the scene-status
@@ -105,9 +109,10 @@ they aren't lost now that the old document is marked historical.
       between open drawers; each guidance drawer gained a copy-to-clipboard
       button. `Mobile_Port_Handoff.md` was rewritten 2026-07-26 to cover all
       of this — read that doc, not just this entry, before further mobile
-      work. The "nothing tested on real iOS Safari" caveat above still
-      applies in full, and now additionally covers the new drag/collapse/
-      scrub gestures, none of which have been touched by a real finger.
+      work. Per the 2026-07-27 correction above, the drag/collapse/scrub
+      gestures (including the scene-status arm's own drag, added
+      2026-07-27) do get checked on Aaron's real iPhone 15 Pro each round —
+      not an untouched-by-any-finger state.
 - [x] **Achievements & usage-tracking data layer.** DONE 2026-07-26 — 188
       achievements embedded with machine-readable rules (cross-checked
       against the source JSON, 0 mismatches), an AES-encrypted

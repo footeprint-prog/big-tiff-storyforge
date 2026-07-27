@@ -1037,16 +1037,17 @@
            AA. A solid #3D2B1F ground (already used across the tool) takes the
            same gold to 6.4:1, keeping the gold border as the accent. */
         body.mobile-layout #review-note-box { padding: 12px; background-color: #3D2B1F; }
-        /* The green arm is a top layer the EDITOR scrolls beneath (item 5),
-           but the summary and review note sit right under it and would be
-           permanently unreadable. Indent just those two clear of the arm;
-           the editor itself stays full-width. */
-        /* Item 5: content sits left-aligned, just clear of the green shape
-           (~74px) with a safe margin - closer in than it was. The summary's
-           book icon is hidden because the status pill now occupies that slot
-           (item 3), so the text starts where the icon used to. */
-        body.mobile-layout.scene-open #scene-summary-bar { padding-left: 6.375rem; }
-        body.mobile-layout.scene-open #review-note-box { padding-left: 6.375rem; }
+        /* Item (2026-07-27): the fixed 6.375rem left indent below (originally
+           added item 5, 2026-07-24) reserved clearance for the status arm
+           when it was permanently pinned flush-left. Now that the arm is
+           horizontally draggable (and can dock right, or float anywhere),
+           permanently reserving that space no longer makes sense - it just
+           left the text starting well right of the window's natural left
+           edge even when nothing was there to avoid. Removed per Aaron
+           (2026-07-27): both windows now use their normal padding on every
+           side, and simply accept that the arm (a floating, high z-index
+           overlay) may sit on top of the text when parked over it - the
+           same trade-off the guidance rail already makes on the right. */
         body.mobile-layout #scene-summary-bar > .flex > .flex-shrink-0,
         body.mobile-layout #review-note-box > .flex > .flex-shrink-0 { display: none; }
         body.mobile-layout #scene-summary-bar > .flex,
@@ -1085,28 +1086,53 @@
             position: fixed !important;
             top: var(--mobile-header-h) !important;
             left: 0;
-            z-index: 40;
+            /* Item (2026-07-27): raised above the guidance rail (z-index 45)
+               and, critically, above an OPEN guidance drawer
+               (.guidance-float-window, z-index 460) - now that the arm is
+               horizontally draggable (see setupStatusBarDrag) it can slide
+               into the same upper-right area the rail occupies when IT is
+               dragged toward the top, and Aaron's spec is that the status
+               circle wins that overlap, not the context window. */
+            z-index: 470;
             height: auto !important; min-height: 0;
             background-color: #1E6B5F !important;
-            border: 2px solid #D4AF37 !important;
-            border-left: none !important;
-            /* Item 5 (2026-07-26): the arm is now a compound shape hanging
-               off the header - square and flush at the top with NO top gold
-               border (the header's own bottom edge caps it), rounded only at
-               the lower-right. Reads as one continuous green form with the
-               header rather than a separate floating block. */
-            border-top: none !important;
-            border-radius: 0 0 14px 0 !important;
-            /* Uniform 4px of green on every side (the "4x" in the previous
-               round was a typo for 4px - reverted 2026-07-26).
-               --arm-pad-r is shared with the options drawer below so the two
-               can never drift apart. */
-            /* Item 1 (2026-07-26): bottom padding halved (4px -> 2px) so
-               there's less green below the arrow tab before the arm's own
-               border. Top/left/right stay 4px - unrelated to this ask. */
-            --arm-pad-r: 4px;
-            padding: 4px var(--arm-pad-r) 2px 4px; margin: 0;
-            display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+            /* Item (2026-07-27, corner-morph round): border is now set per-side
+               (not the `border` shorthand) so JS-driven dock state can flip a
+               single side's width without fighting the other three. Top is
+               always 0 - the arm hangs flush beneath the header's own gold
+               border regardless of horizontal position or dock state. */
+            border-style: solid !important;
+            border-color: #D4AF37 !important;
+            border-width: 0 2px 2px 2px !important;
+            /* Base/"floating" shape: free of both walls, so both bottom
+               corners round the same way (order: top-left top-right
+               bottom-right bottom-left). setupStatusBarDrag toggles
+               .status-bar-docked-left/-right once the arm is released
+               within DOCK_THRESHOLD_PX of a screen edge, which override the
+               matching corner + border side below - see those rules. */
+            border-radius: 0 0 14px 14px !important;
+            /* Item (2026-07-27): standardized to 8px on every side (was an
+               inconsistent 4/4/4/2px) - see BUTTON_STYLE_GUIDE.md. The
+               circle (56px) is the widest child, so this is the true
+               wall-to-circle clearance; the narrower 44px action buttons
+               end up with more breathing room than 8px once centered in
+               that same column, which reads fine and isn't worth a second
+               content-width just to force an identical number for them too. */
+            padding: 8px; margin: 0;
+            display: flex; flex-direction: column; align-items: center; gap: 4px;
+        }
+        /* Item (2026-07-27): dock-state overrides. Only the wall-facing
+           side's border and that corner's radius change - the opposite
+           side keeps its border and rounded corner from the base rule
+           above, so the arm reads as "growing out of" whichever wall it's
+           flush against rather than a fully separate boxed shape. */
+        body.mobile-layout #scene-status-bar.status-bar-docked-left {
+            border-left-width: 0 !important;
+            border-bottom-left-radius: 0 !important;
+        }
+        body.mobile-layout #scene-status-bar.status-bar-docked-right {
+            border-right-width: 0 !important;
+            border-bottom-right-radius: 0 !important;
         }
         /* The pill is now a plain child of that single shape - no background
            or padding of its own (item 2). */
@@ -1204,16 +1230,31 @@
            on both sides, closing the VISUAL space without shrinking the tap
            height - the target stays 30px tall and full arm width. */
         body.mobile-layout #scene-status-bar .status-actions-toggle {
-            display: flex; align-items: flex-start; justify-content: center;
-            width: 100%; min-height: var(--tap-sm); height: var(--tap-sm);
+            display: flex; align-items: center; justify-content: center;
+            width: 100%; min-height: var(--tap-sm);
             background: none; border: none; color: #D4AF37; font-size: 0.7rem;
-            /* Item 1 (2026-07-26): the glyph was centered in this 30px box,
-               leaving ~9px of air above it before the circle even though the
-               box itself already sits flush (margins below cancel the arm's
-               flex gap). align-items:flex-start + a small top pad puts the
-               VISIBLE arrow about half that distance from the circle instead,
-               without shrinking the 30px tap target itself. */
-            padding: 4px 0 0 0;
+            /* Item 1 (2026-07-26): originally align-items:flex-start + a
+               top-only pad, to pull the glyph up close to the circle rather
+               than centered in the 30px box.
+               Item (2026-07-27, round 1): switched to align-items:center so
+               top/bottom padding renders as an equal visual gap (flex-start
+               dumped leftover box height as bottom-only slack).
+               Item (2026-07-27, round 2 - margin standardization): dropped
+               the fixed `height: var(--tap-sm)` in favor of `min-height`
+               only, intending the box to hug its content (glyph + padding)
+               exactly. Padding bumped 6px -> 8px to match the arm's new
+               standardized margin (BUTTON_STYLE_GUIDE.md).
+               Measured result: still 9.4px, not 8px - the glyph is only
+               ~11px tall, so content height (glyph + 2*8px padding =
+               ~27px) is still under the 30px chrome-tier floor, and
+               min-height keeps winning. Getting an exact 8px would mean
+               either shrinking min-height below the project's 30px
+               touch-target floor (not worth it for 1.4px) or bumping
+               padding to ~9.4px (breaking the deliberately-chosen round
+               8px value). Left as 8px padding / ~9.4px rendered - close
+               enough, and the floor is the more important constraint to
+               keep. Don't "fix" this again without re-measuring first. */
+            padding: 8px 0 8px 0;
             margin-top: -4px; margin-bottom: -4px;
             line-height: 1;
         }
@@ -1236,7 +1277,10 @@
             width: 100%;
         }
         body.mobile-layout #scene-status-bar .status-actions-bank {
-            flex-direction: column; align-items: flex-start; gap: 4px;
+            /* Item (2026-07-27): centered (was flex-start) so the 44px
+               action buttons sit centered under the wider 56px status
+               circle above, instead of flush to the arm's left edge. */
+            flex-direction: column; align-items: center; gap: 4px;
             width: 100%;
             display: none;
         }
@@ -1244,8 +1288,6 @@
         body.mobile-layout #scene-status-bar .status-actions-bank > button {
             width: var(--tap); height: var(--tap); min-height: var(--tap);
             padding: 0; gap: 0;
-            /* left-aligned with the pill above so every control sits the same
-               short distance from the window edge */
             margin: 0;
             display: flex; align-items: center; justify-content: center;
             border-radius: 10px;
@@ -1323,13 +1365,25 @@
             /* square tabs (item 7, 2026-07-24) */
             width: 3.5rem; min-width: 3.5rem;
             height: 3.5rem; min-height: 3.5rem;
-            padding: 0;
+            /* Item (2026-07-27): after the icon glyph was shrunk to 1rem to
+               match the editor/status buttons, it read as swimming in too
+               much empty space inside this comparatively large 56px box.
+               Explicit 4px padding (box-sizing:border-box so the 56px
+               outer footprint/tap target is unchanged) plus a larger glyph
+               (see the icon font-size below) tightens that back up. */
+            box-sizing: border-box;
+            padding: 4px;
             background: transparent; border: none;
             border-bottom: 1px solid rgba(212, 175, 55, 0.3);
             border-radius: 0;
             color: #D4AF37;
         }
-        body.mobile-layout #mobile-guidance-rail .rail-tab:last-child { border-bottom: none; }
+        /* Item (2026-07-27): the toggle button moved from first to last
+           child in the bank (see the HTML), so it's now the divider-free
+           end instead of the "success" tab - :nth-last-child(2) targets
+           whichever tab sits immediately above the toggle regardless of
+           further reordering, rather than hardcoding "success". */
+        body.mobile-layout #mobile-guidance-rail .rail-tab:nth-last-child(2) { border-bottom: none; }
         /* Item 3 (2026-07-26): the rail collapses to just this arrow when
            docked, saving screen space; a plain tap expands it back to the
            full 6-icon strip. Chrome-tier size (30px), matching the scene-
@@ -1339,11 +1393,15 @@
             display: flex; align-items: center; justify-content: center;
             width: 3.5rem; height: var(--tap-sm); min-height: var(--tap-sm);
             background: none; border: none; color: #D4AF37; font-size: 0.85rem;
-            border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+            /* Item (2026-07-27): border moved from bottom to top - the
+               toggle is now the LAST element in the bank (divider needed
+               above it, from the tab it follows; none needed below, since
+               nothing follows it). */
+            border-top: 1px solid rgba(212, 175, 55, 0.3);
             flex-shrink: 0;
         }
         body.mobile-layout #mobile-guidance-rail.rail-collapsed .rail-collapse-toggle {
-            border-bottom: none;
+            border-top: none;
         }
         body.mobile-layout #mobile-guidance-rail.rail-collapsed .rail-collapse-toggle i {
             transform: rotate(180deg);
@@ -1351,13 +1409,25 @@
         body.mobile-layout #mobile-guidance-rail.rail-collapsed .rail-tab { display: none; }
         /* Glyph enlarged (2026-07-26) to squeeze the dead space around each
            icon. The 3.5rem tap area is unchanged - only the padding shrinks,
-           so the touch target never regresses. */
-        body.mobile-layout .rail-tab i { font-size: 1.9rem; line-height: 1; }
+           so the touch target never regresses.
+           Item (2026-07-27): reduced back down to 1rem per Aaron, to match
+           the editor toolbar icons (.text-tool-btn, 1rem) and the scene
+           status action-bank icons (.control-bar-item, 0.9375rem) - see
+           BUTTON_STYLE_GUIDE.md. The 3.5rem tap area is unchanged; only the
+           glyph shrinks. */
+        body.mobile-layout .rail-tab i { font-size: 2.5rem; line-height: 1; }
         body.mobile-layout .rail-tab.active { background: #D4AF37; color: #3D2B1F; }
         /* Armed after a 1s press-and-hold (setupGuidanceRailDrag): a visible
            cue that the next finger movement now drags the whole bank rather
            than opening a drawer. */
         body.mobile-layout.scene-open #mobile-guidance-rail.rail-dragging {
+            box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.8), 0 4px 14px rgba(0,0,0,0.4);
+        }
+
+        /* Item (2026-07-27): scene-status arm gets the same armed-drag cue
+           as the rail above, once a 300ms press-and-hold on the status
+           circle arms horizontal dragging (setupStatusBarDrag). */
+        body.mobile-layout #scene-status-bar.status-bar-dragging {
             box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.8), 0 4px 14px rgba(0,0,0,0.4);
         }
 
@@ -2589,13 +2659,17 @@
     <!-- All six guidance tabs stacked on the right edge, icon-only, touching
          (Aaron, 2026-07-24). Drawers open to the left, toward the editor. -->
     <div id="mobile-guidance-rail" class="mobile-rail" aria-label="Scene guidance drawers">
-        <button type="button" id="mobile-rail-toggle" class="rail-collapse-toggle" aria-label="Collapse guidance tabs" aria-expanded="true" onclick="toggleGuidanceRailCollapsed()"><i class="fa-solid fa-chevron-right"></i></button>
         <button type="button" class="rail-tab" data-rail-key="purpose" aria-label="Purpose" title="Purpose" onclick="mobileToggleGuidanceDrawer('purpose')"><i class="fa-solid fa-bullseye"></i></button>
         <button type="button" class="rail-tab" data-rail-key="canon" aria-label="Key Canon to Honor" title="Key Canon to Honor" onclick="mobileToggleGuidanceDrawer('canon')"><i class="fa-solid fa-gem"></i></button>
         <button type="button" class="rail-tab" data-rail-key="emotional" aria-label="Emotional State" title="Emotional State" onclick="mobileToggleGuidanceDrawer('emotional')"><i class="fa-solid fa-heart-pulse"></i></button>
         <button type="button" class="rail-tab" data-rail-key="beats" aria-label="Must-Happen Beats" title="Must-Happen Beats" onclick="mobileToggleGuidanceDrawer('beats')"><i class="fa-solid fa-list-check"></i></button>
         <button type="button" class="rail-tab" data-rail-key="setting" aria-label="Setting &amp; Tone" title="Setting &amp; Tone" onclick="mobileToggleGuidanceDrawer('setting')"><i class="fa-solid fa-mountain-sun"></i></button>
         <button type="button" class="rail-tab" data-rail-key="success" aria-label="Success for This Scene" title="Success for This Scene" onclick="mobileToggleGuidanceDrawer('success')"><i class="fa-solid fa-trophy"></i></button>
+        <!-- Item (2026-07-27): moved from the top of the bank to the bottom
+             so it never sits under the (now horizontally draggable)
+             scene-status arm, which lives up near the header - see
+             CHECKLIST.md / Mobile_Port_Handoff.md. -->
+        <button type="button" id="mobile-rail-toggle" class="rail-collapse-toggle" aria-label="Collapse guidance tabs" aria-expanded="true" onclick="toggleGuidanceRailCollapsed()"><i class="fa-solid fa-chevron-right"></i></button>
     </div>
 
     <!-- Dismiss layer for open side panels (mobile only; see #panel-scrim CSS) -->
@@ -5503,6 +5577,14 @@
 
             wrapper.appendChild(trigger);
             wrapper.appendChild(menu);
+
+            // Re-evaluate (don't reposition) the corner-morph dock state on
+            // every scene render - the arm's position persists across scene
+            // switches (only login resets it, like the rail), but a fresh
+            // page load never ran a drag/reset cycle yet, so without this
+            // the very first render would show the free-floating shape even
+            // though the arm is sitting flush left where it starts.
+            if (typeof updateStatusBarDock === 'function') updateStatusBarDock();
         }
 
         // Close any open status dropdown when clicking elsewhere on the page.
@@ -6228,6 +6310,7 @@
                 if (!ok) return fail();
                 setSession(user.username, user.role, user.canSyncCanon, true);
                 if (typeof resetGuidanceRailPosition === 'function') resetGuidanceRailPosition();
+                if (typeof resetSceneStatusBarPosition === 'function') resetSceneStatusBarPosition();
                 hideLoginModal();
                 refreshAccountButton();
                 applyRoleGating();
@@ -8633,6 +8716,146 @@
                 rail.classList.remove('rail-dragging');
                 rail.style.top = '';
                 rail.style.transform = '';
+            };
+        })();
+
+        // ---- Scene-status arm: tap-and-hold to drag left/right along the
+        // header (2026-07-27, Aaron), mirroring setupGuidanceRailDrag above
+        // but constrained to the X axis - the arm's top stays pinned to
+        // var(--mobile-header-h) (!important in CSS), only its left offset
+        // moves. A 300ms press-and-hold on the status CIRCLE arms dragging;
+        // a plain tap still opens the status options as before, since a
+        // quick tap never reaches the timer. Position lives only in an
+        // inline style, never persisted - a fresh page load/login starts
+        // flush left again, same reset rule as the rail
+        // (resetSceneStatusBarPosition, called alongside
+        // resetGuidanceRailPosition in submitLogin()).
+        //
+        // Aaron's spec: when this arm and the (independently draggable)
+        // guidance rail overlap in the upper-right corner, the status
+        // circle must stay visually on top of any open context window -
+        // handled by #scene-status-bar's z-index (470), not by anything
+        // here.
+        // Item (2026-07-27, corner-morph round): DOCK_THRESHOLD_PX is how
+        // close to a screen edge the arm has to be released before it
+        // "sticks" - snaps flush to that edge and morphs (wall-side border
+        // + that bottom corner's rounding removed, see the CSS above).
+        // Exposed at module scope (not inside the drag IIFE) so both the
+        // drag handler and updateStatusSelector/resetSceneStatusBarPosition
+        // can call it without re-deriving the same logic.
+        const STATUS_BAR_DOCK_THRESHOLD_PX = 24;
+        function updateStatusBarDock(bar) {
+            bar = bar || document.getElementById('scene-status-bar');
+            if (!bar) return;
+            // Decide which wall (if any) using the box's width BEFORE any
+            // class change - this is just for the threshold comparison.
+            const widthBefore = bar.offsetWidth;
+            const maxLeftBefore = Math.max(0, window.innerWidth - widthBefore);
+            const left = bar.getBoundingClientRect().left;
+            bar.classList.remove('status-bar-docked-left', 'status-bar-docked-right');
+            if (left <= STATUS_BAR_DOCK_THRESHOLD_PX) {
+                // Left dock is unaffected by the width change below (the
+                // left edge doesn't move when the RIGHT border disappears).
+                bar.style.left = '0px';
+                bar.classList.add('status-bar-docked-left');
+            } else if (maxLeftBefore - left <= STATUS_BAR_DOCK_THRESHOLD_PX) {
+                bar.classList.add('status-bar-docked-right');
+                // Docking right removes the RIGHT border, shrinking
+                // offsetWidth - recompute maxLeft AFTER that class is
+                // applied, or the arm lands a couple px short of the true
+                // right edge (positioned using its old, wider box).
+                const maxLeftAfter = Math.max(0, window.innerWidth - bar.offsetWidth);
+                bar.style.left = maxLeftAfter + 'px';
+            }
+            // Neither branch: arm is free-floating mid-header - no dock
+            // class, base CSS rule (both corners rounded, full border)
+            // already covers that look with nothing further to apply.
+        }
+        window.updateStatusBarDock = updateStatusBarDock;
+
+        (function setupStatusBarDrag() {
+            const LONG_PRESS_MS = 300;
+            const MOVE_CANCEL_PX = 10;
+            let pressTimer = null;
+            let dragging = false;
+            let didDrag = false;
+            let startX = 0;
+            let startLeft = 0;
+            let barEl = null;
+
+            function clampLeft(left, bar) {
+                const maxLeft = Math.max(0, window.innerWidth - bar.offsetWidth);
+                return Math.min(Math.max(left, 0), maxLeft);
+            }
+
+            function armDrag() {
+                dragging = true;
+                barEl.classList.add('status-bar-dragging');
+                // Mid-drag, the arm is neither wall's shape - clear dock
+                // classes so it reads as freely floating while in motion;
+                // updateStatusBarDock re-evaluates and re-applies on release.
+                barEl.classList.remove('status-bar-docked-left', 'status-bar-docked-right');
+                startLeft = barEl.getBoundingClientRect().left;
+            }
+
+            function onPointerDown(e) {
+                if (e.pointerType === 'mouse' && e.button !== 0) return;
+                if (!isMobileMode()) return;
+                const trigger = e.target.closest('#scene-status-bar .status-dropdown-trigger');
+                if (!trigger) return;
+                barEl = document.getElementById('scene-status-bar');
+                if (!barEl) return;
+                didDrag = false;
+                startX = e.clientX;
+                clearTimeout(pressTimer);
+                pressTimer = setTimeout(armDrag, LONG_PRESS_MS);
+                document.addEventListener('pointermove', onPointerMove);
+                document.addEventListener('pointerup', onPointerUp, { once: true });
+                document.addEventListener('pointercancel', onPointerUp, { once: true });
+            }
+
+            function onPointerMove(e) {
+                if (dragging) {
+                    didDrag = true;
+                    barEl.style.left = clampLeft(startLeft + (e.clientX - startX), barEl) + 'px';
+                    e.preventDefault();
+                } else if (pressTimer && Math.abs(e.clientX - startX) > MOVE_CANCEL_PX) {
+                    clearTimeout(pressTimer);
+                    pressTimer = null;
+                }
+            }
+
+            function onPointerUp() {
+                clearTimeout(pressTimer);
+                pressTimer = null;
+                if (dragging) {
+                    dragging = false;
+                    barEl.classList.remove('status-bar-dragging');
+                    updateStatusBarDock(barEl);
+                }
+                document.removeEventListener('pointermove', onPointerMove);
+            }
+
+            document.addEventListener('pointerdown', onPointerDown);
+
+            // Same trailing-click swallow as the rail: a long-press-drag
+            // ends with a pointerup over the circle, which would otherwise
+            // also fire the circle's own click and pop the status options
+            // open right after moving the arm.
+            document.addEventListener('click', (e) => {
+                if (didDrag) {
+                    didDrag = false;
+                    e.stopPropagation();
+                    e.preventDefault();
+                }
+            }, true);
+
+            window.resetSceneStatusBarPosition = function resetSceneStatusBarPosition() {
+                const bar = document.getElementById('scene-status-bar');
+                if (!bar) return;
+                bar.classList.remove('status-bar-dragging');
+                bar.style.left = '';
+                updateStatusBarDock(bar);
             };
         })();
 
