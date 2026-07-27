@@ -1,22 +1,29 @@
 # Big Tiff StoryForge — Mobile Port Handoff
 
 ## For: whoever picks up mobile work next (agent or human)
-## From: Claude sessions, 2026-07-24 – 2026-07-26, at Aaron's direction
-## Status: **re-promoted 2026-07-26 — the live site now has everything**,
-##         including the full 2026-07-26 mobile refinement rounds and the
-##         achievements/tracking engine. Promotion commit `c071209` in
-##         `big_tiff_launchpage`, verified byte-identical against the
-##         actual live domain (not just the Pages API) after rebuild. No
-##         confirmation has been received in any session that Aaron has
-##         completed a real-device pass on Erica's iPhone since the
-##         ORIGINAL 2026-07-25 promotion — treat the "What is NOT verified"
-##         section below as still fully live until told otherwise; it was
-##         never about this specific promotion, it's about real touch
-##         hardware never having been used at all.
-## Dev branch: `claude/mobile-port` — long-lived, kept around, not deleted
-## Dev repo main: https://github.com/footeprint-prog/big-tiff-storyforge (PR #6 open with everything through `d6aee19`; not yet merged to main as of this promotion — the live site was promoted directly from the branch, same as the original promotion was)
+## From: Claude sessions, 2026-07-24 – 2026-07-27, at Aaron's direction
+## Status: **fully caught up as of 2026-07-27 — dev repo `main`, the
+##         `claude/mobile-port` branch, and the live site all match.**
+##         PR #6 (mobile UI rounds through 2026-07-26 + the achievements
+##         engine) merged into `main` 2026-07-27, and a follow-up governance
+##         doc pass (Sammy guardrails extracted into dedicated files, Dom
+##         retired from Project_Governance_and_Protocols.md) rode in the
+##         same branch/PR. Live site was already re-promoted 2026-07-26
+##         (commit `c071209` in `big_tiff_launchpage`), verified
+##         byte-identical against the actual domain. No confirmation has
+##         been received in any session that Aaron has completed a
+##         real-device pass on Erica's iPhone since the ORIGINAL 2026-07-25
+##         promotion — treat the "What is NOT verified" section below as
+##         still fully live until told otherwise; it was never about a
+##         specific promotion, it's about real touch hardware never having
+##         been used at all.
+## Dev branch: `claude/mobile-port` — long-lived, kept around, not deleted,
+##             still the working branch for ongoing mobile UI iteration
+##             (its GitHub Pages config is what gives the ~1min preview
+##             rebuild). Merged to `main` periodically, not abandoned.
+## Dev repo main: https://github.com/footeprint-prog/big-tiff-storyforge — **now matches `claude/mobile-port` exactly** (merge commit `dd9c6f3`, 2026-07-27). Future mobile-port commits will again lead main until the next merge — that's expected, re-sync when it's next convenient, not a problem to fix immediately.
 ## Live preview (dev repo Pages): https://footeprint-prog.github.io/big-tiff-storyforge/writing.html (tracks `claude/mobile-port`)
-## **Real live site: https://bigtiffsworld.com/app/ — matches `claude/mobile-port`@`d6aee19` as of 2026-07-26.**
+## **Real live site: https://bigtiffsworld.com/app/ — matches `main`/`claude/mobile-port` as of 2026-07-27.**
 
 ---
 
@@ -92,8 +99,8 @@ Two real bugs were caught this way that a naive test would have missed:
 | Where | Repo | What's there |
 |---|---|---|
 | Dev repo Pages preview | `big-tiff-storyforge`, branch `claude/mobile-port` (Pages config) | **Current** — has every round through 2026-07-26 (rail collapse, drag-to-switch, circular status, achievements engine), rebuilds ~1 min after any push to that branch |
-| Dev repo `main` | `big-tiff-storyforge` | Has the 2026-07-25 mobile port (merged via PR #4) plus whatever has since been merged from `claude/mobile-port` via later PRs (check `git log` — a PR was opened 2026-07-26 for everything through the achievements engine, see PR #6) |
-| **Real live site** | `big_tiff_launchpage`, branch `main`, custom domain `bigtiffsworld.com` via Porkbun DNS (no Cloudflare in the path) | **Re-promoted 2026-07-26** (commit `c071209`) — has everything through `d6aee19`, including the 2026-07-26 rounds and the achievements engine. Assets/manifest were unchanged this round (checksums verified identical), only `app/index.html` needed copying. Any future promotion is still a separate manual step Aaron requests explicitly — see the iteration-loop rule below; this doc being current doesn't mean promotion is now automatic. |
+| Dev repo `main` | `big-tiff-storyforge` | **Merged and current as of 2026-07-27** (PR #6, merge commit `dd9c6f3`) — has everything: the 2026-07-25 mobile port, all 2026-07-26 mobile UI rounds, the achievements/tracking engine, and the 2026-07-27 governance/Sammy-extraction doc pass. `main` and `claude/mobile-port` are identical at time of writing; expect `main` to trail again once new commits land on the branch — re-sync via PR when convenient, it's routine, not urgent. |
+| **Real live site** | `big_tiff_launchpage`, branch `main`, custom domain `bigtiffsworld.com` via Porkbun DNS (no Cloudflare in the path) | **Re-promoted 2026-07-26** (commit `c071209`) — has everything through the achievements engine. Assets/manifest were unchanged that round (checksums verified identical), only `app/index.html` needed copying. The 2026-07-27 governance-docs-only commits don't affect `writing.html`, so the live site's code is still current with no further promotion needed for those. Any future promotion (once `writing.html` itself changes again) is still a separate manual step Aaron requests explicitly — see the iteration-loop rule below. |
 
 **The 2026-07-25 promotion already happened** the same way described in
 prior versions of this doc: a direct byte-verified file copy of
