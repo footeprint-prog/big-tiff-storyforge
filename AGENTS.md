@@ -2,7 +2,10 @@
 
 Read this before reading anything else. Five minutes here saves hours.
 Full detail lives in `Project_Governance_and_Protocols.md` — this is just
-the load-bearing facts that are easy to get wrong.
+the load-bearing facts that are easy to get wrong. Sammy-specific
+day-to-day rules are also extracted in `Sammy_Guardrails.md` and
+`Sammy_Update_Webtool_Protocol.md` (they defer to that Governance
+document).
 
 ## The one-sentence model
 Sammy writes story canon to GitHub JSON. The webtool (`writing.html`) reads
