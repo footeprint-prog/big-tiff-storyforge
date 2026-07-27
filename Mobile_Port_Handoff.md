@@ -2,17 +2,21 @@
 
 ## For: whoever picks up mobile work next (agent or human)
 ## From: Claude sessions, 2026-07-24 – 2026-07-26, at Aaron's direction
-## Status: **merged to main AND promoted to the live site as of 2026-07-25.**
-##         Several further rounds of mobile UI refinement landed 2026-07-26
-##         on `claude/mobile-port` (not yet re-promoted — see Deployment
-##         facts below). No confirmation has been received in any session
-##         since the original promotion that Aaron completed a real-device
-##         pass on Erica's iPhone. Treat the "What is NOT verified" section
-##         below as still fully live until told otherwise.
+## Status: **re-promoted 2026-07-26 — the live site now has everything**,
+##         including the full 2026-07-26 mobile refinement rounds and the
+##         achievements/tracking engine. Promotion commit `c071209` in
+##         `big_tiff_launchpage`, verified byte-identical against the
+##         actual live domain (not just the Pages API) after rebuild. No
+##         confirmation has been received in any session that Aaron has
+##         completed a real-device pass on Erica's iPhone since the
+##         ORIGINAL 2026-07-25 promotion — treat the "What is NOT verified"
+##         section below as still fully live until told otherwise; it was
+##         never about this specific promotion, it's about real touch
+##         hardware never having been used at all.
 ## Dev branch: `claude/mobile-port` — long-lived, kept around, not deleted
-## Dev repo main: https://github.com/footeprint-prog/big-tiff-storyforge (has the 2026-07-25 promotion; NOT yet the 2026-07-26 refinements — those are only on the branch, see below)
-## Live preview (dev repo Pages): https://footeprint-prog.github.io/big-tiff-storyforge/writing.html (tracks `claude/mobile-port`, has everything including 2026-07-26 work)
-## **Real live site: https://bigtiffsworld.com/app/ — has the 2026-07-25 build, NOT the 2026-07-26 refinements.**
+## Dev repo main: https://github.com/footeprint-prog/big-tiff-storyforge (PR #6 open with everything through `d6aee19`; not yet merged to main as of this promotion — the live site was promoted directly from the branch, same as the original promotion was)
+## Live preview (dev repo Pages): https://footeprint-prog.github.io/big-tiff-storyforge/writing.html (tracks `claude/mobile-port`)
+## **Real live site: https://bigtiffsworld.com/app/ — matches `claude/mobile-port`@`d6aee19` as of 2026-07-26.**
 
 ---
 
@@ -89,7 +93,7 @@ Two real bugs were caught this way that a naive test would have missed:
 |---|---|---|
 | Dev repo Pages preview | `big-tiff-storyforge`, branch `claude/mobile-port` (Pages config) | **Current** — has every round through 2026-07-26 (rail collapse, drag-to-switch, circular status, achievements engine), rebuilds ~1 min after any push to that branch |
 | Dev repo `main` | `big-tiff-storyforge` | Has the 2026-07-25 mobile port (merged via PR #4) plus whatever has since been merged from `claude/mobile-port` via later PRs (check `git log` — a PR was opened 2026-07-26 for everything through the achievements engine, see PR #6) |
-| **Real live site** | `big_tiff_launchpage`, branch `main`, custom domain `bigtiffsworld.com` via Porkbun DNS (no Cloudflare in the path) | **Promoted 2026-07-25 only.** Does NOT have the 2026-07-26 rounds (circular status redesign, rail collapse/drag-switch, achievements engine, Full Outline Clear confirmation gate). Promoting again is a separate manual step Aaron requests explicitly — see the mobile-port iteration-loop rule below. |
+| **Real live site** | `big_tiff_launchpage`, branch `main`, custom domain `bigtiffsworld.com` via Porkbun DNS (no Cloudflare in the path) | **Re-promoted 2026-07-26** (commit `c071209`) — has everything through `d6aee19`, including the 2026-07-26 rounds and the achievements engine. Assets/manifest were unchanged this round (checksums verified identical), only `app/index.html` needed copying. Any future promotion is still a separate manual step Aaron requests explicitly — see the iteration-loop rule below; this doc being current doesn't mean promotion is now automatic. |
 
 **The 2026-07-25 promotion already happened** the same way described in
 prior versions of this doc: a direct byte-verified file copy of
@@ -288,11 +292,11 @@ introduce new touch-specific interaction:
    discipline as every round in this branch.
 3. Anything flagged "not settled" in the CHANGELOG is Aaron's call, not a
    default to silently pick — surface it, don't resolve it quietly.
-4. **Re-promoting to `bigtiffsworld.com`** needs the same manual
-   byte-copy step described above — it does NOT auto-deploy from the dev
-   repo, and the live site is currently a full round behind the dev
-   preview (missing everything from 2026-07-26). Confirm with Aaron before
-   promoting; per the iteration-loop rule, that's an explicit later step,
-   not something to do automatically just because commits have piled up.
+4. **Any FUTURE promotion** needs the same manual byte-copy step
+   described above — it does NOT auto-deploy from the dev repo, and being
+   caught up as of 2026-07-26 doesn't change that going forward. Confirm
+   with Aaron before promoting again; per the iteration-loop rule, that's
+   an explicit later step, not something to do automatically just because
+   commits have piled up.
 5. The achievements UI phase (icons, achievement book, weekly trophy
    shelves) is the next planned body of work — see `CHECKLIST.md`.
