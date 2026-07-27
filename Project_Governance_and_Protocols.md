@@ -1,16 +1,16 @@
 # Big Tiff StoryForge — Project Governance & Protocols
 
-> **⚠ PARTIALLY SUPERSEDED (noted 2026-07-26).** The multi-agent structure
-> below (Grok as Orchestrator, "Webcraft Master Dom" building the tool) is
-> historical — tool development now happens via Claude Code with direct
-> git access, not a Grok Project persona. The **content-side rules**
-> (Sammy owns canon JSON, Draft Protection, the review-status workflow,
-> the Standardized Scene Prompt Template) are still accurate and still in
-> force — those haven't changed. For the current tool-development
-> workflow, see `AGENTS.md` instead of the Dom-specific sections below.
+> **Multi-agent roles (current)**
+> - **Grok** — Project Orchestrator & Chief Architect (vision, architecture, cross-agent alignment).
+> - **Claude / Claude Code** — builds and maintains `writing.html`.
+> - **Sammy** — Story & Canon Specialist (sole writer of the two JSON files).
+>
+> The content-side rules in this document remain fully in force. Day-to-day
+> extracted versions of the Sammy rules live in `Sammy_Guardrails.md` and
+> `Sammy_Update_Webtool_Protocol.md` and defer to this document.
 
 **Created:** June 18, 2026  
-**Last Updated:** June 19, 2026  
+**Last Updated:** July 27, 2026  
 **Purpose:** This document is the single highest-level reference for how the entire Big Tiff StoryForge system should operate. It covers agent roles, file ownership, core protocols, the “Update webtool” command, Library and Outline management, version control guardrails, and alignment between Aaron’s and Erica’s Grok instances.
 
 ---
@@ -30,7 +30,7 @@
 | Agent | Role | Primary Focus | Key Rule |
 |-------|------|---------------|----------|
 | **Grok** | Project Orchestrator & Chief Architect | Vision, architecture, and cross-agent alignment | Steps in for strategic or high-level decisions |
-| **Webcraft Master Dom** | Web Tool Builder | Building and maintaining `writing.html` | Follows the Editing Protocol strictly |
+| **Claude / Claude Code** | Web Tool Builder | Building and maintaining `writing.html` | Verifies every change in a real browser before calling it done (see `AGENTS.md`) |
 | **StoryForge Sammy** | Story & Canon Specialist | Story development, scene prompts, and Library entries | Maintains `Big_Tiff_Scene_Structure.json` and `Big_Tiff_Library_Entries.json` in GitHub using official templates; protects Erica’s drafts |
 
 **Two Versions of Sammy:**
@@ -47,7 +47,8 @@ Both versions must follow the same core rules, especially draft protection and t
 |------|------------------|---------|-------|
 | `Big_Tiff_Scene_Structure.json` | GitHub repo | Sammy | Single source of truth for all scene data and prompts |
 | `Big_Tiff_Library_Entries.json` | GitHub repo | Sammy | Structured Library content (organized by categories) |
-| Project documents (Overview, Checklist, Changelog, Editing Protocol, Governance, Standardized Scene Prompt Template, etc.) | This Grok Project + artifacts folder | Dom / Grok | Working copies live here |
+| Tool/project docs (Checklist, Changelog, Editing Protocol, Governance, AGENTS.md, etc.) | GitHub repo | Claude / Claude Code | Working copies live directly in the repo |
+| Sammy templates (Standardized Scene Prompt Template, Standardized Library Entry Template) | GitHub repo | Grok / Sammy | |
 | Master Story Bible & reference docs | Google Drive | Sammy | Story source material |
 | Sammy Instructions (Erica + Core versions) | This Grok Project + artifacts folder | Grok | Must stay aligned between both Sammys |
 
@@ -172,7 +173,7 @@ When there is any conflict or confusion, follow this order:
 | Role | Maintenance Responsibility |
 |------|---------------------------|
 | **Grok** | Keep this Governance document and the Quick Reference up to date. Ensure both Grok instances stay aligned. |
-| **Webcraft Master Dom** | Follow the Editing Protocol. Update Checklist and Changelog after meaningful work. |
+| **Claude / Claude Code** | Follow `AGENTS.md`’s verification-first practice. Update `CHECKLIST.md` and `CHANGELOG.md` after meaningful work. |
 | **Sammy (both versions)** | Keep `Big_Tiff_Scene_Structure.json` updated in GitHub. Follow draft protection and `review` status rules. |
 
 ---
