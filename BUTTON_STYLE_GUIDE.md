@@ -30,10 +30,22 @@ which var to use — don't invent a third size.
 Three **named, deliberate exceptions** sit outside this floor on purpose —
 don't "fix" them without asking Aaron first:
 - The guidance-rail tabs (`.rail-tab`) and the scene-status circle
-  (`.status-dropdown-trigger` in mobile) are **3.5rem/56px**, one size up
-  from `--tap`, so the two edge-mounted control banks read as the same
-  visual weight as each other. This is a deliberate exception to `--tap`,
-  not a bug.
+  (`.status-dropdown-trigger` in mobile) are one size up from `--tap`, so
+  the two edge-mounted control banks read as the same visual weight as each
+  other. The status circle is `3.5rem/56px` square; the rail tabs were too
+  until 2026-08-02, when they became **`2.95rem/47.2px` wide × `3.5rem/56px`
+  tall** (no longer square — see the update below). This is a deliberate
+  exception to `--tap`, not a bug.
+  **2026-08-02 update:** Aaron asked for the icon's top/bottom/left margins
+  to match (right stayed at the 8.8px set the same day, above — not part of
+  this ask). With height fixed at 56px, the common-case 20.8px icon already
+  centers to a ~17.6px top/bottom margin; matching left to that only
+  required a 47.2px-wide box (17.6 + 20.8 + 8.8), instead of the old 56px
+  square with ~26px of dead space on the icon's editor-facing side. Removing
+  that dead space is also what makes the rail narrower — same change, not a
+  separate one. Width now lives in `--rail-tab-w` (a shared custom property,
+  also read by the guidance-drawer offset and the JS drag clamp) rather than
+  a repeated literal.
 - The rail's collapse control (`.rail-collapse-toggle`) is **24×96px** as of
   2026-08-02 — it left the `--tap-sm` tier entirely when Aaron respecified it
   as a **handle** on the rail's long left wall rather than a small arrow at
@@ -64,7 +76,7 @@ there's a specific reason to differ (state that reason in a comment):**
 |---|---|---|---|
 | `.text-tool-btn` (editor toolbar: Proofreader, B/I/U) | `--tap` (44px) | `1rem` | mobile |
 | `.status-actions-bank > button` (Save/Draft Log/Sammy) | `--tap` (44px) | `1.21875rem` (2026-08-02; was `0.9375rem` inherited from `.control-bar-item`) | mobile |
-| `.rail-tab` (guidance drawer triggers) | 3.5rem (56px, exception above) | `1.3rem` (2026-08-02; was `1rem`) | mobile |
+| `.rail-tab` (guidance drawer triggers) | 2.95rem × 3.5rem (47.2×56px, exception above; was 56×56 square) | `1.3rem` (2026-08-02; was `1rem`) | mobile |
 | `.m-drawer-close` | `--tap-sm` (30px) | `1.15rem` | mobile |
 | `.guidance-copy-btn` | `--tap-sm` (30px) | `1rem` | mobile |
 | `.control-bar-item` (desktop toolbar/status row) | 30px height | `12px` (`0.75rem`) | desktop |

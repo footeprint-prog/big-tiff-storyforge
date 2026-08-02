@@ -2,6 +2,79 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-02] – Rail drag clamp fix, narrower rail, drawer clears the handle
+
+Third mobile-only round the same day, on top of the handle reshape above.
+Desktop A/B-measured against pristine `HEAD` at 1280×800, identical on every
+value including the three new custom properties (all mobile-scoped, so they
+read as unset on desktop).
+
+### Fixed
+- **The rail's press-and-hold drag could park the collapsed handle somewhere
+  the full 6-icon strip couldn't fit.** `clampTop()`'s bottom/top bounds used
+  `rail.offsetHeight`, which is only the 96px handle while collapsed — far
+  shorter than the ~340px full strip — so the handle could be dragged lower
+  (or higher) than the hidden icons would actually allow, and expanding the
+  rail back out would push it off-screen. Fixed by always clamping against
+  the **expanded** height, computed from the tab count and `--rail-tab-h`
+  rather than measured live, so it works correctly precisely when the real
+  strip isn't there to measure. First attempt undershot by 4px (874px bottom
+  against an 870px legal limit) because it read the rail's own *current*
+  border via `getComputedStyle`, which is `none` while collapsed — switched
+  to reading `--rail-border-w` directly, which reflects what the border will
+  be once expanded regardless of current state. Caught by direct measurement
+  before shipping, not assumed correct from the code.
+
+### Changed
+- **Rail tabs are no longer square.** Aaron asked for the icon's top,
+  bottom, and left margins to match (right stays the 8.8px set earlier the
+  same day — not part of this ask). Height stays 56px, where the common-case
+  20.8px icon already centers to a ~17.6px top/bottom margin; matching left
+  to that only needs a 47.2px-wide box (17.6 + 20.8 + 8.8), instead of the
+  old 56px square with ~26px of unused space on the icon's editor-facing
+  side. **Removing that dead space is also what makes the rail narrower** —
+  the two parts of the ask are the same change, not two separate ones.
+  Padding is now explicit on both sides (`0 0.55rem 0 1.1rem`) rather than
+  left-padding-plus-centering-slack, so the common-case icon's content-box
+  exactly equals its own width and there's no residual slack for
+  `justify-content: center` to redistribute unpredictably.
+- **The scene-context (guidance) drawer opens further left**, clearing the
+  handle instead of overlapping it. Its `right` offset was a flat `3rem`
+  (48px) — enough to clear the old strip-foot toggle, not enough once the
+  handle started protruding further left than the strip itself. Now computed
+  as `--rail-tab-w + --rail-border-w + --rail-handle-w + 8px` (measured 10px
+  final gap) instead of a re-guessed literal.
+
+### Added
+- **Three shared custom properties** — `--rail-tab-w`, `--rail-tab-h`,
+  `--rail-border-w`, `--rail-handle-w` — read by the rail tabs, the rail's
+  own border, the handle, the drawer's offset calc, *and* the JS drag clamp.
+  This is deliberately the fix for a pattern that has now bitten the project
+  twice (`--arm-pad-r`, CHANGELOG 2026-07-27; the folder-tab z-index note,
+  earlier today): a position or size that depends on another element's
+  geometry, expressed as a hardcoded literal, silently drifts the next time
+  that geometry changes. Grep for these four names before resizing the rail,
+  its border, or the handle again.
+
+### Verification notes
+- Margins on the common-case icon measured 17.1 / 18.1 / 17.6 / 8.8px
+  (top/bottom/left/right) — small sub-2px variance from the FA glyph's own
+  baseline metrics, same order of variance already accepted elsewhere in this
+  branch. Rail's outer width 58px → 49.2px. All six tabs still touching
+  (no gap introduced between them).
+- Drawer-vs-handle clearance re-measured after the width change: 10px gap,
+  `drawer.right <= handle.left` holds.
+- Drag clamp re-tested by dragging the collapsed handle *past* both legal
+  edges (to y=2000 and y=-500 on a 956px-tall viewport) and confirming the
+  clamp caught it before expanding, then expanding and re-measuring: bottom
+  landed at exactly 870px (matching the computed legal limit `870`), top at
+  exactly 44px (`--mobile-header-h` + 8). Both directions.
+- Gestures re-run after the resize: tap-to-open, drag-to-switch (switches,
+  rail does not move), and press-and-hold reposition from a rail icon (moves,
+  drawer does not open) — all still pass at the new 47.2px tab width.
+- Touch target re-checked: 47.2×56 still clears the 44px primary-tier floor.
+  Icon contrast unchanged at 6.39:1.
+
 ## [2026-08-02] – Wordmark, rail edge/margin, and the rail folder tab
 
 Four more mobile-only adjustments at Aaron's direction, same day as the icon

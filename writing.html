@@ -1481,7 +1481,7 @@
                Aaron. Width only - the 0.55 alpha is unchanged, as are the
                1px inter-tab dividers inside (his ask was the OUTER edge).
                Right stays borderless: the strip is flush to the screen. */
-            border: 2px solid rgba(212, 175, 55, 0.55); border-right: none;
+            border: var(--rail-border-w) solid rgba(212, 175, 55, 0.55); border-right: none;
             border-radius: 10px 0 0 10px;
             /* Item (2026-08-02): overflow moved to .rail-tab-strip below.
                It has to be `visible` here so the folder tab can protrude
@@ -1508,24 +1508,47 @@
            bordered pills, so simply bumping this past --tap was the way to
            make them feel like peers without breaking the "connected bank"
            layout Aaron asked to keep. */
+        /* Item (2026-08-02): rail-tab width and the rail's total footprint
+           now share custom properties, specifically so the guidance-drawer
+           offset below (`right` on .guidance-float-window) can reference the
+           SAME numbers instead of a hardcoded literal that silently drifts
+           the next time this shape changes - the project has already shipped
+           that exact bug twice (--arm-pad-r, CHANGELOG 2026-07-27; the
+           folder-tab z-index note above). If any of these three values move
+           again, grep for var(--rail-tab-w) / var(--rail-border-w) /
+           var(--rail-handle-w) before calling the change done. */
+        body.mobile-layout {
+            --rail-tab-w: 2.95rem;    /* was 3.5rem (56px); now 47.2px, see below */
+            --rail-tab-h: 3.5rem;     /* unchanged this round; shared so the JS drag clamp (setupGuidanceRailDrag) doesn't hardcode its own copy */
+            --rail-border-w: 2px;
+            --rail-handle-w: 24px;
+        }
         body.mobile-layout .rail-tab {
             display: flex; align-items: center; justify-content: center;
-            /* square tabs (item 7, 2026-07-24) */
-            width: 3.5rem; min-width: 3.5rem;
+            /* Item (2026-08-02, was "square tabs", item 7 2026-07-24): no
+               longer square. Aaron asked for the icon's top/bottom/left
+               margins to match (the right margin, 8.8px, was deliberately
+               set differently just last round and wasn't part of this ask,
+               so it's held fixed). Height stays 3.5rem/56px, unchanged -
+               with the 20.8px common-case icon that centers to a 17.6px
+               top/bottom margin already. Matching left to that means the
+               box only needs to be exactly left(17.6) + icon(20.8) +
+               right(8.8) = 47.2px wide, instead of the old fixed 56px
+               square with ~26px of unused space on the icon's left (editor-
+               facing) side. That 8.8px reduction IS the "make the rail
+               narrower" half of the ask - it's a direct consequence of
+               removing the dead space, not a separate change.
+               padding-left/-right are both explicit now (not just
+               padding-left + centering slack) so the common-case icon's
+               content-box is exactly its own width and justify-content:
+               center has nothing left to redistribute - the two wider
+               glyphs (mountain-sun 26px, trophy 23.4px) still slightly
+               exceed that content-box and get centered into the padding by
+               a couple px, same per-icon variance already accepted last
+               round. */
+            width: var(--rail-tab-w); min-width: var(--rail-tab-w);
             height: 3.5rem; min-height: 3.5rem;
-            /* Item (2026-08-02): halve the gap between each glyph and the
-               screen edge (measured 17.6px -> 8.8px), per Aaron. Done as
-               left padding rather than justify-content:flex-end so the icons
-               stay CENTERED in the space that remains - the six glyphs have
-               different intrinsic widths (mountain-sun is 26px, bullseye
-               20.8px), and right-aligning them would leave their left edges
-               ragged. Padding preserves the shared centerline while moving
-               it right. Box stays 56px, so the touch target is untouched.
-               The math: for a centered glyph, gap = (box - glyph) / 2, so
-               padding-left = the ORIGINAL gap exactly halves it. Tuned for
-               the 20.8px common case; the two wider glyphs land ~1px inside
-               that, same per-icon variance the centered version already had. */
-            padding: 0 0 0 17.6px;
+            padding: 0 0.55rem 0 1.1rem;
             background: transparent; border: none;
             border-bottom: 1px solid rgba(212, 175, 55, 0.3);
             border-radius: 0;
@@ -1567,8 +1590,8 @@
             display: flex; align-items: center; justify-content: center;
             position: absolute;
             top: 50%; transform: translateY(-50%);
-            left: -24px;
-            width: 24px; height: 96px;
+            left: calc(-1 * var(--rail-handle-w));
+            width: var(--rail-handle-w); height: 96px;
             background: #3D2B1F;
             color: #D4AF37; font-size: 0.7rem;
             /* Matches the strip's own outer edge (2px, same alpha). No right
@@ -1644,8 +1667,17 @@
 
         /* Guidance drawer: the float-window shells reused as fixed,
            non-draggable pop-open drawers anchored just left of the rail.
-           !important beats the shells' inline desktop geometry. */
-        body.mobile-layout .guidance-float-window { position: fixed; left: auto !important; right: 3rem !important; top: 50% !important; transform: translateY(-50%); width: min(74vw, 340px) !important; height: auto !important; max-height: calc(100dvh - var(--mobile-header-h) - var(--mobile-nav-clear) - 24px); min-width: 0; min-height: 0; z-index: 460; overscroll-behavior: contain; border-width: 2px; }
+           !important beats the shells' inline desktop geometry.
+           Item (2026-08-02): `right` was a flat 3rem (48px), which cleared
+           the OLD strip-foot toggle fine but not the new left-protruding
+           handle - the handle spans from (rail's left edge) another
+           --rail-handle-w further left, so the drawer's right edge has to
+           clear rail-tab-w + rail-border-w + rail-handle-w, not just the
+           strip. Expressed via the SAME custom properties the rail/handle
+           use (not a re-derived literal), plus 8px breathing room matching
+           the project's standard margin, so this can't drift out of sync
+           with those shapes the way --arm-pad-r once did. */
+        body.mobile-layout .guidance-float-window { position: fixed; left: auto !important; right: calc(var(--rail-tab-w) + var(--rail-border-w) + var(--rail-handle-w) + 8px) !important; top: 50% !important; transform: translateY(-50%); width: min(74vw, 340px) !important; height: auto !important; max-height: calc(100dvh - var(--mobile-header-h) - var(--mobile-nav-clear) - 24px); min-width: 0; min-height: 0; z-index: 460; overscroll-behavior: contain; border-width: 2px; }
 
         /* Item 8: the drawer's own header row (a duplicate title) is removed;
            the ONLY internal line is the separator under the card's own
@@ -8856,12 +8888,45 @@
             let startTop = 0;
             let railEl = null;
 
+            // Item (2026-08-02, Aaron): "do not allow the rail handle to be
+            // moved lower than the hidden rail icons allow at the bottom or
+            // top edges of the screen." Collapsed, the rail element is only
+            // the 96px handle, which is much shorter than the full 6-icon
+            // strip (~340px at default text scale) - clamping the drag
+            // against rail.offsetHeight alone would let the handle park
+            // somewhere that only fits the SHORT box, and then expanding the
+            // strip back out would push it off the top or bottom edge.
+            // Computed from --rail-tab-h / the tab count rather than a
+            // hardcoded height, so it tracks both the UI text-scale setting
+            // (rem-based) and any future change to the tab count or height
+            // without needing a second edit here.
+            function getExpandedRailHeight(rail) {
+                const strip = rail.querySelector('.rail-tab-strip');
+                const tabCount = strip ? strip.querySelectorAll('.rail-tab').length : rail.querySelectorAll('.rail-tab').length;
+                const remPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+                const tabRem = parseFloat(getComputedStyle(document.body).getPropertyValue('--rail-tab-h')) || 3.5;
+                const bodyCs = getComputedStyle(document.body);
+                // NOT the rail's own live border: while collapsed, the rail's
+                // border is `none` (see the .rail-collapsed rule), so reading
+                // it here would silently measure 0 instead of what the border
+                // will actually be once expanded - a real 4px undershoot this
+                // caught in testing (874px bottom vs. an 870px legal limit).
+                // --rail-border-w is the value that will apply on expand
+                // regardless of current state, so read that instead. Border
+                // only exists on the top+bottom edges (border-right is none).
+                const borderW = parseFloat(bodyCs.getPropertyValue('--rail-border-w')) || 0;
+                return tabCount * tabRem * remPx + borderW * 2;
+            }
+
             function clampTop(top, rail) {
                 const cs = getComputedStyle(document.body);
                 const headerH = parseFloat(cs.getPropertyValue('--mobile-header-h')) || 56;
                 const navClear = parseFloat(cs.getPropertyValue('--mobile-nav-clear')) || 56;
                 const minTop = headerH + 8;
-                const maxTop = Math.max(minTop, window.innerHeight - navClear - rail.offsetHeight - 8);
+                // Always clamp against the EXPANDED height, even while
+                // collapsed - see comment above.
+                const fullHeight = rail.classList.contains('rail-collapsed') ? getExpandedRailHeight(rail) : rail.offsetHeight;
+                const maxTop = Math.max(minTop, window.innerHeight - navClear - fullHeight - 8);
                 return Math.min(Math.max(top, minTop), maxTop);
             }
 
