@@ -1427,13 +1427,20 @@
         body.mobile-layout #scene-status-bar .status-actions-bank > button[aria-label="Save Draft"] { order: 3; }
         /* Item 4: "Auto-saved…" leaves the arm and sits semi-transparent in
            the bottom-right corner of the writing area. pointer-events:none so
-           taps pass through to the editor beneath it. */
+           taps pass through to the editor beneath it.
+           Item (2026-08-02): also carries the word count now (see
+           updateWordCount()) - "N words autosaved" replaces the separate
+           toolbar word counter, which is hidden on mobile (#word-count-wrap
+           below). `bottom` now reads --autosave-gap (shared with the rail's
+           JS clamp) instead of a bare 0.9rem, since the rail's new bottom
+           drag limit is deliberately pinned to this same line - see
+           getRailBand(). */
         body.mobile-layout #auto-save-status {
             position: fixed;
             /* pulled further in so it never sits on the editor's rounded
                border */
             right: 1.6rem;
-            bottom: calc(var(--mobile-nav-clear) + 0.9rem);
+            bottom: calc(var(--mobile-nav-clear) + var(--autosave-gap));
             z-index: 30;
             min-height: 0; padding: 0;
             background: none;
@@ -1462,8 +1469,44 @@
         /* Measured: 44px-wide tools still fit on one line at 440px, so there
            is no need to trade touch size for the single row. */
         body.mobile-layout #editor-toolbar .text-tool-btn { min-width: var(--tap); padding-left: 0.4rem; padding-right: 0.4rem; }
+        /* Item (2026-08-02): the standalone toolbar word counter is hidden
+           on mobile - its count now lives folded into #auto-save-status
+           ("N words autosaved", see updateWordCount()). Hide the WRAPPER
+           div (#word-count-wrap), not just the #word-count span inside it -
+           hiding only the span would leave an empty-but-present flex child,
+           still consuming its share of the row's gap-x-3 spacing on both
+           sides. Desktop keeps both elements exactly as they were; this
+           rule is mobile-scoped. The #word-count font-size rule below stays
+           harmless dead weight (never rendered while its wrapper is
+           display:none) rather than being deleted, since deleting it would
+           silently change desktop's shared (non-mobile-scoped) styling if
+           this line were ever mis-edited to drop the `body.mobile-layout`
+           prefix - see it as a guard rail, not dead code worth trimming. */
+        body.mobile-layout #word-count-wrap { display: none; }
         body.mobile-layout #word-count { white-space: nowrap; font-size: 0.8rem; }
         body.mobile-layout #editor-zoom-label { font-size: 0.8rem; }
+        /* Item (2026-08-02, Aaron): "shrink [the zoom scaler] to writing
+           tool button height" - the -/100%/+ pill was taller than its
+           sibling buttons (B/I/U/Proofreader, all exactly --tap/44px) by
+           about 4px, because its OWN border+padding (py-0.5, 2px top/bottom
+           Tailwind, plus a 1px border each side) added on top of the 44px
+           the inner buttons already establish via the global
+           `.text-tool-btn` mobile rule (min-height:44px). box-sizing:
+           border-box makes the border draw INSIDE the fixed 44px rather
+           than adding to it; zeroing the wrapper's own padding removes the
+           rest. The inner buttons' min-height is overridden to `auto` here
+           specifically (they'd otherwise fight the parent's fixed height
+           with their own independent 44px floor) - this makes the -/+
+           buttons render a couple px under the project's --tap touch-target
+           floor when measured in isolation, a small, deliberate,
+           Aaron-specified exception (matching the precedent already
+           documented for the 24px-wide rail handle in
+           BUTTON_STYLE_GUIDE.md), not an oversight. */
+        body.mobile-layout #editor-zoom-control {
+            height: var(--tap); box-sizing: border-box;
+            padding-top: 0; padding-bottom: 0;
+        }
+        body.mobile-layout #editor-zoom-control .text-tool-btn { min-height: auto; }
         body.mobile-layout #editor { font-size: 1.0625rem; line-height: 1.65; min-height: 55vh; min-height: 55svh; padding: 1rem; border-radius: 1rem; }
 
         /* Guidance rail: all six tabs as one icon-only strip on the right
@@ -1545,6 +1588,14 @@
             --rail-tab-h: 3.5rem;     /* unchanged this round; shared so the JS drag clamp (setupGuidanceRailDrag) doesn't hardcode its own copy */
             --rail-border-w: 2px;
             --rail-handle-w: 24px;
+            /* Item (2026-08-02): shared between #auto-save-status's own
+               `bottom` offset and getRailBand()'s JS clamp (see that
+               function) - the rail/handle's new bottom drag limit is
+               deliberately set to the SAME line the autosave text already
+               sits on, so the two numbers must never drift apart. Was a
+               bare 0.9rem literal on #auto-save-status alone before this
+               round. */
+            --autosave-gap: 0.9rem;
         }
         body.mobile-layout .rail-tab {
             display: flex; align-items: center; justify-content: center;
@@ -1602,6 +1653,15 @@
            4:1 vertical pill with its outboard corners fully rounded. Hence
            24x96 with a 12px radius (= half the width, so the left edge is a
            true semicircle) rather than the previous 60x140/10px.
+           Item (2026-08-02, further revised): height 96px -> 112px
+           (`calc(2 * var(--rail-tab-h))`), per Aaron - "as tall as 2
+           rail-drawer boxes" (a rail-tab, 3.5rem/56px, is the box that opens
+           a drawer). This deliberately breaks the 4:1 iOS-PiP-handle ratio
+           the previous round matched exactly - Aaron's new explicit number
+           supersedes that fidelity goal. Width (24px, --rail-handle-w) and
+           the 12px corner radius are unchanged - the radius is derived from
+           WIDTH, not height, so it's still correct (still a true semicircle
+           on the left edge) at the new taller size.
            Absolutely positioned, so it protrudes past the rail's left edge
            - this is why the rail's overflow had to move to .rail-tab-strip
            (see that rule). It stays a child of #mobile-guidance-rail on
@@ -1614,7 +1674,7 @@
             position: absolute;
             top: 50%; transform: translateY(-50%);
             left: calc(-1 * var(--rail-handle-w));
-            width: var(--rail-handle-w); height: 96px;
+            width: var(--rail-handle-w); height: calc(2 * var(--rail-tab-h));
             background: #3D2B1F;
             color: #D4AF37; font-size: 0.7rem;
             /* Matches the strip's own outer edge (2px, same alpha). No right
@@ -1639,9 +1699,10 @@
         }
         /* Collapsed: the six-tab strip disappears and the handle IS the
            rail - it drops back into normal flow so the rail element sizes to
-           it (96px), which matters because the drag clamp reads
-           rail.offsetHeight to keep the thing on screen. The rail's own
-           border/background go transparent so the tab's edge isn't doubled. */
+           it (112px as of 2026-08-02, was 96px), which matters because the
+           layout code reads offsetHeight/offsetWidth to keep the thing on
+           screen. The rail's own border/background go transparent so the
+           tab's edge isn't doubled. */
         body.mobile-layout #mobile-guidance-rail.rail-collapsed {
             border: none; background: transparent;
         }
@@ -2275,14 +2336,14 @@
                                     <button onclick="formatEditorText('underline')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1">U</button>
                                 </div>
                                 <div class="flex items-center gap-x-3">
-                                    <div class="text-xs text-[#D4AF37]/70">
+                                    <div id="word-count-wrap" class="text-xs text-[#D4AF37]/70">
                                         <span id="word-count">0 words</span>
                                     </div>
                                     <button onclick="openProofreader()" aria-label="Proofreader" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 flex items-center justify-center gap-x-1.5">
                                         <i class="fa-solid fa-glasses"></i>
                                         <span class="btn-text">Proofreader</span>
                                     </button>
-                                    <div class="flex items-center gap-x-1 border border-[#D4AF37]/40 rounded-xl px-1.5 py-0.5" title="Display size only — does not affect saved draft">
+                                    <div id="editor-zoom-control" class="flex items-center gap-x-1 border border-[#D4AF37]/40 rounded-xl px-1.5 py-0.5" title="Display size only — does not affect saved draft">
                                         <button onclick="adjustEditorZoom(-1)" class="text-tool-btn px-1.5 leading-none">−</button>
                                         <span id="editor-zoom-label" class="text-[10px] text-[#D4AF37]/70 w-8 text-center select-none">100%</span>
                                         <button onclick="adjustEditorZoom(1)" class="text-tool-btn px-1.5 leading-none">+</button>
@@ -4581,6 +4642,19 @@
             return `current-draft:${sceneId}`;
         }
 
+        // Item (2026-08-02): guards #auto-save-status's two temporary flash
+        // messages ("Draft saved!" below, "Couldn't find that text" in
+        // goToProofreaderIssue) against updateWordCount(), which on mobile
+        // now writes into the SAME element ("N words autosaved" - see that
+        // function). Both flashes snapshot textContent before overwriting
+        // and restore that exact snapshot after their timeout; without this
+        // guard, a keystroke during the flash window would both cut the
+        // flash short (overwritten early by a word count) AND leave the
+        // eventual restore holding a stale count (the snapshot taken before
+        // typing resumed). True for both flash sites, so this is a single
+        // shared flag rather than two separate ad hoc booleans.
+        let autoSaveFlashActive = false;
+
         /**
          * Manual "Save" - explicitly persists the live editor content as the
          * scene's current draft. Autosave (on every input) already keeps this
@@ -4599,12 +4673,14 @@
 
             const status = document.getElementById('auto-save-status');
             const originalText = status.textContent;
+            autoSaveFlashActive = true;
             status.textContent = 'Draft saved!';
             status.style.color = '#E8C86B';
-            
+
             setTimeout(() => {
                 status.textContent = originalText;
                 status.style.color = '';
+                autoSaveFlashActive = false;
             }, 1500);
 
             // Keep the Draft Pad's "Current Draft" preview in sync if it's open
@@ -4677,6 +4753,21 @@
             const text = editor.innerText || editor.textContent || '';
             const w = text.trim().split(/\s+/).filter(Boolean).length;
             wc.textContent = `${w} words`;
+
+            // Item (2026-08-02, Aaron): mobile folds the count into
+            // #auto-save-status ("N words autosaved") instead of the
+            // separate toolbar counter above, which is hidden on mobile
+            // (#word-count-wrap) but stays live/correct here for desktop,
+            // which keeps both as two independent elements exactly as
+            // before - this block is mobile-only. Skipped while a temporary
+            // flash message is showing (autoSaveFlashActive, set by
+            // saveDraft() and goToProofreaderIssue()) - see that flag's own
+            // comment for why overwriting mid-flash is a real bug, not just
+            // a redundant write.
+            if (isMobileMode() && !autoSaveFlashActive) {
+                const status = document.getElementById('auto-save-status');
+                if (status) status.textContent = `${w} words autosaved`;
+            }
         }
 
         // ==================== PROOFREADER ====================
@@ -4914,8 +5005,9 @@
                     const status = document.getElementById('auto-save-status');
                     if (status) {
                         const prev = status.textContent;
+                        autoSaveFlashActive = true;
                         status.textContent = "Couldn't find that text";
-                        setTimeout(() => { status.textContent = prev; }, 2200);
+                        setTimeout(() => { status.textContent = prev; autoSaveFlashActive = false; }, 2200);
                     }
                     return;
                 }
@@ -8906,15 +8998,33 @@
         // achieved by moving the strip rather than by restricting the
         // handle, which is what lets the handle now use the full band.
         //
-        // The band is header-bottom to nav-top, flush: Aaron asked for the
-        // handle to reach "the top of the nav button to the bottom of the
-        // header", so the previous 8px inset at each end is deliberately
-        // gone - an inset would leave it 8px short of both endpoints he named.
+        // The band's TOP is header-bottom, flush: Aaron asked for the handle
+        // to reach "the bottom of the header" with no inset, and nothing
+        // since has changed that.
+        //
+        // The band's BOTTOM was ALSO flush-to-nav-top for one round (2026-
+        // 08-02, same day), then pulled back the same day after Aaron
+        // flagged a real problem: at true flush-bottom, the rail's own
+        // rounded corner (10px on the wrapper, 12px on the handle) meets the
+        // dead-straight top edge of the bottom nav bar with nothing to round
+        // INTO - a visible notch/glitch at that seam. Rather than adding a
+        // dock-state radius override (the fix the scene-status arm uses for
+        // its own corner-morph docking), Aaron's simpler ask was to just
+        // stop the handle short of the true edge - specifically, at the
+        // SAME line #auto-save-status already sits on (--autosave-gap,
+        // shared with that element's own `bottom` offset - see its CSS),
+        // so the handle overlays that status line at its new maximum rather
+        // than reaching bare nav-top. Both the handle's own clamp and the
+        // expanded strip's clamp read this same `band.bottom`, so both
+        // states get the fix uniformly.
         function getRailBand() {
             const cs = getComputedStyle(document.body);
             const headerH = parseFloat(cs.getPropertyValue('--mobile-header-h')) || 56;
             const navClear = parseFloat(cs.getPropertyValue('--mobile-nav-clear')) || 56;
-            return { top: headerH, bottom: window.innerHeight - navClear };
+            const remPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+            const autosaveGapRem = parseFloat(cs.getPropertyValue('--autosave-gap')) || 0.9;
+            const autosaveGap = autosaveGapRem * remPx;
+            return { top: headerH, bottom: window.innerHeight - navClear - autosaveGap };
         }
 
         // The rail's outer height when EXPANDED. Computed from the tab count
@@ -8941,7 +9051,7 @@
             if (!rail || !tog) return handleTop;
             const band = getRailBand();
             const bandH = Math.max(0, band.bottom - band.top);
-            const handleH = tog.offsetHeight || 96;
+            const handleH = tog.offsetHeight || 112; // fallback only; live measurement always wins
             // The handle itself always stays inside the band - this is the
             // full range Aaron asked for, no longer reduced by the strip.
             handleTop = Math.min(Math.max(handleTop, band.top), Math.max(band.top, band.bottom - handleH));

@@ -46,20 +46,33 @@ don't "fix" them without asking Aaron first:
   separate one. Width now lives in `--rail-tab-w` (a shared custom property,
   also read by the guidance-drawer offset and the JS drag clamp) rather than
   a repeated literal.
-- The rail's collapse control (`.rail-collapse-toggle`) is **24×96px** as of
-  2026-08-02 — it left the `--tap-sm` tier entirely when Aaron respecified it
-  as a **handle** on the rail's long left wall rather than a small arrow at
-  the strip's foot. It was briefly 60×140 (2.5 rail icons tall) the same day;
-  Aaron then pointed at **iOS's own hidden-PiP-window handle** — the slim
-  translucent pill on a phone screen's right edge — and asked for the same
-  size and shape, which measures ~24×96 CSS px at a 4:1 ratio with a fully
-  rounded outboard edge (hence the 12px radius = half the width).
+- The rail's collapse control (`.rail-collapse-toggle`) is **24×112px** as of
+  2026-08-02 (height revised same day, was 96px) — it left the `--tap-sm`
+  tier entirely when Aaron respecified it as a **handle** on the rail's long
+  left wall rather than a small arrow at the strip's foot. It was briefly
+  60×140 (2.5 rail icons tall) the same day; Aaron then pointed at **iOS's
+  own hidden-PiP-window handle** — the slim translucent pill on a phone
+  screen's right edge — and asked for the same size and shape (~24×96 CSS px,
+  4:1, fully rounded outboard edge, hence the 12px radius = half the width).
+  **Later the same day, height was revised again to 112px** (`calc(2 *
+  var(--rail-tab-h))`, "as tall as 2 rail-drawer boxes") — this deliberately
+  breaks the 4:1 iOS-ratio fidelity the previous revision matched; Aaron's
+  explicit new number is what governs now, not the ratio. Width (24px) and
+  the 12px radius are unchanged (the radius derives from width, not height).
   **This is the one control in the tool that sits below the 30×30 chrome
   touch floor in one dimension** (24px wide). It is a deliberate,
   Aaron-specified exception, made on the reasoning that it is edge-anchored
-  and 96px tall, so the hard-to-miss axis is the long one. Don't "fix" the
-  24px on accessibility grounds without asking him — and don't cite it as
-  precedent for shrinking anything else.
+  and well over 100px tall, so the hard-to-miss axis is the long one. Don't
+  "fix" the 24px on accessibility grounds without asking him — and don't
+  cite it as precedent for shrinking anything else.
+- The **editor-toolbar zoom scaler** (`#editor-zoom-control`, the −/100%/+
+  pill) is a second, narrower deliberate exception, added 2026-08-02: its
+  total height is capped at exactly `--tap`/44px to match its sibling
+  toolbar buttons, which pushes its own −/+ buttons a few px under 44px
+  when measured in isolation (their `min-height` is overridden to `auto`
+  inside this control specifically, so they don't fight the pill's own
+  fixed height). The pill as a whole still meets the 44px floor; only the
+  two glyphs inside it individually read slightly under it.
 
 ## 2. Icon (glyph) size is separate from box size — don't conflate them
 

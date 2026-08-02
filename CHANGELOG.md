@@ -2,6 +2,103 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-02] – Handle taller, bottom clamp pulled back, autosave/word-count merged
+
+Six adjustments at Aaron's direction, all mobile-only. Desktop A/B-verified
+against pristine `HEAD` throughout - see verification notes.
+
+### Changed
+- **Handle height 96px → 112px** (`calc(2 * var(--rail-tab-h))`), "as tall
+  as 2 rail-drawer boxes" per Aaron - a rail-tab (the box that opens a
+  drawer) is 3.5rem/56px, so two of them is 112px. This deliberately breaks
+  the 4:1 iOS-PiP-handle ratio matched exactly two rounds ago; Aaron's new
+  explicit number supersedes that fidelity goal. Width (24px) and the 12px
+  corner radius are unchanged - the radius is derived from width, not
+  height, so it's still a true semicircle at the new size.
+- **Rail's bottom drag boundary pulled back from true nav-top.** For one
+  round (earlier the same day) the band was flush at both ends. Aaron
+  flagged a real visual problem at the true bottom: the rail's own rounded
+  corner (10px on the wrapper, 12px on the handle) meets the dead-straight
+  top edge of the bottom nav bar with nothing to round into - a visible
+  notch. Rather than add a dock-state radius override (the fix the
+  scene-status arm uses for its own corner-morph docking), the simpler ask
+  was to stop the handle short of the true edge. New `--autosave-gap` custom
+  property (`0.9rem`) is shared between `#auto-save-status`'s own `bottom`
+  offset and `getRailBand()`'s JS clamp, so the two can't drift apart - the
+  rail's new bottom limit is deliberately the SAME line the autosave text
+  sits on, not an arbitrary buffer.
+- **The handle+rail now overlay the autosave/word-count line** at their new
+  bottom maximum - a direct consequence of the clamp change above (the
+  112px-tall handle spans well past the autosave line's own ~19px height
+  once its bottom edge is pinned to that line), not a separate mechanism.
+  `#auto-save-status` stays z-index 30, well under the rail's 465, so the
+  rail already paints over it wherever they overlap.
+- **Word count folded into the autosave line**: mobile now shows "N words
+  autosaved" instead of "Auto-saved just now", updated by the same
+  `updateWordCount()` that already drove the toolbar counter. Desktop is
+  unaffected - it keeps `#word-count` and `#auto-save-status` as two
+  independent elements exactly as before; the new write is gated on
+  `isMobileMode()`.
+- **Original toolbar word counter removed on mobile.** Hides
+  `#word-count-wrap` (the wrapping div, added this round), not just the
+  `#word-count` span inside it - hiding only the span would leave an
+  empty-but-present flex child still consuming its share of the row's
+  `gap-x-3` spacing on both sides.
+- **Zoom scaler (−/100%/+) capped at 44px total height**, matching its
+  sibling editor-toolbar buttons (B/I/U/Proofreader, all `--tap`/44px) -
+  it had been running ~4px taller than them due to its own border+padding
+  stacking on top of the 44px its child buttons already establish.
+  `box-sizing: border-box` on the new `#editor-zoom-control` id makes the
+  border draw inside the fixed 44px rather than adding to it; the inner
+  buttons' `min-height` is overridden to `auto` so they don't fight the
+  parent's fixed height with their own independent 44px floor - this
+  renders the −/+ buttons a few px under the project's touch-target floor
+  in isolation, a small, deliberate, Aaron-specified exception (same
+  precedent as the 24px-wide handle already documented in
+  `BUTTON_STYLE_GUIDE.md`), not an oversight.
+
+### Fixed (found during this round, not a separate ask)
+- **A real race** in `updateWordCount()`'s new mobile write: `saveDraft()`
+  and `goToProofreaderIssue()` both show a temporary flash message on
+  `#auto-save-status` ("Draft saved!", "Couldn't find that text") and
+  restore a *snapshot* of the prior text after a timeout. Without a guard,
+  typing during that window would both cut the flash short (overwritten by
+  a word count) and leave the eventual restore holding a stale count (the
+  snapshot taken before typing resumed). Fixed with a shared
+  `autoSaveFlashActive` flag, set for the duration of both flash sites and
+  checked before every mobile word-count write.
+
+### Verification notes
+Measured at 440×956 with a seeded scene, `getBoundingClientRect()` /
+`getComputedStyle()`, real `PointerEvent` sequences:
+- Handle height exactly 112px in both collapse states.
+- Zoom control exactly 44px total (was ~48px), `box-sizing: border-box`
+  confirmed via computed style.
+- Dragged to the extreme bottom in both collapsed and expanded states: the
+  handle's/strip's bottom edge lands exactly at the new band boundary (not
+  the old true nav-top), genuinely overlaps `#auto-save-status`'s rect, and
+  provably does NOT reach the true nav-top edge. Top extreme re-confirmed
+  still flush (unaffected - only the bottom changed this round).
+- Flash-guard raced on purpose: triggered `saveDraft()`'s flash, then called
+  `updateWordCount()` mid-flash with different content - flash text survived
+  untouched, and the eventual restore correctly returned to the
+  *pre-flash* count (not the mid-flash one), with the next natural call
+  catching up. Same pattern confirmed for the proofreader flash site.
+- Re-ran tap-to-open, drag-to-switch, and the unrelated scene-status-arm
+  drag after this round's `getRailBand()` rewrite - all still pass.
+- **Desktop parity hit a real testing pitfall worth recording**: this
+  browser environment's `navigate` does not always perform a true hard
+  reload for `file://` URLs (confirmed even with a cache-busting query
+  param) - DOM mutations from an earlier mobile-mode test round persisted
+  across "reloads" in the same tab, which initially looked like a mobile-
+  gate leak on desktop. Resolved with a self-contained test that doesn't
+  depend on reload freshness at all: manually reset the element, ran a
+  desktop pass (untouched), a mobile pass (correctly written), and a
+  desktop pass again (still untouched, not overwriting the mobile value) -
+  all three passed with `isMobileMode()` checked live at each step. Zoom
+  control height (22px) and every other measured desktop value matched
+  pristine `HEAD` exactly once verified this way.
+
 ## [2026-08-02] – Rail handle becomes the layout anchor, full drag range
 
 Supersedes the drag-clamp fix earlier the same day (`2bf9b81`). That round
