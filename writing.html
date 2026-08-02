@@ -8891,13 +8891,121 @@
             });
         }
 
+        // ---- Rail layout: the HANDLE is the anchor (2026-08-02, Aaron) ----
+        // Aaron's spec, in his words: the icons "appear immediately behind
+        // wherever the rail handle is parked", opening the rail must
+        // "preserve the handle's Y-axis position", and the handle is NOT to
+        // be re-centered on the rail. So the handle's viewport Y is the
+        // single source of truth and the strip is positioned around it -
+        // the inverse of the original design, where the rail was positioned
+        // and the handle rode along at a fixed 50% centre.
+        //
+        // This SUPERSEDES the clamp added earlier the same day (which stopped
+        // the collapsed handle being dragged somewhere the strip couldn't
+        // fit). Same guarantee - the strip never opens out of bounds - but
+        // achieved by moving the strip rather than by restricting the
+        // handle, which is what lets the handle now use the full band.
+        //
+        // The band is header-bottom to nav-top, flush: Aaron asked for the
+        // handle to reach "the top of the nav button to the bottom of the
+        // header", so the previous 8px inset at each end is deliberately
+        // gone - an inset would leave it 8px short of both endpoints he named.
+        function getRailBand() {
+            const cs = getComputedStyle(document.body);
+            const headerH = parseFloat(cs.getPropertyValue('--mobile-header-h')) || 56;
+            const navClear = parseFloat(cs.getPropertyValue('--mobile-nav-clear')) || 56;
+            return { top: headerH, bottom: window.innerHeight - navClear };
+        }
+
+        // The rail's outer height when EXPANDED. Computed from the tab count
+        // and --rail-tab-h rather than measured, because the common case for
+        // needing it is while the strip is collapsed (display:none) and
+        // therefore unmeasurable. Reads --rail-border-w rather than the
+        // rail's live border, which is `none` while collapsed - that exact
+        // mistake caused a 4px undershoot when this was first written.
+        function getExpandedRailHeight(rail) {
+            const strip = rail.querySelector('.rail-tab-strip');
+            const tabCount = strip ? strip.querySelectorAll('.rail-tab').length : rail.querySelectorAll('.rail-tab').length;
+            const remPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+            const bodyCs = getComputedStyle(document.body);
+            const tabRem = parseFloat(bodyCs.getPropertyValue('--rail-tab-h')) || 3.5;
+            const borderW = parseFloat(bodyCs.getPropertyValue('--rail-border-w')) || 0;
+            return tabCount * tabRem * remPx + borderW * 2;
+        }
+
+        // Places the rail so the handle's top edge lands on `handleTop`
+        // (viewport coords), in whichever collapse state the rail is in.
+        // Returns the clamped handle top actually used.
+        function layoutRailAroundHandle(rail, handleTop) {
+            const tog = document.getElementById('mobile-rail-toggle');
+            if (!rail || !tog) return handleTop;
+            const band = getRailBand();
+            const bandH = Math.max(0, band.bottom - band.top);
+            const handleH = tog.offsetHeight || 96;
+            // The handle itself always stays inside the band - this is the
+            // full range Aaron asked for, no longer reduced by the strip.
+            handleTop = Math.min(Math.max(handleTop, band.top), Math.max(band.top, band.bottom - handleH));
+            rail.style.transform = 'none';
+
+            if (rail.classList.contains('rail-collapsed')) {
+                // Collapsed the handle IS the rail (position:static), so the
+                // rail's own top is the handle's top.
+                rail.style.top = handleTop + 'px';
+                return handleTop;
+            }
+
+            // Expanded: centre the strip on the handle where there's room,
+            // then clamp the STRIP into the band. Clamping the strip rather
+            // than the handle is what keeps the handle's Y fixed while still
+            // guaranteeing the rail opens fully inside the boundaries.
+            // Cap at the band height for the large-text-scale case, where the
+            // strip's own max-height makes it shorter than its natural size.
+            const railH = Math.min(getExpandedRailHeight(rail), bandH || Infinity);
+            let railTop = handleTop + handleH / 2 - railH / 2;
+            railTop = Math.min(Math.max(railTop, band.top), Math.max(band.top, band.bottom - railH));
+            rail.style.top = railTop + 'px';
+
+            // Offset the handle within the rail so it does not move. `top` on
+            // an absolutely positioned child resolves against the containing
+            // block's PADDING box (inside the border), so the rail's own top
+            // border has to come out of the offset or the handle sits 2px
+            // low. Read from --rail-border-w rather than the rail's live
+            // border, same reasoning as getExpandedRailHeight above.
+            const borderTop = parseFloat(getComputedStyle(document.body).getPropertyValue('--rail-border-w')) || 0;
+            // At the two extreme drag positions, `railTop` gets clamped to
+            // the band edge while `handleTop` is already sitting AT that same
+            // edge - the math that falls out of that (see below) legitimately
+            // wants offset = -borderTop (top extreme) or
+            // railH - handleH - borderTop (bottom extreme), i.e. the handle
+            // rendering flush with the rail's OUTER border edge, one border-
+            // width outside the padding box. A first version clamped this to
+            // [0, railH - 2*borderTop - handleH] on the assumption the handle
+            // should never leave the padding box - that clamp was wrong by
+            // exactly one border-width at both ends, and measured as a
+            // systematic 2px shortfall against the band edges Aaron specified
+            // (36px got the handle to 38px, and the bottom edge undershot by
+            // the same 2px) rather than landing flush. Fixed by moving the
+            // clamp's bounds out by one borderTop in each direction.
+            const minOffset = -borderTop;
+            const maxOffset = Math.max(minOffset, railH - handleH - borderTop);
+            const offset = Math.min(Math.max(handleTop - railTop - borderTop, minOffset), maxOffset);
+            tog.style.top = offset + 'px';
+            tog.style.transform = 'none';
+            return handleTop;
+        }
+
         // Item 3 (2026-07-26): manual collapse/expand for the rail bank.
         function toggleGuidanceRailCollapsed() {
             const rail = document.getElementById('mobile-guidance-rail');
             if (!rail) return;
             const toggle = document.getElementById('mobile-rail-toggle');
+            // Capture where the handle is BEFORE the class flips - that's the
+            // position the whole layout is then rebuilt around, so the handle
+            // stays put and the icons appear behind it.
+            const handleTop = toggle ? toggle.getBoundingClientRect().top : null;
             const collapsed = rail.classList.toggle('rail-collapsed');
             if (toggle) toggle.setAttribute('aria-expanded', String(!collapsed));
+            if (handleTop !== null) layoutRailAroundHandle(rail, handleTop);
         }
 
         // ---- Shared drag/selection guard (2026-08-02, Aaron) ----
@@ -8954,58 +9062,23 @@
             let scrubbing = false;
             let didScrub = false;
             let startY = 0;
-            let startTop = 0;
+            let startHandleTop = 0;
             let railEl = null;
 
-            // Item (2026-08-02, Aaron): "do not allow the rail handle to be
-            // moved lower than the hidden rail icons allow at the bottom or
-            // top edges of the screen." Collapsed, the rail element is only
-            // the 96px handle, which is much shorter than the full 6-icon
-            // strip (~340px at default text scale) - clamping the drag
-            // against rail.offsetHeight alone would let the handle park
-            // somewhere that only fits the SHORT box, and then expanding the
-            // strip back out would push it off the top or bottom edge.
-            // Computed from --rail-tab-h / the tab count rather than a
-            // hardcoded height, so it tracks both the UI text-scale setting
-            // (rem-based) and any future change to the tab count or height
-            // without needing a second edit here.
-            function getExpandedRailHeight(rail) {
-                const strip = rail.querySelector('.rail-tab-strip');
-                const tabCount = strip ? strip.querySelectorAll('.rail-tab').length : rail.querySelectorAll('.rail-tab').length;
-                const remPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-                const tabRem = parseFloat(getComputedStyle(document.body).getPropertyValue('--rail-tab-h')) || 3.5;
-                const bodyCs = getComputedStyle(document.body);
-                // NOT the rail's own live border: while collapsed, the rail's
-                // border is `none` (see the .rail-collapsed rule), so reading
-                // it here would silently measure 0 instead of what the border
-                // will actually be once expanded - a real 4px undershoot this
-                // caught in testing (874px bottom vs. an 870px legal limit).
-                // --rail-border-w is the value that will apply on expand
-                // regardless of current state, so read that instead. Border
-                // only exists on the top+bottom edges (border-right is none).
-                const borderW = parseFloat(bodyCs.getPropertyValue('--rail-border-w')) || 0;
-                return tabCount * tabRem * remPx + borderW * 2;
-            }
-
-            function clampTop(top, rail) {
-                const cs = getComputedStyle(document.body);
-                const headerH = parseFloat(cs.getPropertyValue('--mobile-header-h')) || 56;
-                const navClear = parseFloat(cs.getPropertyValue('--mobile-nav-clear')) || 56;
-                const minTop = headerH + 8;
-                // Always clamp against the EXPANDED height, even while
-                // collapsed - see comment above.
-                const fullHeight = rail.classList.contains('rail-collapsed') ? getExpandedRailHeight(rail) : rail.offsetHeight;
-                const maxTop = Math.max(minTop, window.innerHeight - navClear - fullHeight - 8);
-                return Math.min(Math.max(top, minTop), maxTop);
-            }
-
+            // Item (2026-08-02, Aaron): the drag now moves the HANDLE, not
+            // the rail - see layoutRailAroundHandle() above for why the
+            // handle is the anchor. Whatever collapse state we're in, the
+            // finger's delta is applied to the handle's own start position
+            // and the rail is rebuilt around the result, so the handle
+            // tracks the finger 1:1 in both states instead of tracking the
+            // rail's top edge (which is a different point in each state).
             function armDrag() {
                 dragging = true;
                 railEl.classList.add('rail-dragging');
                 beginUiDrag();
-                const rect = railEl.getBoundingClientRect();
-                railEl.style.transform = 'none';
-                railEl.style.top = clampTop(rect.top, railEl) + 'px';
+                const tog = document.getElementById('mobile-rail-toggle');
+                startHandleTop = tog ? tog.getBoundingClientRect().top : railEl.getBoundingClientRect().top;
+                layoutRailAroundHandle(railEl, startHandleTop);
             }
 
             // Hit-tests e.clientY against the visible .rail-tab elements and
@@ -9050,7 +9123,6 @@
                     beginUiDrag();
                 } else {
                     scrubbing = false;
-                    startTop = railEl.getBoundingClientRect().top;
                     clearTimeout(pressTimer);
                     pressTimer = setTimeout(armDrag, LONG_PRESS_MS);
                 }
@@ -9065,7 +9137,7 @@
                     e.preventDefault();
                 } else if (dragging) {
                     didDrag = true;
-                    railEl.style.top = clampTop(startTop + (e.clientY - startY), railEl) + 'px';
+                    layoutRailAroundHandle(railEl, startHandleTop + (e.clientY - startY));
                     e.preventDefault();
                 } else if (pressTimer && Math.abs(e.clientY - startY) > MOVE_CANCEL_PX) {
                     clearTimeout(pressTimer);
@@ -9110,6 +9182,14 @@
                 rail.classList.remove('rail-dragging');
                 rail.style.top = '';
                 rail.style.transform = '';
+                // Item (2026-08-02): the handle now carries its own inline
+                // offset along the rail (it is no longer always centred), so
+                // clearing only the rail would leave a dragged handle stuck
+                // at an old offset on the freshly re-centred rail. Clearing
+                // both returns to the pure-CSS default: rail centred in the
+                // viewport, handle centred on the rail.
+                const tog = document.getElementById('mobile-rail-toggle');
+                if (tog) { tog.style.top = ''; tog.style.transform = ''; }
             };
         })();
 

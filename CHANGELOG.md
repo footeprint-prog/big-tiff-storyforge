@@ -2,6 +2,82 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-02] – Rail handle becomes the layout anchor, full drag range
+
+Supersedes the drag-clamp fix earlier the same day (`2bf9b81`). That round
+stopped the handle being dragged somewhere the hidden strip couldn't legally
+expand into — a real fix, but it worked by *restricting where the handle
+could go*. Aaron's follow-up ask inverts the relationship: the handle should
+be draggable across the **entire** header-to-nav band, and the rail should
+build itself around wherever the handle ends up, rather than the handle
+being boxed in by where the rail can fit.
+
+### Changed
+- **The handle is now the single source of truth for the rail's vertical
+  position**, not the rail. `layoutRailAroundHandle(rail, handleTop)`
+  replaces the old `clampTop()` + centered-rail model: it clamps the
+  *handle* into the full header-to-nav band, then positions the strip
+  around that handle position (centering the strip on the handle where
+  there's room, then clamping the **strip** — not the handle — into the
+  band at the edges). Both `toggleGuidanceRailCollapsed()` and the drag
+  handlers (`armDrag` / `onPointerMove`) now go through this one function
+  instead of each keeping their own positioning logic.
+- **Opening/collapsing the rail preserves the handle's Y position and does
+  not re-center it on the strip.** Previously the rail's CSS `top: 50%`
+  plus the handle's own `top: 50%; transform: translateY(-50%)` meant
+  expanding a collapsed (and dragged) handle re-centered everything;
+  now `toggleGuidanceRailCollapsed()` reads the handle's real position
+  first and rebuilds the layout around it, so the six icons appear
+  "immediately behind wherever the handle is parked," per Aaron's wording.
+- **The drag range is now the full band, flush at both ends** — "the top
+  of the nav button to the bottom of the header," per Aaron, with the rail
+  opening entirely within those two boundaries and never over- or
+  under-lapping either one. The previous round's 8px inset at each edge is
+  gone; this round's spec is exact flush contact, not a safety margin.
+
+### Fixed
+- The handle-offset clamp (inside `layoutRailAroundHandle`, for the
+  expanded case) initially bounded the handle to `[0, railH - 2×borderTop -
+  handleH]` on the assumption it should never leave the rail's padding box.
+  That's wrong by exactly one border-width at both extremes, because CSS
+  resolves an absolutely-positioned child's `top` against the parent's
+  **padding** box, not its border box — so reaching the rail's true outer
+  edge legitimately requires an offset of `-borderTop`, one border-width
+  *outside* the padding box. Measured as a systematic 2px shortfall against
+  the band edges (36px requested → 38px rendered, and the same 2px short at
+  the bottom). Fixed by moving both clamp bounds out by one `borderTop`:
+  `[-borderTop, railH - handleH - borderTop]`.
+
+### Verification notes
+Measured at 440×956 with a seeded scene, `getBoundingClientRect()` against
+the live `--mobile-header-h` / `--mobile-nav-clear` band (36–878px this
+round), real `PointerEvent` sequences (`pointerType: 'touch'`):
+- Handle Y preserved exactly across collapse→expand→collapse round trips at
+  a mid-band park point, confirmed genuinely off-center on the resulting
+  strip (not incidentally centered).
+- Both band extremes land flush to the pixel (36/36 top, 878/878 bottom)
+  in both collapse states, with the expanded rail's own top/bottom staying
+  within the band in every case — no over- or under-lap.
+- Direct drag (not via the collapse toggle) verified in both states: drag
+  while expanded moves the whole rail with the handle; drag while collapsed
+  stays collapsed and doesn't pop open.
+- Re-ran the full existing gesture suite to confirm no regression: tap-to-
+  open, drag-to-switch-drawers (rail stays put, switches correctly), the
+  text-selection guard (`body.ui-dragging`) still arms/clears correctly
+  during a handle drag, and the guidance drawer still clears the handle on
+  open (`2bf9b81`'s fix, unaffected by this round's positioning rewrite).
+  The unrelated scene-status circle drag was also re-checked and is
+  unaffected.
+- `resetGuidanceRailPosition()` updated to also clear the handle's own
+  inline offset (it now carries one independently of the rail) — verified
+  it returns to the pure-CSS default (rail centered, handle centered on
+  rail) rather than leaving a stale offset from a prior drag.
+- Desktop A/B against pristine `HEAD` at 1280×800: identical on every
+  value checked (rail/toggle `display:none`, header/wordmark unchanged,
+  `--rail-tab-w` reading unset) — this round only touched JS positioning
+  logic and made no CSS changes, so desktop parity was never at risk, but
+  re-verified per the project's standing rule anyway.
+
 ## [2026-08-02] – Suppress text selection while dragging UI elements
 
 ### Fixed
