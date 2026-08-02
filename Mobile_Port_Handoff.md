@@ -2,32 +2,45 @@
 
 ## For: whoever picks up mobile work next (agent or human)
 ## From: Claude sessions, 2026-07-24 – 2026-07-27, at Aaron's direction
-## Status: **fully caught up as of 2026-07-27 — dev repo `main`, the
-##         `claude/mobile-port` branch, and the live site all match.**
-##         PR #6 (mobile UI rounds through 2026-07-26 + the achievements
-##         engine) merged into `main` 2026-07-27, and a follow-up governance
-##         doc pass (Sammy guardrails extracted into dedicated files, Dom
-##         retired from Project_Governance_and_Protocols.md) rode in the
-##         same branch/PR. Live site was already re-promoted 2026-07-26
-##         (commit `c071209` in `big_tiff_launchpage`), verified
-##         byte-identical against the actual domain. **CORRECTED 2026-07-27:**
-##         every mobile UI round is in fact tested on a real device — Aaron
-##         confirmed directly he checks all changes on a real iPhone 15 Pro,
-##         iOS Safari, as a normal part of his workflow ("that is exactly
-##         what I test everything on"). The "What is NOT verified" section
-##         below had been carried forward with the wrong framing (implying
-##         NO real hardware had ever touched this) across several sessions —
-##         that framing is retired. What's still genuinely open: Aaron's own
-##         test device (15 Pro) differs from Erica's phone (16 Pro Max per
-##         her user profile) — a device-specific bug on her exact model
-##         isn't ruled out just because Aaron's 15 Pro checks look fine.
+## Status: **`claude/mobile-port` is ahead of `main` again as of 2026-07-27
+##         evening — NOT currently in sync, and don't re-sync without
+##         reading the next paragraph.** Earlier 2026-07-27 (the button-
+##         polish, arm-drag, and corner-morph-docking rounds) were merged
+##         into `main` while Aaron was away, at his explicit request. The
+##         corner-morph round shipped real problems (see CHANGELOG's
+##         2026-07-27 entry: a positioning bug, an icon-size overreach) that
+##         Aaron caught on review after returning — **those fixes are on
+##         `claude/mobile-port` only (commit `23b7e7b`) and have NOT been
+##         merged to `main` yet**, since Aaron was actively present/
+##         reviewing at that point rather than away, and the standing
+##         claude-mobile-port-only iteration loop applies by default unless
+##         he says otherwise. Ask before merging again rather than assuming
+##         the "push to main" permission from the away-from-desk round
+##         still stands.
+## Live site (`bigtiffsworld.com`) status: **untouched this entire session**
+##         — still whatever was promoted 2026-07-26, predating ALL of
+##         today's arm-drag/corner-morph/button-polish work in both
+##         directions (has neither the bug nor its fix). Do not assume the
+##         live site matches `main` right now — it doesn't, for any commit
+##         after 2026-07-26.
+## Real-device testing: **CORRECTED 2026-07-27** — every mobile UI round is
+##         in fact tested on a real device. Aaron confirmed directly he
+##         checks all changes on a real iPhone 15 Pro, iOS Safari, as a
+##         normal part of his workflow ("that is exactly what I test
+##         everything on"). The "What is NOT verified" section below had
+##         been carried forward with the wrong framing (implying NO real
+##         hardware had ever touched this) across several sessions — that
+##         framing is retired. What's still genuinely open: Aaron's own test
+##         device (15 Pro) differs from Erica's phone (16 Pro Max per her
+##         user profile) — a device-specific bug on her exact model isn't
+##         ruled out just because Aaron's 15 Pro checks look fine.
 ## Dev branch: `claude/mobile-port` — long-lived, kept around, not deleted,
 ##             still the working branch for ongoing mobile UI iteration
 ##             (its GitHub Pages config is what gives the ~1min preview
 ##             rebuild). Merged to `main` periodically, not abandoned.
-## Dev repo main: https://github.com/footeprint-prog/big-tiff-storyforge — **now matches `claude/mobile-port` exactly** (merge commit `dd9c6f3`, 2026-07-27). Future mobile-port commits will again lead main until the next merge — that's expected, re-sync when it's next convenient, not a problem to fix immediately.
-## Live preview (dev repo Pages): https://footeprint-prog.github.io/big-tiff-storyforge/writing.html (tracks `claude/mobile-port`)
-## **Real live site: https://bigtiffsworld.com/app/ — matches `main`/`claude/mobile-port` as of 2026-07-27.**
+## Dev repo main: https://github.com/footeprint-prog/big-tiff-storyforge — **currently BEHIND `claude/mobile-port` by one commit (`23b7e7b`, the 2026-07-27 fix-up round) — see Status above before merging.**
+## Live preview (dev repo Pages): https://footeprint-prog.github.io/big-tiff-storyforge/writing.html (tracks `claude/mobile-port`, so it DOES have the fixes)
+## **Real live site: https://bigtiffsworld.com/app/ — last promoted 2026-07-26, does NOT have any 2026-07-27 work. See "Live site status" above.**
 
 ---
 
@@ -97,14 +110,29 @@ Two real bugs were caught this way that a naive test would have missed:
   state) as "terminal" — only caught by testing the achievement against a
   freshly-seeded, untouched scene list, not just the "everything complete"
   happy path.
+- (2026-07-27) The status circle's option menu positioned itself in the
+  wrong place entirely — `left: calc(100% + var(--arm-pad-r) + 2px)` kept
+  referencing a custom property (`--arm-pad-r`) that had been deleted
+  earlier the same session. **An undefined custom property inside `calc()`
+  invalidates the whole declaration**, not just that one value — so `left`
+  silently fell back to a *different, unrelated* rule (the desktop
+  default, `left: 0`) instead of erroring or doing nothing. This one
+  **wasn't caught by the synthetic-event test suite** — the tests asserted
+  state transitions (did the `open` class toggle, did the direction class
+  apply) but never asserted the actual rendered position, so a completely
+  wrong pixel position passed every check. Aaron caught it on the live
+  preview. Lesson: when a change deletes a CSS custom property, grep for
+  every other `var(--that-name)` reference before considering the change
+  done — and add a position/rect assertion, not just a class-toggle
+  assertion, to tests for anything that's positioned via CSS variables.
 
 ## Deployment facts — three separate places, keep them straight
 
 | Where | Repo | What's there |
 |---|---|---|
-| Dev repo Pages preview | `big-tiff-storyforge`, branch `claude/mobile-port` (Pages config) | **Current** — has every round through 2026-07-26 (rail collapse, drag-to-switch, circular status, achievements engine), rebuilds ~1 min after any push to that branch |
-| Dev repo `main` | `big-tiff-storyforge` | **Merged and current as of 2026-07-27** (PR #6, merge commit `dd9c6f3`) — has everything: the 2026-07-25 mobile port, all 2026-07-26 mobile UI rounds, the achievements/tracking engine, and the 2026-07-27 governance/Sammy-extraction doc pass. `main` and `claude/mobile-port` are identical at time of writing; expect `main` to trail again once new commits land on the branch — re-sync via PR when convenient, it's routine, not urgent. |
-| **Real live site** | `big_tiff_launchpage`, branch `main`, custom domain `bigtiffsworld.com` via Porkbun DNS (no Cloudflare in the path) | **Re-promoted 2026-07-26** (commit `c071209`) — has everything through the achievements engine. Assets/manifest were unchanged that round (checksums verified identical), only `app/index.html` needed copying. The 2026-07-27 governance-docs-only commits don't affect `writing.html`, so the live site's code is still current with no further promotion needed for those. Any future promotion (once `writing.html` itself changes again) is still a separate manual step Aaron requests explicitly — see the iteration-loop rule below. |
+| Dev repo Pages preview | `big-tiff-storyforge`, branch `claude/mobile-port` (Pages config) | **Current, ahead of `main`** — has everything through the 2026-07-27 fix-up round (commit `23b7e7b`: arm drag, corner-morph docking, the `--arm-pad-r` positioning fix, rail-icon revert). Rebuilds ~1 min after any push to that branch. |
+| Dev repo `main` | `big-tiff-storyforge` | **One commit behind `claude/mobile-port`** as of 2026-07-27 evening — has the button-polish, arm-drag, and corner-morph-docking rounds (merged while Aaron was away, at his explicit request), but **not** the same-day fix-up round (`23b7e7b`) that corrected the bugs those rounds shipped. Don't merge `claude/mobile-port` into `main` again without checking whether Aaron wants that — the away-from-desk permission was for that one round, not standing. |
+| **Real live site** | `big_tiff_launchpage`, branch `main`, custom domain `bigtiffsworld.com` via Porkbun DNS (no Cloudflare in the path) | **Last promoted 2026-07-26** (commit `c071209`) — untouched by any 2026-07-27 work, in either direction. Does not have the arm-drag/corner-morph feature at all, buggy or fixed. Any future promotion is still a separate manual step Aaron requests explicitly — see the iteration-loop rule below. |
 
 **The 2026-07-25 promotion already happened** the same way described in
 prior versions of this doc: a direct byte-verified file copy of
@@ -159,26 +187,56 @@ URL.
 - **Proofreader "go to" arrow**: never mutates `editor.innerHTML` — uses
   the CSS Custom Highlight API with a text-selection fallback.
 
-### Scene-status control arm — redesigned twice since the original port
+### Scene-status control arm — redesigned repeatedly since the original port
 The original port made the green status bar a fixed "control arm" in the
 upper-left with a pill + Sammy/Draft-Log/Save stacked below it. **That pill
-is gone.** As of 2026-07-25/26 it's a **circular status button**:
+is gone.** As of 2026-07-25/26 it's a **circular status button**, and as of
+2026-07-27 it's also **draggable and corner-docking** rather than fixed:
 - 56px circle, single letter code (**R**eview / **UF** unfinished /
-  **C**omplete), 2px gold ring. Tapping it slides the alternate status
-  option(s) out **horizontally** to the right (not the old vertical
-  drop-down) — same status-picking rules as always (current status
-  excluded, Review only offered if already active), just a sideways reveal
-  since the circle sits flush against the screen's left edge.
-- The Sammy/Draft-Log/Save action buttons now live behind a **separate
+  **C**omplete), 1px gold ring (thinned from 2px, 2026-07-27). Tapping it
+  slides the alternate status option(s) out **horizontally** — same
+  status-picking rules as always (current status excluded, Review only
+  offered if already active).
+- **Horizontally draggable along the header** (2026-07-27,
+  `setupStatusBarDrag()`): a 300ms press-and-hold on the circle arms
+  dragging; a plain tap still opens the status options. `top` stays pinned
+  to the header (`var(--mobile-header-h)`); only `left` moves, clamped to
+  the screen edges. Mirrors the guidance rail's own drag pattern. Position
+  is inline-style-only, resets on login (`resetSceneStatusBarPosition()`,
+  wired alongside the rail's own reset in `submitLogin()`).
+- **Corner-morph docking** (2026-07-27, `updateStatusBarDock()`): release
+  within 48px (0.5in) of a screen edge and the arm snaps flush and morphs —
+  the wall-facing border and that bottom corner's rounding drop, the free
+  side keeps both. Both bottom corners round when genuinely free-floating
+  mid-header. Runs on drag release, every scene render, and login reset,
+  so the shape always matches wherever the arm currently is. `#scene-
+  status-bar`'s z-index (470) is deliberately above the guidance rail (45)
+  and an open guidance drawer (460) — when the two draggable elements
+  (this arm and the rail) end up overlapping in a corner, the status
+  circle wins, per Aaron's spec.
+- The status option menu opens **left or right, decided fresh at open time**
+  (`positionStatusMenuDirection()`) from the option row's real
+  `scrollWidth` against actual available viewport space — necessary once
+  the arm could be anywhere along the header, not just flush-left. Its
+  `left`/`right` offset depends on the arm's own padding + border (8px +
+  2px = 10px) — **if the arm's padding or border ever change again, this
+  needs to change with it**; there's no shared variable expressing that
+  relationship after `--arm-pad-r` was removed (see the bug in "How to
+  test it yourself" above) — worth reintroducing one if this drifts again.
+- The Sammy/Draft-Log/Save action buttons live behind a **separate
   dropdown-arrow tab** (`#status-actions-toggle`) below the circle,
-  collapsed by default on every scene load. Wrapped in their own
-  `.status-actions-bank` div, deliberately NOT the same flex row as
-  `#auto-save-status` — collapsing the bank must never also hide the
-  auto-save indicator (it's `position:fixed`, and `display:none` on an
-  ancestor hides a fixed descendant regardless of its own positioning).
+  collapsed by default on every scene load, centered under the arm.
+  Wrapped in their own `.status-actions-bank` div, deliberately NOT the
+  same flex row as `#auto-save-status` — collapsing the bank must never
+  also hide the auto-save indicator (it's `position:fixed`, and
+  `display:none` on an ancestor hides a fixed descendant regardless of its
+  own positioning).
 - The whole arm is a compound shape hanging flush off the header (no top
   border of its own — the header's own 2px gold bottom border, shared with
-  desktop, caps it) with rounding only at the lower-right.
+  desktop, caps it). Margins standardized to 8px throughout (bottom padding
+  under the button stack is 14px specifically, to match the ~14-16px side
+  clearance those buttons get from being centered in the wider,
+  circle-driven column — see `BUTTON_STYLE_GUIDE.md`).
 - `updateStatusSelector()` renders both a `.status-trigger-label` (full
   word) and `.status-trigger-code` (short code) per status option; mobile
   CSS shows the code and hides the label, desktop is the reverse — so the
@@ -196,8 +254,21 @@ is gone.** As of 2026-07-25/26 it's a **circular status button**:
   `resetGuidanceRailPosition()` explicitly for the case where a different
   account logs in without a full reload.
 - **Collapsible** (2026-07-26): a small arrow tab (`#mobile-rail-toggle`,
-  chrome-tier 30px) at the top of the strip toggles `.rail-collapsed`,
-  hiding all six icons down to just that arrow when docked.
+  chrome-tier 30px) toggles `.rail-collapsed`, hiding all six icons down to
+  just that arrow when docked. **Moved from the top to the bottom of the
+  strip (2026-07-27)** so it never ends up positioned under the (now
+  draggable) scene-status arm, which lives up near the header — if the
+  toggle is ever unreachable/hidden behind something, check this hasn't
+  drifted back.
+- Icon glyph size: **1rem, matching the editor-toolbar and status-button
+  icons** (`.text-tool-btn`, `.control-bar-item`) — this was bumped to
+  2.5rem for a few hours on 2026-07-27 to try to close up the visible
+  margin around each icon inside its 56px box, then reverted the same day
+  after Aaron flagged it as oversized and inconsistent. **The margin
+  complaint itself is still open** (see CHANGELOG's 2026-07-27
+  "Flagged, not settled") — don't re-attempt via icon size again without
+  asking; a fix needs to come from somewhere else (box/padding geometry,
+  not the glyph).
 - **Drag-to-switch between drawers** (2026-07-26): once a drawer is
   already open, dragging on the rail switches which one is shown in real
   time (hit-tested per `pointermove` against each `.rail-tab`'s rect) —

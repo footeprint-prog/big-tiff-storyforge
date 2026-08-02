@@ -2,6 +2,124 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-07-27] – Scene-status arm: drag, corner-morph docking, button polish
+
+Four rounds in one day on the mobile scene-status arm (the circular R/UF/C
+control up near the header): a button-sizing/spacing polish pass, a new
+press-and-hold horizontal drag, corner-morph docking for that drag, and a
+same-day fix-up round after Aaron reviewed the corner-morph round and flagged
+real problems. All mobile-only; desktop re-verified unchanged after every
+commit, same discipline as every prior round.
+
+### Added
+- **Horizontal drag for the status arm** (`setupStatusBarDrag()`), mirroring
+  the existing guidance-rail drag: a 300ms press-and-hold on the status
+  circle arms dragging; a plain tap still opens the status options. The
+  arm's `top` stays pinned to the header; only `left` moves, clamped to the
+  screen edges. Position is inline-style-only (never persisted) and resets
+  on login, same as the rail.
+- **Corner-morph docking.** Release the arm within **48px (0.5in)** of a
+  screen edge and it snaps flush and morphs: the wall-facing border and that
+  bottom corner's rounding drop, the free side keeps both (both bottom
+  corners round when the arm is genuinely free-floating mid-header).
+  `updateStatusBarDock()` runs on drag release, every scene render, and
+  login reset, so the shape is always correct for wherever the arm actually
+  is — not just right after a drag.
+- **Direction-aware status-option menu.** The circle's slide-out option menu
+  (Unfinished/Complete/Review) now opens left instead of right when there
+  isn't room, decided fresh at open time (`positionStatusMenuDirection()`)
+  from the option row's real `scrollWidth` against actual viewport space —
+  not a static docked/floating flag, since a floating (undocked) arm near
+  the right edge needs the same flip a docked one does.
+- **`BUTTON_STYLE_GUIDE.md`** — a shared reference for button size tiers,
+  icon-size ranges, and accessibility minimums (contrast, touch targets)
+  across both desktop and mobile layouts, added after the rail-icon sizing
+  went back and forth twice in one day with no written reference to check
+  against.
+
+### Changed
+- Scene-status arm's gold border now wraps left/right/bottom (previously
+  missing the left edge); stays borderless on top, flush under the header,
+  regardless of horizontal position.
+- Margins standardized to 8px throughout the arm (was an inconsistent
+  4/4/4/2px) — container padding and the circle-to-chevron gap. Bottom
+  padding under the action-button stack specifically bumped to 14px to
+  match the ~14-16px side clearance the buttons actually get once centered
+  in the wider, circle-driven column (the bottom edge has no equivalent
+  centering slack, so flat 8px there visibly under-matched the sides).
+- Status-actions-bank buttons (Sammy/Draft Log/Save) now centered under the
+  arm instead of flush-left.
+- Guidance-rail collapse toggle moved from the top to the bottom of the
+  six-tab bank, so it never ends up under the now-draggable status arm.
+- Status circle's own gold ring thinned 2px → 1px.
+- Scene-summary/review-note boxes: removed a stale fixed 6.375rem left
+  indent that only made sense back when the arm was permanently pinned
+  flush-left; replaced with a plain 16px safe margin now that the arm can
+  dock anywhere or float free (and, being a high-z-index overlay, may sit
+  on top of the text when parked over it — an accepted trade-off, same one
+  the guidance rail already makes on the right).
+- Show-more/less chevron (`.m-expand`) in the Scene Summary and Review Note
+  boxes centered horizontally (was left-aligned); those boxes' bottom
+  padding trimmed 12px → 4px since the chevron row already carries its own
+  vertical buffer.
+
+### Fixed
+- **Status-option menu opened from the wrong position entirely** —
+  `left: calc(100% + var(--arm-pad-r) + 2px)` referenced a custom property
+  (`--arm-pad-r`) that had been deleted earlier the same day when the arm's
+  padding was standardized to a flat 8px, but this one declaration still
+  referenced it. An undefined custom property inside `calc()` invalidates
+  the *whole* declaration (not just falls back to a default), so `left`
+  silently reverted to the desktop rule's `left: 0` — the menu rendered
+  overlapping the circle's top-left instead of sliding out beside it.
+  Caught by Aaron on the live preview, not by the synthetic-event test
+  suite, since the tests asserted state transitions (open/closed, direction
+  class) rather than the actual rendered pixel position — worth adding
+  position assertions to this kind of test going forward.
+- Off-by-2px right-dock snap: docking right removes that side's border,
+  shrinking the box *after* the snap position had already been calculated
+  from the wider (still-bordered) box. `updateStatusBarDock()` now
+  recomputes the target position after applying the dock class.
+
+### Reverted
+- **Rail-tab icon size, back to 1rem** (had been grown to 2.5rem earlier
+  the same day). The original ask was "too much margin around the icons" —
+  not a request to enlarge the glyph. Growing it read as oversized and
+  broke consistency with the editor-toolbar/status-button icon sizing
+  established the same day. No replacement fix shipped; left open rather
+  than guess again. **Flagged, not settled** — if the margin still needs
+  addressing, the fix has to come from something other than glyph size.
+
+### Verification notes
+Every state change verified by direct measurement (`getBoundingClientRect`
+diffs, `getComputedStyle`), not by eyeballing screenshots, via
+`setMobilePreview(true)` + synthetic `PointerEvent` sequences
+(`pointerType: 'touch'`), consistent with the project's established test
+pattern:
+- Corner-dock: measured in all three states (free-floating — both bottom
+  corners round, full 2px border both sides; docked-left; docked-right —
+  mirrored border/radius each time), plus the 48px/24px threshold boundary
+  (drag-and-release at 40px docks, at 60px doesn't).
+- Direction-flip menu: measured the default (right) open position after
+  the `--arm-pad-r` fix (10px gap, vertically aligned with the circle, not
+  overlapping it), then dragged the arm to the right wall and confirmed the
+  menu opens left with the same 10px gap and stays fully on-screen.
+- Bottom-margin-matches-side-margin: measured the actual visually-last
+  button (CSS `order` reorders Sammy/Draft Log/Save, so DOM-last ≠
+  visually-last — used `getBoundingClientRect().bottom` comparison, not
+  DOM position, to find the real bottom button).
+- Desktop re-checked unchanged after every commit (status pill still drops
+  straight down from the trigger, same width, no mobile-only classes
+  applied without `body.mobile-layout`).
+
+### Flagged, not settled
+- Rail-tab icon margin (see Reverted above) — original complaint
+  unresolved, needs a fix that doesn't touch icon size.
+- No real-device (iPhone) confirmation specifically for this round's new
+  gestures (arm drag, corner-dock snap) yet — see
+  `Mobile_Port_Handoff.md`'s real-device-testing section for the general
+  (corrected 2026-07-27) testing-status context.
+
 ## [2026-07-26] – Achievements & Usage Tracking (data layer)
 
 The engine behind 188 achievements plus the usage tracking that drives them.

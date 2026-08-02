@@ -1037,6 +1037,22 @@
            AA. A solid #3D2B1F ground (already used across the tool) takes the
            same gold to 6.4:1, keeping the gold border as the accent. */
         body.mobile-layout #review-note-box { padding: 12px; background-color: #3D2B1F; }
+        /* Item (2026-07-27): the expand/collapse chevron row already has its
+           own ~2rem of height below the text, so the full 12px container
+           padding underneath IT as well reads as excess space stacked on
+           top of that row's own buffer. Trimmed just the bottom side - top/
+           left/right padding (and the tap-target size of .m-expand itself)
+           are unchanged. */
+        body.mobile-layout #scene-summary-bar { padding-bottom: 4px; }
+        body.mobile-layout #review-note-box { padding-bottom: 4px; }
+        /* Item (2026-07-27, round 2): after removing the old 6.375rem
+           arm-clearance indent below, the base 12px padding read as too
+           tight against the screen edge on its own. A small explicit
+           left bump (12px -> 16px total) restores a deliberate "safe"
+           margin without reintroducing a large reserved gap - this is a
+           starting value, adjust if 16px still isn't enough. */
+        body.mobile-layout.scene-open #scene-summary-bar { padding-left: 1rem; }
+        body.mobile-layout.scene-open #review-note-box { padding-left: 1rem; }
         /* Item (2026-07-27): the fixed 6.375rem left indent below (originally
            added item 5, 2026-07-24) reserved clearance for the status arm
            when it was permanently pinned flush-left. Now that the arm is
@@ -1071,8 +1087,13 @@
            lower-left, no text label - kills a lot of empty vertical space. */
         /* Small arrow, but the WHOLE line is the hit area - the row it sits on
            is otherwise empty, so spanning it costs no vertical space while
-           making the target far easier to hit. */
-        body.mobile-layout .m-expand { display: flex; align-items: center; justify-content: flex-start; align-self: stretch; width: 100%; height: 2rem; min-width: 0; min-height: 2rem; margin: 0; padding: 0; background: none; border: none; color: #D4AF37; font-size: 0.95rem; text-decoration: none; }
+           making the target far easier to hit.
+           Item (2026-07-27): centered horizontally (was flex-start/left) per
+           Aaron. The 2rem row height stays - it's already close to the
+           chrome-tier 30px touch-target floor and shouldn't shrink further
+           just to close up whitespace; see the container's own
+           padding-bottom reduction below for that instead. */
+        body.mobile-layout .m-expand { display: flex; align-items: center; justify-content: center; align-self: stretch; width: 100%; height: 2rem; min-width: 0; min-height: 2rem; margin: 0; padding: 0; background: none; border: none; color: #D4AF37; font-size: 0.95rem; text-decoration: none; }
 
         /* ---- Item 5 (2026-07-24): the green status bar becomes a fixed
            "control arm" pinned to the upper-left, a top layer the editor
@@ -1116,9 +1137,17 @@
                circle (56px) is the widest child, so this is the true
                wall-to-circle clearance; the narrower 44px action buttons
                end up with more breathing room than 8px once centered in
-               that same column, which reads fine and isn't worth a second
-               content-width just to force an identical number for them too. */
-            padding: 8px; margin: 0;
+               that same column - measured at 14-16px (8px padding + ~6px
+               centering gap, the 2px spread between the two sides being
+               the docked wall's missing border).
+               Item (2026-07-27, round 2): the bottom edge has no such
+               centering gap (the button stack already fills the full
+               content width vertically), so plain 8px padding-bottom
+               measured only ~10px below the last button - visibly less
+               than the 14-16px side clearance. Bumped padding-bottom
+               specifically to 14px to match what the sides actually look
+               like, not just the abstract 8px value. */
+            padding: 8px; margin: 0; padding-bottom: 14px;
             display: flex; flex-direction: column; align-items: center; gap: 4px;
         }
         /* Item (2026-07-27): dock-state overrides. Only the wall-facing
@@ -1152,9 +1181,10 @@
         body.mobile-layout #scene-status-bar .status-dropdown-trigger {
             width: 3.5rem; height: 3.5rem; min-width: 3.5rem; min-height: 3.5rem;
             border-radius: 50%;
-            /* Item 2 (2026-07-26): 2px gold ring, matching the arm's own
-               2px edge so the circle reads as part of the same family. */
-            border: 2px solid #D4AF37;
+            /* Item 2 (2026-07-26): gold ring matching the arm's own edge so
+               the circle reads as part of the same family.
+               Item (2026-07-27): thinned 2px -> 1px per Aaron. */
+            border: 1px solid #D4AF37;
             box-sizing: border-box;
             padding: 0;
             /* Item 5 (2026-07-26): larger status letter. 1.5rem keeps the
@@ -1168,20 +1198,35 @@
         body.mobile-layout #scene-status-bar .status-dropdown-wrapper.open .status-dropdown-trigger {
             border-radius: 50%; border-bottom-color: #D4AF37;
         }
-        /* Options slide out horizontally to the right of the circle rather
+        /* Options slide out horizontally to the side of the circle rather
            than dropping down beneath it (desktop behavior) - this control
-           sits flush against the left screen edge now, so down-and-under
-           has nowhere comfortable to go. Same two alternate statuses,
-           same click targets, just a sideways reveal. */
+           can sit flush against either screen edge (or float free) now
+           that it's draggable, so down-and-under has nowhere comfortable
+           to go. Same alternate statuses, same click targets, just a
+           sideways reveal - opens right by default, left if there's no
+           room (see positionStatusMenuDirection). */
         /* Item 6 (2026-07-26): the drawer reads as sliding out from BEHIND
            the arm's 2px gold edge. It is positioned just past that edge -
-           the arm's right padding plus its own 2px border - so the gold
-           line stays unbroken and acts as the cap the drawer emerges from.
-           Same green, its own 1px gold outline, and no left border so the
-           two shapes read as one continuous piece. */
+           the arm's own padding plus its border - so the gold line stays
+           unbroken and acts as the cap the drawer emerges from. Same
+           green, its own 1px gold outline, and no near-side border so the
+           two shapes read as one continuous piece.
+           Item (2026-07-27): the arm's old --arm-pad-r variable (its
+           previous asymmetric right-padding) no longer exists - it was
+           removed when padding was standardized to a flat 8px, but this
+           rule kept referencing it. An undefined custom property inside
+           calc() invalidates the WHOLE declaration, so `left` silently
+           fell back to the desktop rule's `left: 0` - the exact "opens
+           from above the circle instead of beside it" bug Aaron caught.
+           Replaced with the literal 8px (padding) + 2px (border) = 10px
+           gap - if the arm's padding or border ever change again, this
+           needs to change with it (there's no way to express "the arm's
+           current padding" from inside a different element's rule other
+           than keeping a shared custom property - worth reintroducing one
+           if this drifts again). */
         body.mobile-layout #scene-status-bar .status-dropdown-menu {
             top: 0; right: auto; bottom: auto;
-            left: calc(100% + var(--arm-pad-r) + 2px);
+            left: calc(100% + 10px);
             margin-left: 0;
             box-sizing: border-box;
             display: flex; flex-direction: row; align-items: center; gap: 6px;
@@ -1198,6 +1243,22 @@
         body.mobile-layout #scene-status-bar .status-dropdown-wrapper.open .status-dropdown-menu {
             width: auto; opacity: 1;
             padding: 0 8px 0 6px;
+        }
+        /* Item (2026-07-27): mirror image for when the circle is docked/
+           dragged near the RIGHT edge and opening rightward would run off
+           screen - positionStatusMenuDirection() (JS) adds this class at
+           open time based on real available space, not just dock state,
+           per Aaron's "if its position demands it". Every rightward
+           property above gets its leftward mirror; nothing here should
+           need to change independent of the block above. */
+        body.mobile-layout #scene-status-bar .status-dropdown-wrapper.open-left .status-dropdown-menu {
+            left: auto;
+            right: calc(100% + 10px);
+            border-left: 1px solid #D4AF37; border-right: none;
+            border-radius: 12px 0 0 12px;
+        }
+        body.mobile-layout #scene-status-bar .status-dropdown-wrapper.open-left.open .status-dropdown-menu {
+            padding: 0 6px 0 8px;
         }
         body.mobile-layout #scene-status-bar .status-dropdown-option {
             width: 2.75rem; height: 2.75rem; min-width: 2.75rem; min-height: 0;
@@ -1365,14 +1426,7 @@
             /* square tabs (item 7, 2026-07-24) */
             width: 3.5rem; min-width: 3.5rem;
             height: 3.5rem; min-height: 3.5rem;
-            /* Item (2026-07-27): after the icon glyph was shrunk to 1rem to
-               match the editor/status buttons, it read as swimming in too
-               much empty space inside this comparatively large 56px box.
-               Explicit 4px padding (box-sizing:border-box so the 56px
-               outer footprint/tap target is unchanged) plus a larger glyph
-               (see the icon font-size below) tightens that back up. */
-            box-sizing: border-box;
-            padding: 4px;
+            padding: 0;
             background: transparent; border: none;
             border-bottom: 1px solid rgba(212, 175, 55, 0.3);
             border-radius: 0;
@@ -1408,14 +1462,17 @@
         }
         body.mobile-layout #mobile-guidance-rail.rail-collapsed .rail-tab { display: none; }
         /* Glyph enlarged (2026-07-26) to squeeze the dead space around each
-           icon. The 3.5rem tap area is unchanged - only the padding shrinks,
-           so the touch target never regresses.
-           Item (2026-07-27): reduced back down to 1rem per Aaron, to match
-           the editor toolbar icons (.text-tool-btn, 1rem) and the scene
-           status action-bank icons (.control-bar-item, 0.9375rem) - see
-           BUTTON_STYLE_GUIDE.md. The 3.5rem tap area is unchanged; only the
-           glyph shrinks. */
-        body.mobile-layout .rail-tab i { font-size: 2.5rem; line-height: 1; }
+           icon, then reduced back down to 1rem (2026-07-27) to match the
+           editor toolbar icons (.text-tool-btn, 1rem) and the scene status
+           action-bank icons (.control-bar-item, 0.9375rem) - see
+           BUTTON_STYLE_GUIDE.md.
+           Item (2026-07-27, reverted): a same-day follow-up round grew this
+           to 2.5rem to close the empty space around the glyph - wrong
+           read of "reduce the margin," which was never a request to grow
+           the icon itself. Reverted to 1rem. If the margin still needs
+           addressing, the fix has to come from somewhere other than
+           glyph size - ask before changing this again. */
+        body.mobile-layout .rail-tab i { font-size: 1rem; line-height: 1; }
         body.mobile-layout .rail-tab.active { background: #D4AF37; color: #3D2B1F; }
         /* Armed after a 1s press-and-hold (setupGuidanceRailDrag): a visible
            cue that the next finger movement now drags the whole bank rather
@@ -5516,7 +5573,7 @@
             // the rest of the Scene Status Control Bar's vertically-centered,
             // flex-aligned items rather than overriding that layout.
             wrapper.style.display = 'flex';
-            wrapper.classList.remove('open');
+            wrapper.classList.remove('open', 'open-left');
             wrapper.innerHTML = '';
 
             // Mobile: the action-button bank (Sammy/Draft Log/Save) starts
@@ -5555,7 +5612,15 @@
             trigger.innerHTML = entryInnerHTML(currentEntry);
             trigger.onclick = (e) => {
                 e.stopPropagation();
-                wrapper.classList.toggle('open');
+                const isOpen = wrapper.classList.toggle('open');
+                // Item (2026-07-27): only relevant on mobile, where the menu
+                // slides sideways off the circle instead of dropping down -
+                // decide left vs right fresh on every open, based on real
+                // available space, since the arm can be dragged/docked
+                // anywhere along the header.
+                if (isOpen && typeof positionStatusMenuDirection === 'function') {
+                    positionStatusMenuDirection(wrapper);
+                }
             };
 
             const menu = document.createElement('div');
@@ -5585,6 +5650,29 @@
             // the very first render would show the free-floating shape even
             // though the arm is sitting flush left where it starts.
             if (typeof updateStatusBarDock === 'function') updateStatusBarDock();
+        }
+
+        /**
+         * Mobile only: decides whether the status circle's slide-out option
+         * menu should open to the right (default) or left, based on real
+         * available space at the moment it opens - the arm is draggable
+         * along the whole header now, so a fixed "always right" direction
+         * would run the menu off-screen once the circle sits anywhere near
+         * the right edge. menu.scrollWidth measures the option row's true
+         * intrinsic width even while it's visually collapsed (width:0,
+         * overflow:hidden don't affect scrollWidth), so this doesn't need
+         * to wait for the open animation to finish.
+         */
+        function positionStatusMenuDirection(wrapper) {
+            if (!isMobileMode() || !wrapper) return;
+            const menu = wrapper.querySelector('.status-dropdown-menu');
+            const trigger = wrapper.querySelector('.status-dropdown-trigger');
+            if (!menu || !trigger) return;
+            const GAP = 10; // must match the CSS (arm padding 8px + border 2px)
+            const neededWidth = menu.scrollWidth;
+            const triggerRect = trigger.getBoundingClientRect();
+            const fitsRight = triggerRect.right + GAP + neededWidth <= window.innerWidth;
+            wrapper.classList.toggle('open-left', !fitsRight);
         }
 
         // Close any open status dropdown when clicking elsewhere on the page.
@@ -8743,7 +8831,11 @@
         // Exposed at module scope (not inside the drag IIFE) so both the
         // drag handler and updateStatusSelector/resetSceneStatusBarPosition
         // can call it without re-deriving the same logic.
-        const STATUS_BAR_DOCK_THRESHOLD_PX = 24;
+        // Item (2026-07-27): 0.5in per Aaron - CSS px are defined at 96/in
+        // regardless of device pixel ratio, so 0.5in = 48px is a real,
+        // device-independent distance, not a guess. Was 24px (too easy to
+        // overshoot the corner and have it not stick).
+        const STATUS_BAR_DOCK_THRESHOLD_PX = 48;
         function updateStatusBarDock(bar) {
             bar = bar || document.getElementById('scene-status-bar');
             if (!bar) return;
