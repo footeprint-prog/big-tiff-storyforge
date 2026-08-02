@@ -953,6 +953,17 @@
         body.mobile-layout #login-modal input, body.mobile-layout #token-setup-modal input { min-height: 44px; }
 
         /* ---- Header: slim down; Notepad + Focus move to the bottom nav ---- */
+        /* z-index (2026-08-02, later same day): raised from the shared
+           `z-50` Tailwind class to 480 on mobile only - ABOVE
+           #mobile-guidance-rail (465)/its handle (470), same reasoning as
+           #mobile-nav's own z-index bump - see layoutRailAroundHandle()'s
+           comment. The expanded rail strip can now extend past this
+           header's own bottom edge when centering on a near-top handle;
+           this header's opaque background + its own 2px gold bottom border
+           cap that overflow visually. Higher specificity (2 classes) than
+           the `.z-50` utility wins without `!important`. Desktop keeps the
+           shared z-50 - this selector requires body.mobile-layout. */
+        body.mobile-layout .fantasy-header { z-index: 480; }
         body.mobile-layout header .max-w-screen-2xl { padding-left: 0.25rem; padding-right: 0.25rem; }
         /* Buy back enough width for the header to stay on one row at the
            default text scale; it still wraps gracefully when scaled up. */
@@ -1438,8 +1449,20 @@
         body.mobile-layout #auto-save-status {
             position: fixed;
             /* pulled further in so it never sits on the editor's rounded
-               border */
-            right: 1.6rem;
+               border.
+               Item (2026-08-02, later same day): tightened 1.6rem -> 1rem.
+               Aaron: "autosave text line must appear under the handle+rail"
+               - measured that the OLD 1.6rem (25.6px) left this text's own
+               right edge 1.6px short of the COLLAPSED handle's left edge
+               (the handle is 24px/--rail-handle-w wide, flush right) - a
+               near-miss, not a real overlap, in that one state (the
+               EXPANDED handle, which sits further left, already cleared
+               this comfortably). 1rem (16px) guarantees at least 8px of
+               real overlap in BOTH states, on any viewport width (the two
+               `right`-from-edge offsets cancel viewport width out of the
+               comparison, so this isn't screen-size-dependent) - verified
+               it still clears the editor's own rounded border afterward. */
+            right: 1rem;
             bottom: calc(var(--mobile-nav-clear) + var(--autosave-gap));
             z-index: 30;
             min-height: 0; padding: 0;
@@ -1885,7 +1908,19 @@
         /* padding-top reserves the space the Focus bulge rises into, so the
            bulge lives inside the nav's own padding box and is not clipped by
            overflow-x (which the browser forces to clip vertically too). */
-        body.mobile-layout #mobile-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 320; display: flex; align-items: flex-start; background: #2A2119; border-top: 2px solid rgba(212, 175, 55, 0.6); padding-top: 0.9rem; padding-bottom: env(safe-area-inset-bottom, 0px); overflow-x: auto; overscroll-behavior-x: contain; }
+        /* z-index (2026-08-02, later same day): raised 320 -> 480, ABOVE
+           #mobile-guidance-rail (465) and its handle (470) - see
+           layoutRailAroundHandle()'s comment. The expanded rail strip is now
+           deliberately allowed to extend past this bar's own top edge when
+           centering on a near-bottom handle; this nav bar's opaque
+           background and its own top border are what visually cap that
+           overflow, instead of the strip's own (mismatched) rounded corner.
+           Every OTHER mobile element that could theoretically reach this low
+           (left/right panels, the scrim, open guidance drawers) already
+           self-limits to `bottom: var(--mobile-nav-clear)` or an equivalent
+           max-height, so none of them actually overlap this bar today -
+           raising it only changes what happens for the rail. */
+        body.mobile-layout #mobile-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 480; display: flex; align-items: flex-start; background: #2A2119; border-top: 2px solid rgba(212, 175, 55, 0.6); padding-top: 0.9rem; padding-bottom: env(safe-area-inset-bottom, 0px); overflow-x: auto; overscroll-behavior-x: contain; }
         /* min-width holds the touch floor even at high zoom, where six equal
            flex items would be squeezed under it; the nav scrolls instead. */
         body.mobile-layout #mobile-nav button { flex: 1 1 0; min-width: var(--tap); min-height: var(--mobile-nav-h); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: none; border: none; color: #D4AF37; font-size: 0.8rem; transition: background-color 0.18s ease, color 0.18s ease, font-size 0.18s ease; }
@@ -8992,39 +9027,34 @@
         // the inverse of the original design, where the rail was positioned
         // and the handle rode along at a fixed 50% centre.
         //
-        // This SUPERSEDES the clamp added earlier the same day (which stopped
-        // the collapsed handle being dragged somewhere the strip couldn't
-        // fit). Same guarantee - the strip never opens out of bounds - but
-        // achieved by moving the strip rather than by restricting the
-        // handle, which is what lets the handle now use the full band.
+        // getRailBand() is the HANDLE's own boundary - "the top of the nav
+        // button to the bottom of the header," flush, no inset. This is
+        // true again as of 2026-08-02 (later same day) - the previous
+        // pulled-back version (subtracting --autosave-gap from the bottom)
+        // is REVERTED here per Aaron's explicit "unrestrict bottom handle
+        // slide." --autosave-gap itself is untouched and still used by
+        // #auto-save-status's own `bottom` offset (see its CSS) - only its
+        // use HERE, as a rail-boundary buffer, is gone.
         //
-        // The band's TOP is header-bottom, flush: Aaron asked for the handle
-        // to reach "the bottom of the header" with no inset, and nothing
-        // since has changed that.
-        //
-        // The band's BOTTOM was ALSO flush-to-nav-top for one round (2026-
-        // 08-02, same day), then pulled back the same day after Aaron
-        // flagged a real problem: at true flush-bottom, the rail's own
-        // rounded corner (10px on the wrapper, 12px on the handle) meets the
-        // dead-straight top edge of the bottom nav bar with nothing to round
-        // INTO - a visible notch/glitch at that seam. Rather than adding a
-        // dock-state radius override (the fix the scene-status arm uses for
-        // its own corner-morph docking), Aaron's simpler ask was to just
-        // stop the handle short of the true edge - specifically, at the
-        // SAME line #auto-save-status already sits on (--autosave-gap,
-        // shared with that element's own `bottom` offset - see its CSS),
-        // so the handle overlays that status line at its new maximum rather
-        // than reaching bare nav-top. Both the handle's own clamp and the
-        // expanded strip's clamp read this same `band.bottom`, so both
-        // states get the fix uniformly.
+        // That earlier pullback existed to solve a real problem: at true
+        // flush-bottom, the STRIP's own rounded corner met the dead-straight
+        // top edge of the bottom nav bar with nothing to round into - a
+        // visible notch where two different, unrelated corner radii (the
+        // strip's, the handle's) collided at the same Y. Pulling the
+        // boundary back fixed it by never letting them reach that point at
+        // all - but Aaron's next round wanted the handle to keep the full
+        // range instead, so the fix has moved to layoutRailAroundHandle()
+        // below: the STRIP no longer clamps to this same band - it is
+        // deliberately left free to extend past it when centering on a
+        // near-edge handle, with #mobile-nav's and .fantasy-header's own
+        // (now-raised) z-index and opaque backgrounds capping the overflow
+        // with THEIR OWN straight edge instead of the strip's mismatched
+        // rounded one. See that function's own comment for the mechanism.
         function getRailBand() {
             const cs = getComputedStyle(document.body);
             const headerH = parseFloat(cs.getPropertyValue('--mobile-header-h')) || 56;
             const navClear = parseFloat(cs.getPropertyValue('--mobile-nav-clear')) || 56;
-            const remPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-            const autosaveGapRem = parseFloat(cs.getPropertyValue('--autosave-gap')) || 0.9;
-            const autosaveGap = autosaveGapRem * remPx;
-            return { top: headerH, bottom: window.innerHeight - navClear - autosaveGap };
+            return { top: headerH, bottom: window.innerHeight - navClear };
         }
 
         // The rail's outer height when EXPANDED. Computed from the tab count
@@ -9053,7 +9083,8 @@
             const bandH = Math.max(0, band.bottom - band.top);
             const handleH = tog.offsetHeight || 112; // fallback only; live measurement always wins
             // The handle itself always stays inside the band - this is the
-            // full range Aaron asked for, no longer reduced by the strip.
+            // full range Aaron asked for ("the top of the nav button to the
+            // bottom of the header"), unrestricted.
             handleTop = Math.min(Math.max(handleTop, band.top), Math.max(band.top, band.bottom - handleH));
             rail.style.transform = 'none';
 
@@ -9064,41 +9095,44 @@
                 return handleTop;
             }
 
-            // Expanded: centre the strip on the handle where there's room,
-            // then clamp the STRIP into the band. Clamping the strip rather
-            // than the handle is what keeps the handle's Y fixed while still
-            // guaranteeing the rail opens fully inside the boundaries.
-            // Cap at the band height for the large-text-scale case, where the
-            // strip's own max-height makes it shorter than its natural size.
+            // Expanded: centre the strip on the handle, UNCLAMPED as of
+            // 2026-08-02 (later same day) - Aaron: "the rail cannot bottom
+            // or top align with handle." Clamping the strip into the SAME
+            // band the handle uses (the old behavior) is EXACTLY what forced
+            // the strip's own edge to land at the same Y as the handle's
+            // whenever the handle neared either extreme - two unrelated
+            // corner radii (the strip's 8/10px, the handle's 12px) meeting
+            // at one point, which is what read as a glitch. Left uncentered-
+            // clamp-free, the strip naturally extends past headerH/navTop
+            // whenever a near-edge handle's centering math calls for it -
+            // "the rail opens under the nav button row / under the header,"
+            // in Aaron's words. #mobile-nav and .fantasy-header were raised
+            // above the rail's z-index specifically so their own opaque
+            // backgrounds (and #mobile-nav's own top border) cap that
+            // overflow with a clean straight edge, rather than the strip's
+            // mismatched rounded corner being what's visible at the seam.
+            // Cap the STRIP'S OWN SIZE (not its position) at the band height
+            // for the large-text-scale case, where its own max-height makes
+            // it shorter than its natural tab-count size - unrelated to the
+            // position-clamp removal above, this guards the centering math
+            // against a too-tall theoretical height, not a boundary.
             const railH = Math.min(getExpandedRailHeight(rail), bandH || Infinity);
-            let railTop = handleTop + handleH / 2 - railH / 2;
-            railTop = Math.min(Math.max(railTop, band.top), Math.max(band.top, band.bottom - railH));
+            const railTop = handleTop + handleH / 2 - railH / 2;
             rail.style.top = railTop + 'px';
 
-            // Offset the handle within the rail so it does not move. `top` on
-            // an absolutely positioned child resolves against the containing
-            // block's PADDING box (inside the border), so the rail's own top
-            // border has to come out of the offset or the handle sits 2px
-            // low. Read from --rail-border-w rather than the rail's live
-            // border, same reasoning as getExpandedRailHeight above.
+            // Offset the handle within the rail so it does not move. `top`
+            // on an absolutely positioned child resolves against the
+            // containing block's PADDING box (inside the border), so the
+            // rail's own top border has to come out of the offset or the
+            // handle sits low by that amount. Now a FIXED constant,
+            // independent of handleTop: since railTop above is no longer
+            // independently clamped, it always tracks the exact centered
+            // position relative to the handle, so the handle's placement
+            // WITHIN the rail never varies - simpler than the old min/max
+            // clamp, which existed only to cover the case (now gone) where
+            // railTop and handleTop could diverge at a clamped boundary.
             const borderTop = parseFloat(getComputedStyle(document.body).getPropertyValue('--rail-border-w')) || 0;
-            // At the two extreme drag positions, `railTop` gets clamped to
-            // the band edge while `handleTop` is already sitting AT that same
-            // edge - the math that falls out of that (see below) legitimately
-            // wants offset = -borderTop (top extreme) or
-            // railH - handleH - borderTop (bottom extreme), i.e. the handle
-            // rendering flush with the rail's OUTER border edge, one border-
-            // width outside the padding box. A first version clamped this to
-            // [0, railH - 2*borderTop - handleH] on the assumption the handle
-            // should never leave the padding box - that clamp was wrong by
-            // exactly one border-width at both ends, and measured as a
-            // systematic 2px shortfall against the band edges Aaron specified
-            // (36px got the handle to 38px, and the bottom edge undershot by
-            // the same 2px) rather than landing flush. Fixed by moving the
-            // clamp's bounds out by one borderTop in each direction.
-            const minOffset = -borderTop;
-            const maxOffset = Math.max(minOffset, railH - handleH - borderTop);
-            const offset = Math.min(Math.max(handleTop - railTop - borderTop, minOffset), maxOffset);
+            const offset = (railH - handleH) / 2 - borderTop;
             tog.style.top = offset + 'px';
             tog.style.transform = 'none';
             return handleTop;
@@ -9115,6 +9149,24 @@
             const handleTop = toggle ? toggle.getBoundingClientRect().top : null;
             const collapsed = rail.classList.toggle('rail-collapsed');
             if (toggle) toggle.setAttribute('aria-expanded', String(!collapsed));
+            if (handleTop !== null) layoutRailAroundHandle(rail, handleTop);
+        }
+
+        // Item (2026-08-02, later same day, Aaron): Focus force-collapses
+        // the rail, same "one calm action" spirit as mobileCloseEverything -
+        // see mobileNav('focus'). Idempotent (a no-op if already collapsed),
+        // matching the existing resetStatusActionsBank()/
+        // toggleStatusActionsBank() pair's pattern rather than sharing code
+        // with toggleGuidanceRailCollapsed(). Reuses layoutRailAroundHandle
+        // so the handle's Y position is preserved exactly like a manual
+        // collapse via the handle itself.
+        function collapseGuidanceRail() {
+            const rail = document.getElementById('mobile-guidance-rail');
+            if (!rail || rail.classList.contains('rail-collapsed')) return;
+            const toggle = document.getElementById('mobile-rail-toggle');
+            const handleTop = toggle ? toggle.getBoundingClientRect().top : null;
+            rail.classList.add('rail-collapsed');
+            if (toggle) toggle.setAttribute('aria-expanded', 'false');
             if (handleTop !== null) layoutRailAroundHandle(rail, handleTop);
         }
 
@@ -9487,8 +9539,16 @@
                     break;
                 }
                 case 'focus':
-                    // One calm action: close every drawer, panel and sheet.
+                    // One calm action: close every drawer, panel and sheet,
+                    // AND put the guidance rail and the scene-status arm's
+                    // action bank back to their own resting/collapsed state
+                    // (2026-08-02, later same day, Aaron) - mobileCloseEverything
+                    // alone never touched either of those two, so Focus could
+                    // leave the rail expanded or the arm's Sammy/Draft Log/
+                    // Save bank open even after "closing everything."
                     mobileCloseEverything(null);
+                    collapseGuidanceRail();
+                    resetStatusActionsBank();
                     break;
             }
             updateNavActiveState();

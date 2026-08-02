@@ -2,6 +2,92 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-02] – Rail no longer aligns with the handle; Focus resets both compound controls
+
+Four adjustments at Aaron's direction, all mobile-only, same day as the
+round below. Supersedes that round's `--autosave-gap` pullback fix for the
+same corner-glitch bug, with a different mechanism per his follow-up ask.
+
+### Changed
+- **Unrestricted the handle's bottom slide again** - `getRailBand()`'s
+  bottom reverts to the true, flush `window.innerHeight - navClear` (no
+  longer pulled back by `--autosave-gap`). That property is untouched and
+  still drives `#auto-save-status`'s own position; only its use as a rail-
+  boundary buffer is gone.
+- **The expanded strip no longer clamps into the same band the handle
+  uses.** This is the real fix for the corner-glitch Aaron reported a
+  second time ("still shows a graphics glitch... due to the rail's rounded
+  corner"): the OLD fix (pulling the boundary back) stopped the handle
+  short of true-edge, but the STRIP's own clamp still forced it to match
+  wherever the handle stopped - two differently-radiused corners (the
+  strip's 8/10px, the handle's 12px) landing at the identical Y, which is
+  what actually reads as a glitch regardless of where that Y is. Per
+  Aaron's fix: "the rail cannot bottom or top align with handle... the rail
+  opens under the nav button row... under the header." The strip's position
+  is now purely `handleTop + handleH/2 - railH/2`, uncapped - when a near-
+  edge handle's centering math pushes it past headerH/navTop, it's now
+  allowed to, extending into that territory rather than stopping at it.
+- **`#mobile-nav` and `.fantasy-header` z-index raised to 480** (mobile
+  only; desktop keeps nav's prior stacking and the header's shared `z-50`),
+  above the rail (465) and its handle (470). This is what makes "opens
+  under" literal: the strip's now-unclamped overflow renders BEHIND these
+  two permanent chrome bars, whose own opaque backgrounds and existing
+  borders (nav's top border, header's bottom border) cap the overflow with
+  a single clean straight edge - not the strip's own mismatched rounded
+  corner. Confirmed nothing else reaches into header/nav's territory today
+  (left/right panels, the scrim, open drawers all already self-limit to
+  `bottom: var(--mobile-nav-clear)` or an equivalent max-height), so this
+  only changes behavior for the rail.
+- **The handle's offset within the rail is now a fixed constant**
+  (`(railH - handleH) / 2 - borderTop`), not clamped - a direct
+  simplification that falls out of the strip no longer being independently
+  clamped: since the strip's position always exactly tracks the ideal
+  centered value now, the handle's placement within it never varies,
+  removing the min/max clamp that existed only to cover the old clamped-
+  divergence case.
+- **`#auto-save-status`'s `right` tightened 1.6rem → 1rem.** Aaron: "autosave
+  text line must appear under the handle+rail." Measured that the old value
+  left the text's own right edge 1.6px short of the COLLAPSED handle's left
+  edge (24px wide, flush right) - a near-miss, not a real overlap, in that
+  one state (the expanded handle, sitting further left, already cleared it
+  comfortably). 1rem guarantees ≥8px of real overlap in both states, on any
+  viewport width (the two `right`-from-edge offsets cancel viewport width
+  out of the comparison). Reverified it still clears the editor's own
+  rounded border.
+- **Focus now also collapses the guidance rail and closes the scene-status
+  arm's action bank.** `mobileCloseEverything(null)` (which Focus already
+  called) never touched either - a new `collapseGuidanceRail()` (idempotent,
+  mirrors the existing `resetStatusActionsBank()`) plus a call to that
+  existing function are both now wired into `mobileNav('focus')`, so Focus
+  is genuinely "back to the calmest possible screen" rather than leaving
+  either compound control open.
+
+### Verification notes
+Measured at 440×956 with a seeded scene, real `PointerEvent` sequences:
+- Dragged the handle to both true extremes in the collapsed state - lands
+  exactly flush (36px top, 878px bottom on this viewport), unrestricted.
+- Expanded from each extreme: the strip's own edge now differs from the
+  handle's edge by >100px in both directions (was 0, the glitch condition),
+  while the handle itself stays exactly at the true boundary throughout.
+- `elementFromPoint` at the exact seam in both directions, and again deeper
+  inside each bar's own territory, returns `#mobile-nav`/`.fantasy-header`
+  as topmost in every case - confirmed the strip's overflow is genuinely
+  hidden behind them, not floating on top.
+- Autosave overlap re-checked in both collapse states after the `right`
+  fix: real geometric overlap confirmed in both, `elementFromPoint` at the
+  overlap returns the handle (`mobile-rail-toggle`) as topmost in both,
+  and the text's right edge still sits inside the editor's own right edge
+  (no new collision with the border it was originally pulled in to avoid).
+- Focus tested with both the rail expanded AND the status-arm's action bank
+  open simultaneously - one call correctly collapses/closes both.
+- Re-ran tap-to-open, drag-to-switch, and the unrelated status-arm drag -
+  all still pass after this round's rewrite.
+- Desktop A/B against pristine `HEAD` at 1280×800 (isMobileMode() explicitly
+  reset first - this environment's `navigate` can carry the forced-preview
+  flag across loads): header z-index still 50, header rect unchanged, nav/
+  rail still `display:none`, `#auto-save-status`'s `right` still `auto`
+  (unset) - all mobile-only changes confirmed inert on desktop.
+
 ## [2026-08-02] – Handle taller, bottom clamp pulled back, autosave/word-count merged
 
 Six adjustments at Aaron's direction, all mobile-only. Desktop A/B-verified
