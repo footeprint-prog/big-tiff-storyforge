@@ -2,6 +2,58 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-02] – Suppress text selection while dragging UI elements
+
+### Fixed
+- **Grabbing the scene-status circle or the rail handle started selecting
+  text** (Aaron, on device). Root cause is a gesture collision, not a styling
+  oversight: both drags arm on a **300ms press-and-hold**, which is also iOS
+  Safari's own trigger for select-word and the "Copy | Look Up" callout. The
+  controls look like graphics but are real text as far as the selection
+  engine is concerned — the status circle renders its status code (`UF` /
+  `C` / `R`), and the rail tabs and handle are FontAwesome glyphs, i.e. font
+  characters. So the hold selected them, and the selection then extended as
+  the finger moved.
+  Fixed in two layers:
+  1. `user-select: none` + **`-webkit-touch-callout: none`** on
+     `#scene-status-bar` and `#mobile-guidance-rail` (the latter covers the
+     six tabs *and* the handle, which is a child of it), so a selection can
+     never start on these controls. `-webkit-touch-callout` is a separate
+     property — `user-select` alone does **not** suppress the iOS callout
+     bubble.
+  2. A `body.ui-dragging` guard applied only for the **duration of an armed
+     drag**, since once a drag is running the finger travels over the editor
+     and other page text that could anchor a selection en route. Both drag
+     setups raise and clear it, including on `pointercancel`, which iOS fires
+     when a gesture is interrupted.
+  Deliberately **not** a permanent global `user-select: none`: copying scene
+  text is a real thing Erica does, so the editor and guidance text stay
+  selectable at rest. `clearSelectionRanges()` drops any selection that got
+  established before the guard went up, but explicitly **skips a selection
+  anchored inside `#editor`** — clearing that would fight her caret while
+  she's writing.
+
+### Verification notes
+- At rest: status bar, status circle, rail strip, rail tabs, and rail handle
+  all compute `user-select: none`; `#editor` still computes `auto`; no guard
+  class on `body`.
+- Guard lifecycle asserted across every path: absent before the hold arms,
+  present once armed, absent after release — for the status-arm drag, the
+  rail reposition drag, **and** the drawer-scrub path (which arms with no
+  hold delay). Also cleared correctly on `pointercancel`, and never left
+  stuck by a plain tap that never became a drag.
+- `#editor` computes `none` *during* an armed drag and returns to `auto`
+  after release.
+- **Editor selection survives a drag**: seeded a 48-character selection
+  inside `#editor`, ran a full rail drag, and measured 48 characters still
+  selected throughout — `clearSelectionRanges()`'s editor exemption works.
+- **Limitation, stated rather than glossed:** `-webkit-touch-callout` is
+  WebKit-only, and Chromium drops unsupported properties at parse time, so it
+  is absent from the CSSOM here and **cannot be verified in this
+  environment** — confirmed present in the shipped source (three
+  declarations) instead. Whether the iOS callout is actually gone needs
+  Aaron's device. The `user-select` half is fully verified above.
+
 ## [2026-08-02] – Rail drag clamp fix, narrower rail, drawer clears the handle
 
 Third mobile-only round the same day, on top of the handle reshape above.

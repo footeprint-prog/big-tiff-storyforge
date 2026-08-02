@@ -1126,6 +1126,19 @@
             position: fixed !important;
             top: var(--mobile-header-h) !important;
             left: 0;
+            /* Item (2026-08-02): kill text selection + the iOS callout on the
+               whole arm. Both drag gestures in this tool arm on a 300ms
+               press-and-hold, which is ALSO iOS Safari's own trigger for
+               select-word / "Copy | Look Up" - so grabbing the status circle
+               would start selecting its status code ("UF" / "C" / "R") and
+               the selection would then extend as the finger moved. The
+               circle looks like a graphic but is real text, which is why it
+               is selectable at all. -webkit-touch-callout is the separate
+               property for the callout bubble; user-select alone does not
+               suppress it on iOS. Applied to the whole arm rather than just
+               the circle so the action buttons behave the same way. */
+            -webkit-user-select: none; user-select: none;
+            -webkit-touch-callout: none;
             /* Item (2026-07-27): raised above the guidance rail (z-index 45)
                and, critically, above an OPEN guidance drawer
                (.guidance-float-window, z-index 460) - now that the arm is
@@ -1483,6 +1496,16 @@
                Right stays borderless: the strip is flush to the screen. */
             border: var(--rail-border-w) solid rgba(212, 175, 55, 0.55); border-right: none;
             border-radius: 10px 0 0 10px;
+            /* Item (2026-08-02): same press-and-hold/selection problem as the
+               scene-status arm - see the matching comment on
+               #scene-status-bar. The rail arms a reposition drag on a 300ms
+               hold, which collides with iOS's own select/callout gesture;
+               the FontAwesome glyphs in the tabs and in the handle are text
+               as far as the selection engine is concerned. Set on the rail
+               so every descendant (the six tabs AND the handle, which is a
+               child of this element) inherits it in one place. */
+            -webkit-user-select: none; user-select: none;
+            -webkit-touch-callout: none;
             /* Item (2026-08-02): overflow moved to .rail-tab-strip below.
                It has to be `visible` here so the folder tab can protrude
                past this element's left edge - and overflow-x cannot be
@@ -1663,6 +1686,22 @@
            circle arms horizontal dragging (setupStatusBarDrag). */
         body.mobile-layout #scene-status-bar.status-bar-dragging {
             box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.8), 0 4px 14px rgba(0,0,0,0.4);
+        }
+
+        /* Item (2026-08-02): belt-and-braces for the same selection problem.
+           The rules on #scene-status-bar / #mobile-guidance-rail stop a
+           selection STARTING on those controls, which is the actual bug
+           Aaron hit. This one covers the drag's whole lifetime: once a drag
+           is armed the finger travels across the editor and the rest of the
+           page, and a selection anchored anywhere en route would still show
+           highlight. Set for the duration of an armed drag only (both drag
+           setups add/remove it), never permanently - the editor and the
+           guidance text must stay selectable the rest of the time, since
+           copying scene text is a real thing Erica does. */
+        body.ui-dragging,
+        body.ui-dragging * {
+            -webkit-user-select: none !important; user-select: none !important;
+            -webkit-touch-callout: none !important;
         }
 
         /* Guidance drawer: the float-window shells reused as fixed,
@@ -8861,6 +8900,36 @@
             if (toggle) toggle.setAttribute('aria-expanded', String(!collapsed));
         }
 
+        // ---- Shared drag/selection guard (2026-08-02, Aaron) ----
+        // Both mobile drag gestures arm on a 300ms press-and-hold, which is
+        // also iOS Safari's own trigger for select-word + the "Copy | Look
+        // Up" callout. CSS on #scene-status-bar / #mobile-guidance-rail stops
+        // a selection from STARTING on those controls; these two helpers
+        // cover the rest of the drag, when the finger is travelling over the
+        // editor and other page text that must stay selectable normally.
+        // Deliberately a temporary body class rather than a permanent
+        // user-select:none - copying scene text is a real thing Erica does.
+        // clearSelectionRanges() drops anything that already got selected
+        // before the guard went up (e.g. during the hold itself, on browsers
+        // that begin a selection before the CSS applies).
+        function beginUiDrag() {
+            document.body.classList.add('ui-dragging');
+            clearSelectionRanges();
+        }
+        function endUiDrag() {
+            document.body.classList.remove('ui-dragging');
+        }
+        function clearSelectionRanges() {
+            const sel = window.getSelection && window.getSelection();
+            if (!sel || sel.isCollapsed) return;
+            // Never disturb a selection the user has inside the editor - that
+            // would fight the caret while they're writing.
+            const anchor = sel.anchorNode;
+            const editor = document.getElementById('editor');
+            if (editor && anchor && editor.contains(anchor.nodeType === 1 ? anchor : anchor.parentNode)) return;
+            sel.removeAllRanges();
+        }
+
         // ---- Guidance rail: tap-and-hold to drag reposition (2026-07-25),
         // drag-across-tabs to switch drawers once one is open (2026-07-26) ----
         // The rail defaults to vertically centered (CSS top:50%). A 300ms
@@ -8933,6 +9002,7 @@
             function armDrag() {
                 dragging = true;
                 railEl.classList.add('rail-dragging');
+                beginUiDrag();
                 const rect = railEl.getBoundingClientRect();
                 railEl.style.transform = 'none';
                 railEl.style.top = clampTop(rect.top, railEl) + 'px';
@@ -8973,6 +9043,11 @@
                     // available in this state - see file header comment.
                     scrubbing = true;
                     didScrub = false;
+                    // Scrubbing has no hold delay, so it can't collide with
+                    // iOS's long-press select the way arming does - but the
+                    // finger still travels across tabs, so suppress for the
+                    // duration here too.
+                    beginUiDrag();
                 } else {
                     scrubbing = false;
                     startTop = railEl.getBoundingClientRect().top;
@@ -9006,6 +9081,9 @@
                     dragging = false;
                     railEl.classList.remove('rail-dragging');
                 }
+                // Unconditional: this also runs for pointercancel, and the
+                // scrub path arms it without ever setting `dragging`.
+                endUiDrag();
                 document.removeEventListener('pointermove', onPointerMove);
             }
 
@@ -9111,6 +9189,7 @@
             function armDrag() {
                 dragging = true;
                 barEl.classList.add('status-bar-dragging');
+                beginUiDrag();
                 // Mid-drag, the arm is neither wall's shape - clear dock
                 // classes so it reads as freely floating while in motion;
                 // updateStatusBarDock re-evaluates and re-applies on release.
@@ -9153,6 +9232,9 @@
                     barEl.classList.remove('status-bar-dragging');
                     updateStatusBarDock(barEl);
                 }
+                // Unconditional - also covers pointercancel, where `dragging`
+                // may already have been cleared.
+                endUiDrag();
                 document.removeEventListener('pointermove', onPointerMove);
             }
 
