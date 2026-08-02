@@ -49,8 +49,8 @@ there's a specific reason to differ (state that reason in a comment):**
 | Class | Box size | Icon `font-size` | Layout |
 |---|---|---|---|
 | `.text-tool-btn` (editor toolbar: Proofreader, B/I/U) | `--tap` (44px) | `1rem` | mobile |
-| `.status-actions-bank > button` (Save/Draft Log/Sammy) | `--tap` (44px) | inherits `.control-bar-item` `0.9375rem` | mobile |
-| `.rail-tab` (guidance drawer triggers) | 3.5rem (56px, exception above) | `1rem` | mobile |
+| `.status-actions-bank > button` (Save/Draft Log/Sammy) | `--tap` (44px) | `1.21875rem` (2026-08-02; was `0.9375rem` inherited from `.control-bar-item`) | mobile |
+| `.rail-tab` (guidance drawer triggers) | 3.5rem (56px, exception above) | `1.3rem` (2026-08-02; was `1rem`) | mobile |
 | `.m-drawer-close` | `--tap-sm` (30px) | `1.15rem` | mobile |
 | `.guidance-copy-btn` | `--tap-sm` (30px) | `1rem` | mobile |
 | `.control-bar-item` (desktop toolbar/status row) | 30px height | `12px` (`0.75rem`) | desktop |
@@ -63,6 +63,26 @@ different, heavier control family than the editor toolbar and status
 buttons next to them. Reverted to `1rem` per Aaron. If dead space around an
 icon is a real problem again, shrink the box's internal padding first,
 not the glyph.
+
+**2026-08-02 update — the icon-margin item above is now settled, by
+Aaron's own number.** He asked for a flat **+30% glyph** on both the rail
+tabs (`1rem` → `1.3rem`) and the action bank (`0.9375rem` →
+`1.21875rem`), explicitly keeping every margin, padding, and border as-is.
+This is not a re-run of the reverted 2026-07-26 attempt: that one was a
+2.5× guess made in place of asking, this is the requested ratio, and it
+lands well short of the size that read as a different control family.
+Both boxes are untouched (56px rail tab, 44px `--tap` action button), so
+touch targets and the arm's circle-driven column geometry are unchanged —
+confirmed by measurement, not by eye.
+
+Also 2026-08-02: **Draft Log renders the letters `DL` instead of its
+`fa-layer-group` icon on mobile only.** Implemented the same way the
+status circle does its short codes — both forms sit in the DOM
+(`.btn-text` / new `.btn-code`), CSS picks one per layout, no JS
+branching, and the button's `aria-label` still carries "Draft Log" so the
+accessible name never changed. Desktop keeps icon + full text. If you add
+another letter-code button, reuse `.btn-code` rather than inventing a
+parallel class.
 
 ## 3. Accessibility minimums (both layouts)
 

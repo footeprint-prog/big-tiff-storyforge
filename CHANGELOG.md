@@ -2,6 +2,82 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-02] – Icon sizing round: rail +30%, action bank +30%, DL code
+
+Three small mobile-only adjustments at Aaron's direction. Desktop re-verified
+unchanged by direct measurement against the pristine pre-change file, same
+discipline as every prior round.
+
+### Changed
+- **Guidance-rail tab icons +30%** (`1rem` → `1.3rem`, measured 16px →
+  20.8px). Box, padding, and the 1px divider borders all unchanged — this is
+  a glyph-only change, so the 56px touch targets and the strip's connected
+  geometry are untouched. **This settles the "too much margin around the rail
+  icons" item that had been open since 2026-07-27**, using Aaron's own
+  number; the earlier reverted attempt (2.5rem, unasked) overshot badly, and
+  1.3rem lands nowhere near it.
+- **Scene-status action-bank icons +30%** (inherited `0.9375rem` →
+  `1.21875rem`, measured 15px → 19.5px) on Sammy / Draft Log / Save Draft.
+  Aaron's note said "button size"; confirmed with him first that the **glyph**
+  grows and the box does not. Growing the boxes 30% would have taken them to
+  57.2px — wider than the 56px status circle above them — which would widen
+  the whole arm and invert the "narrower buttons centered under the wider
+  circle" relationship that the arm's 8px/14px padding values were derived
+  from. Boxes stay 44px `--tap`; arm width stays 74px.
+- **Draft Log shows the letters `DL` instead of its icon, mobile only.** Uses
+  the existing `.status-trigger-label` / `.status-trigger-code` pattern —
+  both forms in the DOM, CSS picks per layout, no JS branching. Desktop still
+  renders the `fa-layer-group` icon plus the full "Draft Log" text, and the
+  `aria-label` is unchanged either way, so the accessible name is untouched.
+- **Collapsed arm's bottom green trimmed.** `padding-bottom` drops 14px → 0
+  **in the collapsed state only**; the open state keeps its 14px. That 14px
+  was derived from the open state (matching the 14-16px side clearance the
+  centered action buttons get) and made no sense with the buttons hidden — it
+  stacked on top of the chevron toggle's own ~9.4px internal bottom padding,
+  leaving ~25px of green under the glyph against only 8px above the circle.
+  Now the toggle's own padding is the entire bottom gap: measured 9.4px green
+  plus the 2px gold border, which reads symmetric with the top.
+
+### Verification notes
+Measured via `setMobilePreview(true)` at 440×956 with a seeded scene, real
+`getBoundingClientRect()` / `getComputedStyle()` values, not screenshots:
+- Both icon bumps confirmed at exactly ×1.3 (16→20.8px, 15→19.5px) with
+  boxes, padding, and borders byte-identical to before (56×56 rail tabs,
+  44×44 action buttons, arm still 74px wide, circle still 56px).
+- Collapsed/open padding swap asserted in both directions with the state
+  class read explicitly (`actions-open`): collapsed → 0px pad / 96px arm /
+  9.4px green under the glyph; open → 14px pad / 250px arm / 16px under the
+  last button, i.e. the open state is untouched. `#auto-save-status` stays
+  visible in both states (the documented must-not-hide invariant).
+- Gestures re-run as real `PointerEvent` sequences (`pointerType: 'touch'`):
+  status-arm press-and-hold drag → corner-dock left and right (flush, correct
+  border/radius morph per side, `top` still pinned to the header), status menu
+  direction-flip measured at a 10px gap and fully on-screen in **both**
+  directions, rail tap-to-open, rail drag-to-switch (switches, rail does not
+  move, trailing click swallowed), and rail press-and-hold reposition (moved
+  the full 130px, drawer correctly did not open, reset clears the inline
+  style).
+- Accessibility re-checked on everything touched: rail-tab targets still
+  56×56, action buttons still 44×44, rail icon contrast 9.99:1, `DL` contrast
+  5.44:1 at 19.5px — all above the AA floors in `BUTTON_STYLE_GUIDE.md`.
+- **Desktop verified by A/B measurement**, not assertion: the pristine
+  `HEAD` file and the edited file were loaded side by side at 1280×800 and
+  probed identically. Every value matches — status bar `1028×48` at the same
+  offset, same padding/border/radius/z-index, status pill 100×18.55 at
+  10.4px, action buttons 95.2 / 90.86 / 80.67px wide with 12px icons and
+  visible text labels, rail `display:none`, rail icon still 16px there. The
+  new `.btn-code` span computes to `display:none` / 0×0 on desktop, so Draft
+  Log's width is unchanged to the hundredth of a pixel.
+
+### Flagged, not settled
+- The collapsed-arm bottom gap is now 9.4px because that is the chevron
+  toggle's own internal padding, which is the floor without touching the
+  toggle's box (deliberately left alone — it carries a documented "don't
+  re-fix without re-measuring" note about the 30px touch-target floor). If
+  Aaron wants it tighter than 9.4px, that toggle's padding is the next thing
+  to change, and it needs asking first.
+- No real-device confirmation yet for this round specifically.
+
 ## [2026-07-27] – Scene-status arm: drag, corner-morph docking, button polish
 
 Four rounds in one day on the mobile scene-status arm (the circular R/UF/C
