@@ -113,6 +113,18 @@ they aren't lost now that the old document is marked historical.
       gestures (including the scene-status arm's own drag, added
       2026-07-27) do get checked on Aaron's real iPhone 15 Pro each round —
       not an untouched-by-any-finger state.
+      **UPDATE 2026-07-27:** the scene-status arm gained its own
+      press-and-hold horizontal drag plus corner-morph docking (snaps flush
+      to whichever screen edge it's released near, border/rounding morph
+      to match), and its option menu now opens left or right depending on
+      available space instead of always right. A same-day fix-up round
+      corrected two real problems from the initial version (a positioning
+      bug from a deleted CSS variable, and an icon-size change that
+      overshot a "reduce the margin" request) — see CHANGELOG's 2026-07-27
+      entry for full detail, including one item still flagged not settled
+      (rail-icon margin). **`claude/mobile-port` and `main` are NOT in sync
+      as of this update** — see `Mobile_Port_Handoff.md`'s Status header
+      before assuming otherwise.
 - [x] **Achievements & usage-tracking data layer.** DONE 2026-07-26 — 188
       achievements embedded with machine-readable rules (cross-checked
       against the source JSON, 0 mismatches), an AES-encrypted
@@ -284,4 +296,4 @@ rather than assuming the whole list is still live.
 
 ---
 
-*Last Updated: 2026-07-26*
+*Last Updated: 2026-07-27*
