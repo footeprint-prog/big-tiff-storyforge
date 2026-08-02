@@ -34,14 +34,20 @@ don't "fix" them without asking Aaron first:
   from `--tap`, so the two edge-mounted control banks read as the same
   visual weight as each other. This is a deliberate exception to `--tap`,
   not a bug.
-- The rail's collapse control (`.rail-collapse-toggle`) is **60×140px**
-  as of 2026-08-02 — it left the `--tap-sm` tier entirely when Aaron
-  respecified it as a **folder tab** centered on the rail's long left wall
-  rather than a small arrow at the strip's foot. 140px = 2.5 rail icons,
-  60px = twice the old toggle's 30px depth. It is not a "set once and
-  ignore" control any more; it's the handle you grab to reopen a collapsed
-  rail, so the generous size is the point. Don't shrink it back toward
-  `--tap-sm` without asking.
+- The rail's collapse control (`.rail-collapse-toggle`) is **24×96px** as of
+  2026-08-02 — it left the `--tap-sm` tier entirely when Aaron respecified it
+  as a **handle** on the rail's long left wall rather than a small arrow at
+  the strip's foot. It was briefly 60×140 (2.5 rail icons tall) the same day;
+  Aaron then pointed at **iOS's own hidden-PiP-window handle** — the slim
+  translucent pill on a phone screen's right edge — and asked for the same
+  size and shape, which measures ~24×96 CSS px at a 4:1 ratio with a fully
+  rounded outboard edge (hence the 12px radius = half the width).
+  **This is the one control in the tool that sits below the 30×30 chrome
+  touch floor in one dimension** (24px wide). It is a deliberate,
+  Aaron-specified exception, made on the reasoning that it is edge-anchored
+  and 96px tall, so the hard-to-miss axis is the long one. Don't "fix" the
+  24px on accessibility grounds without asking him — and don't cite it as
+  precedent for shrinking anything else.
 
 ## 2. Icon (glyph) size is separate from box size — don't conflate them
 

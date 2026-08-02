@@ -27,12 +27,22 @@ at 1280×800 and identical on every value.
   glyphs, so the six icons keep a shared centerline — they have different
   intrinsic widths (mountain-sun 26px vs bullseye 20.8px) and flex-end would
   have left their left edges ragged. Touch targets stay 56×56.
-- **The rail's collapse control is now a folder tab on the rail's long left
-  wall**, replacing the 56×30 arrow at the foot of the strip. 140px tall
-  (2.5 rail icons), 60px wide, vertically centered, protruding into the
-  editor. Collapsed, the six-icon strip disappears and the tab *becomes* the
-  rail — it drops back into normal flow so the rail element sizes to it,
-  which matters because the drag clamp reads `rail.offsetHeight`.
+- **The rail's collapse control is now a handle on the rail's long left
+  wall**, replacing the 56×30 arrow at the foot of the strip. Vertically
+  centered, protruding into the editor. Collapsed, the six-icon strip
+  disappears and the handle *becomes* the rail — it drops back into normal
+  flow so the rail element sizes to it, which matters because the drag clamp
+  reads `rail.offsetHeight`.
+  Built first at 60×140 (2.5 rail icons tall, twice the old toggle's depth),
+  then **revised the same day to 24×96** after Aaron pointed at iOS's own
+  hidden-PiP-window handle and asked for that size and shape: ~55×217 px in a
+  923px-wide screenshot of a 393pt screen (≈2.35×) → ~24×96 CSS px, 4:1, with
+  a fully rounded outboard edge (12px radius = half the width). Chevron
+  dropped 0.85rem → 0.7rem to sit inside the narrower pill.
+  **24px wide is below the project's 30×30 chrome touch floor** — a
+  deliberate, Aaron-specified exception now recorded in
+  `BUTTON_STYLE_GUIDE.md`, on the reasoning that the control is edge-anchored
+  and 96px tall. Flagged to him rather than silently adjusted.
 
 ### Added
 - **`.rail-tab-strip`**, an inner scroller wrapping the six tabs. Required,
@@ -66,11 +76,13 @@ sequences (`pointerType: 'touch'`):
 - Icon gap 8.8px on all four 20.8px glyphs (exactly half of 17.6px); the two
   wider glyphs land at 6.2px and 7.5px, the same per-icon variance the
   centered layout already had. Tabs still 56×56, `box-sizing: border-box`.
-- Folder tab measured 60×140 (= 2.5 × 56), vertically centered on the rail to
-  within 0.5px, 2px border on three sides, `10px 0 0 10px` radius, not clipped.
-  Collapsed: strip `display:none`, tab `position:static`, rail 60×140 flush
-  right, rail border/background cleared so the tab's edge isn't doubled,
-  chevron rotated, `aria-expanded` false. Re-expanding restores every value.
+- Handle measured 24×96 (ratio exactly 4.00), vertically centered on the rail
+  to within 0.5px, 2px border on three sides, `12px 0 0 12px` radius, chevron
+  fitting inside with clearance, not clipped. Collapsed: strip `display:none`,
+  handle `position:static`, rail 24×96 flush right, rail border/background
+  cleared so the edge isn't doubled, chevron rotated, `aria-expanded` false.
+  Re-expanding restores every value. (The intermediate 60×140 version was
+  measured the same way before the revision.)
 - Gestures re-run after the DOM restructure: tap-to-open, drag-to-switch
   (switches, rail does not move, trailing click swallowed), press-and-hold
   reposition **from a rail icon and from the folder tab itself** (drags
@@ -80,8 +92,8 @@ sequences (`pointerType: 'touch'`):
   with a drawer open, and collapse works from under it. The status arm was
   then parked in a real geometric overlap with the rail and still came out
   topmost — Aaron's spec holds.
-- Accessibility: folder tab 60×140 (well over the 44px primary floor), rail
-  tabs 56×56, wordmark 15.2px at 5.44:1, rail icons 6.39:1.
+- Accessibility: rail tabs 56×56, wordmark 15.2px at 5.44:1, rail icons
+  6.39:1. The handle's 24px width is the one known floor exception, above.
 - Desktop A/B at 1280×800 against pristine `HEAD`: header 1280×58, wordmark
   still 21px/31.5px, feather 16px, gold disc 32×32, STORYFORGE and account
   button at identical offsets, rail and toggle `display:none`, rail icon still

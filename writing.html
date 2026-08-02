@@ -1545,12 +1545,17 @@
            docked, saving screen space; a plain tap expands it back to the
            full 6-icon strip.
            Item (2026-08-02, Aaron): it is no longer a 56x30 arrow sitting
-           at the bottom of the bank - it's a FOLDER TAB centered on the
-           rail's long (left) wall. 140px tall = 2.5 rail icons (2.5 x 56),
-           60px wide = twice the old toggle's 30px depth (confirmed with him
-           - "twice the width of the chevron toggle" read literally off the
-           old 56px width would have been a 112px slab, a quarter of a 440px
-           screen, which is a panel and not a tab).
+           at the bottom of the bank - it's a HANDLE centered on the rail's
+           long (left) wall.
+           Item (2026-08-02, same day, revised): first built at 60x140
+           (2.5 rail icons tall), then Aaron pointed at iOS's own
+           hidden-PiP-window handle - the translucent pill on the right edge
+           of a phone screenshot - and asked for the same size and shape.
+           Eyeballed off that screenshot: ~55x217 image px on a 923px-wide
+           capture of a 393pt screen (~2.35x), so ~24x96 CSS px, a roughly
+           4:1 vertical pill with its outboard corners fully rounded. Hence
+           24x96 with a 12px radius (= half the width, so the left edge is a
+           true semicircle) rather than the previous 60x140/10px.
            Absolutely positioned, so it protrudes past the rail's left edge
            - this is why the rail's overflow had to move to .rail-tab-strip
            (see that rule). It stays a child of #mobile-guidance-rail on
@@ -1562,21 +1567,23 @@
             display: flex; align-items: center; justify-content: center;
             position: absolute;
             top: 50%; transform: translateY(-50%);
-            left: -60px;
-            width: 60px; height: 140px;
+            left: -24px;
+            width: 24px; height: 96px;
             background: #3D2B1F;
-            color: #D4AF37; font-size: 0.85rem;
+            color: #D4AF37; font-size: 0.7rem;
             /* Matches the strip's own outer edge (2px, same alpha). No right
                border: that side butts against the rail's left wall, and the
                rail's own border draws the seam, so the two read as one
                shape with the tab growing out of it. */
             border: 2px solid rgba(212, 175, 55, 0.55);
             border-right: none;
-            border-radius: 10px 0 0 10px;
+            /* 12px = half the 24px width, so the outboard edge is a true
+               semicircle, matching the iOS handle's fully-rounded end. */
+            border-radius: 12px 0 0 12px;
             flex-shrink: 0;
             /* Above an open guidance drawer (.guidance-float-window, 460).
                The old bottom-mounted toggle sat inside the 56px strip, which
-               a drawer never reached; the folder tab protrudes 60px LEFT,
+               a drawer never reached; this handle protrudes LEFT,
                straight into the drawer's footprint, so at the rail's own
                z-index (45) it would be covered and untappable exactly when
                you'd want to collapse. Same precedent as the scene-status
@@ -1584,9 +1591,9 @@
                Confirmed with him 2026-08-02. */
             z-index: 470;
         }
-        /* Collapsed: the six-tab strip disappears and the folder tab IS the
+        /* Collapsed: the six-tab strip disappears and the handle IS the
            rail - it drops back into normal flow so the rail element sizes to
-           it (140px), which matters because the drag clamp reads
+           it (96px), which matters because the drag clamp reads
            rail.offsetHeight to keep the thing on screen. The rail's own
            border/background go transparent so the tab's edge isn't doubled. */
         body.mobile-layout #mobile-guidance-rail.rail-collapsed {
