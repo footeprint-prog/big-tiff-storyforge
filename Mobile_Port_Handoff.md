@@ -2,27 +2,35 @@
 
 ## For: whoever picks up mobile work next (agent or human)
 ## From: Claude sessions, 2026-07-24 – 2026-07-27, at Aaron's direction
-## Status: **`claude/mobile-port` is ahead of `main` again as of 2026-07-27
-##         evening — NOT currently in sync, and don't re-sync without
-##         reading the next paragraph.** Earlier 2026-07-27 (the button-
-##         polish, arm-drag, and corner-morph-docking rounds) were merged
-##         into `main` while Aaron was away, at his explicit request. The
-##         corner-morph round shipped real problems (see CHANGELOG's
-##         2026-07-27 entry: a positioning bug, an icon-size overreach) that
-##         Aaron caught on review after returning — **those fixes are on
-##         `claude/mobile-port` only (commit `23b7e7b`) and have NOT been
-##         merged to `main` yet**, since Aaron was actively present/
-##         reviewing at that point rather than away, and the standing
-##         claude-mobile-port-only iteration loop applies by default unless
-##         he says otherwise. Ask before merging again rather than assuming
-##         the "push to main" permission from the away-from-desk round
-##         still stands.
-## Live site (`bigtiffsworld.com`) status: **untouched this entire session**
-##         — still whatever was promoted 2026-07-26, predating ALL of
-##         today's arm-drag/corner-morph/button-polish work in both
-##         directions (has neither the bug nor its fix). Do not assume the
-##         live site matches `main` right now — it doesn't, for any commit
-##         after 2026-07-26.
+## Status: **fully caught up as of 2026-07-27 evening — dev repo `main`,
+##         `claude/mobile-port`, and the live site all match again**
+##         (`main` commit `0faaf33`, `claude/mobile-port` commit `ce16f62`,
+##         same tree). Sequence that day, for context if this drifts again:
+##         the button-polish/arm-drag/corner-morph rounds were merged to
+##         `main` while Aaron was away, at his explicit request; the
+##         corner-morph round shipped real problems (a positioning bug, an
+##         icon-size overreach — see CHANGELOG's 2026-07-27 entry) that he
+##         caught on review after returning; a same-day fix-up round
+##         (`23b7e7b`) corrected them on `claude/mobile-port` only at
+##         first; Aaron then explicitly asked to push everything live, at
+##         which point `main` was re-synced to pick up the fix-up commit
+##         **before** promoting (promoting stale/buggy `main` content would
+##         have shipped the bug to the live site) - re-verify `main` has
+##         what you expect before ever promoting, don't just trust a status
+##         line in this doc without checking.
+## Live site (`bigtiffsworld.com`) status: **promoted 2026-07-27** (commit
+##         `eb5b5c4` in `big_tiff_launchpage`), verified **byte-identical**
+##         against the actual live domain response (not just the Pages
+##         build API, which can report "built" before a CDN edge actually
+##         serves the new bytes - fetched `https://bigtiffsworld.com/app/`
+##         directly and diffed against the pushed file after normalizing
+##         line endings, since this Windows checkout's `core.autocrlf`
+##         makes the local working-tree copy differ byte-for-byte from the
+##         LF-only git blob/live response even when the content is
+##         identical - don't mistake that for a real diff next time).
+##         Assets/manifest unchanged this round (checksums verified
+##         identical); manifest's `start_url` was already correctly
+##         `./index.html` from a prior promotion, nothing to fix this time.
 ## Real-device testing: **CORRECTED 2026-07-27** — every mobile UI round is
 ##         in fact tested on a real device. Aaron confirmed directly he
 ##         checks all changes on a real iPhone 15 Pro, iOS Safari, as a
@@ -38,9 +46,9 @@
 ##             still the working branch for ongoing mobile UI iteration
 ##             (its GitHub Pages config is what gives the ~1min preview
 ##             rebuild). Merged to `main` periodically, not abandoned.
-## Dev repo main: https://github.com/footeprint-prog/big-tiff-storyforge — **currently BEHIND `claude/mobile-port` by one commit (`23b7e7b`, the 2026-07-27 fix-up round) — see Status above before merging.**
-## Live preview (dev repo Pages): https://footeprint-prog.github.io/big-tiff-storyforge/writing.html (tracks `claude/mobile-port`, so it DOES have the fixes)
-## **Real live site: https://bigtiffsworld.com/app/ — last promoted 2026-07-26, does NOT have any 2026-07-27 work. See "Live site status" above.**
+## Dev repo main: https://github.com/footeprint-prog/big-tiff-storyforge — **matches `claude/mobile-port` exactly** (merge commit `0faaf33`, 2026-07-27). Expect `main` to trail again once new commits land on the branch - that's normal, re-sync (and re-verify main actually has the fix-up commits) before the next promotion.
+## Live preview (dev repo Pages): https://footeprint-prog.github.io/big-tiff-storyforge/writing.html (tracks `claude/mobile-port`)
+## **Real live site: https://bigtiffsworld.com/app/ — matches `main`/`claude/mobile-port` as of 2026-07-27, verified against the live domain directly.**
 
 ---
 
@@ -130,9 +138,9 @@ Two real bugs were caught this way that a naive test would have missed:
 
 | Where | Repo | What's there |
 |---|---|---|
-| Dev repo Pages preview | `big-tiff-storyforge`, branch `claude/mobile-port` (Pages config) | **Current, ahead of `main`** — has everything through the 2026-07-27 fix-up round (commit `23b7e7b`: arm drag, corner-morph docking, the `--arm-pad-r` positioning fix, rail-icon revert). Rebuilds ~1 min after any push to that branch. |
-| Dev repo `main` | `big-tiff-storyforge` | **One commit behind `claude/mobile-port`** as of 2026-07-27 evening — has the button-polish, arm-drag, and corner-morph-docking rounds (merged while Aaron was away, at his explicit request), but **not** the same-day fix-up round (`23b7e7b`) that corrected the bugs those rounds shipped. Don't merge `claude/mobile-port` into `main` again without checking whether Aaron wants that — the away-from-desk permission was for that one round, not standing. |
-| **Real live site** | `big_tiff_launchpage`, branch `main`, custom domain `bigtiffsworld.com` via Porkbun DNS (no Cloudflare in the path) | **Last promoted 2026-07-26** (commit `c071209`) — untouched by any 2026-07-27 work, in either direction. Does not have the arm-drag/corner-morph feature at all, buggy or fixed. Any future promotion is still a separate manual step Aaron requests explicitly — see the iteration-loop rule below. |
+| Dev repo Pages preview | `big-tiff-storyforge`, branch `claude/mobile-port` (Pages config) | **Current** — has everything through the 2026-07-27 fix-up round (commit `ce16f62`: arm drag, corner-morph docking, the `--arm-pad-r` positioning fix, rail-icon revert, plus CHANGELOG/handoff docs). Rebuilds ~1 min after any push to that branch. |
+| Dev repo `main` | `big-tiff-storyforge` | **Merged and current as of 2026-07-27 evening** (commit `0faaf33`) — re-synced with `claude/mobile-port` specifically so the fix-up round (not just the buggy corner-morph round) would be what got promoted live. `main` and `claude/mobile-port` are identical at time of writing; expect `main` to trail again once new commits land on the branch. |
+| **Real live site** | `big_tiff_launchpage`, branch `main`, custom domain `bigtiffsworld.com` via Porkbun DNS (no Cloudflare in the path) | **Promoted 2026-07-27** (commit `eb5b5c4`) — has everything through the fix-up round, i.e. the corrected (not buggy) version. Assets/manifest unchanged this round (checksums verified identical), only `app/index.html` needed copying; `start_url` was already `./index.html` from a prior round. Verified byte-identical against `https://bigtiffsworld.com/app/` directly (line-ending-normalized — this Windows checkout's `core.autocrlf` makes local/live diffs look nonzero even when content is identical; don't mistake that for drift). Any future promotion is still a separate manual step Aaron requests explicitly — see the iteration-loop rule below. |
 
 **The 2026-07-25 promotion already happened** the same way described in
 prior versions of this doc: a direct byte-verified file copy of
