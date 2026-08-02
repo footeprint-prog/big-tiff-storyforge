@@ -122,9 +122,14 @@ they aren't lost now that the old document is marked historical.
       bug from a deleted CSS variable, and an icon-size change that
       overshot a "reduce the margin" request) — see CHANGELOG's 2026-07-27
       entry for full detail, including one item still flagged not settled
-      (rail-icon margin). **`claude/mobile-port` and `main` are NOT in sync
-      as of this update** — see `Mobile_Port_Handoff.md`'s Status header
-      before assuming otherwise.
+      (rail-icon margin). **UPDATE 2026-07-27 (later same day):** Aaron
+      asked to push everything live; `main` was re-synced with
+      `claude/mobile-port` (picking up the fix-up round, not just the
+      buggy corner-morph round) and promoted to bigtiffsworld.com,
+      verified byte-identical against the live domain directly. All three
+      — `claude/mobile-port`, `main`, and the live site — match as of this
+      update. See `Mobile_Port_Handoff.md`'s Status header for the
+      current state if this has since drifted.
 - [x] **Achievements & usage-tracking data layer.** DONE 2026-07-26 — 188
       achievements embedded with machine-readable rules (cross-checked
       against the source JSON, 0 mismatches), an AES-encrypted
