@@ -2,6 +2,98 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-02] – Wordmark, rail edge/margin, and the rail folder tab
+
+Four more mobile-only adjustments at Aaron's direction, same day as the icon
+sizing round below. Desktop A/B-measured against the pristine pre-change file
+at 1280×800 and identical on every value.
+
+### Changed
+- **"Big Tiff" wordmark sized to the feather glyph** (30px → 15.2px), not to
+  the gold disc it sits in — the disc is 30px but the feather inside it is
+  half that. Both now read from one new `--logo-glyph` custom property rather
+  than repeating the literal, since "the wordmark matches the feather" is
+  exactly the kind of relationship that breaks silently when only one of two
+  rules gets edited (see the `--arm-pad-r` bug, 2026-07-27).
+  **Side effect worth knowing:** the mobile header was wrapping to two rows to
+  fit the 30px wordmark. It now fits on one, so `--mobile-header-h` measures
+  **70px → 36px** and everything anchored to it (the status arm, the sheets)
+  moves up with it. That is a real layout shift, not just a font change — it
+  gives back 34px of writing area.
+- **Rail's outer gold edge 1px → 2px.** Width only; the 0.55 alpha and the
+  1px inter-tab dividers are untouched (the ask was the outer edge).
+- **Rail icons moved closer to the screen edge**, gap halved 17.6px → 8.8px.
+  Done as `padding-left` on the 56px tab rather than right-aligning the
+  glyphs, so the six icons keep a shared centerline — they have different
+  intrinsic widths (mountain-sun 26px vs bullseye 20.8px) and flex-end would
+  have left their left edges ragged. Touch targets stay 56×56.
+- **The rail's collapse control is now a folder tab on the rail's long left
+  wall**, replacing the 56×30 arrow at the foot of the strip. 140px tall
+  (2.5 rail icons), 60px wide, vertically centered, protruding into the
+  editor. Collapsed, the six-icon strip disappears and the tab *becomes* the
+  rail — it drops back into normal flow so the rail element sizes to it,
+  which matters because the drag clamp reads `rail.offsetHeight`.
+
+### Added
+- **`.rail-tab-strip`**, an inner scroller wrapping the six tabs. Required,
+  not cosmetic: the rail must be `overflow: visible` for the folder tab to
+  protrude, and CSS will not allow `overflow-x: visible` alongside
+  `overflow-y: auto` (the visible axis computes to auto). The scroll +
+  max-height behavior that kept tabs reachable at large text scales moved
+  into this wrapper unchanged.
+
+### Fixed
+- **Folder tab was unreachable under an open drawer.** Protruding 60px left
+  put it inside the drawer's footprint, where the old strip-foot toggle never
+  went. Raising the *tab's* z-index to 470 did nothing — the rail is
+  `position: fixed` with a z-index, so it forms a stacking context and no
+  child z-index can escape it. Fixed on the rail itself: **45 → 465**.
+  Deliberately not 470: `#scene-status-bar` is 470 and the rail comes later in
+  the DOM, so an equal value would silently invert Aaron's documented "the
+  status circle wins that overlap" rule. 465 clears the drawer (460) and stays
+  under the arm.
+- `.rail-tab:nth-last-child(2)` → `.rail-tab-strip .rail-tab:last-child`. The
+  old selector meant "the tab above the toggle"; with the toggle out of the
+  flow it would have skipped the real last tab and stranded a divider on the
+  strip's bottom edge.
+
+### Verification notes
+Measured at 440×956 with a seeded scene; gestures as real `PointerEvent`
+sequences (`pointerType: 'touch'`):
+- Wordmark and feather rects both 15.2px tall with matching tops — "same
+  height" true of the measured rect, not just the type size. Branding not
+  clipped, account button still fully on-screen at the new header height.
+- Icon gap 8.8px on all four 20.8px glyphs (exactly half of 17.6px); the two
+  wider glyphs land at 6.2px and 7.5px, the same per-icon variance the
+  centered layout already had. Tabs still 56×56, `box-sizing: border-box`.
+- Folder tab measured 60×140 (= 2.5 × 56), vertically centered on the rail to
+  within 0.5px, 2px border on three sides, `10px 0 0 10px` radius, not clipped.
+  Collapsed: strip `display:none`, tab `position:static`, rail 60×140 flush
+  right, rail border/background cleared so the tab's edge isn't doubled,
+  chevron rotated, `aria-expanded` false. Re-expanding restores every value.
+- Gestures re-run after the DOM restructure: tap-to-open, drag-to-switch
+  (switches, rail does not move, trailing click swallowed), press-and-hold
+  reposition **from a rail icon and from the folder tab itself** (drags
+  without collapsing), tap-to-collapse/expand, and `resetGuidanceRailPosition`.
+- Stacking verified by `elementFromPoint`, not by reading z-index values: the
+  folder tab and the rail icons are the topmost elements at their own centers
+  with a drawer open, and collapse works from under it. The status arm was
+  then parked in a real geometric overlap with the rail and still came out
+  topmost — Aaron's spec holds.
+- Accessibility: folder tab 60×140 (well over the 44px primary floor), rail
+  tabs 56×56, wordmark 15.2px at 5.44:1, rail icons 6.39:1.
+- Desktop A/B at 1280×800 against pristine `HEAD`: header 1280×58, wordmark
+  still 21px/31.5px, feather 16px, gold disc 32×32, STORYFORGE and account
+  button at identical offsets, rail and toggle `display:none`, rail icon still
+  16px with 0 padding, `--logo-glyph` unset. The new `.rail-tab-strip` div
+  exists in the DOM there but renders nothing.
+
+### Flagged, not settled
+- The header is a **shared** element and Aaron has said it likely needs
+  splitting into separate mobile/desktop rules. The wordmark change above is
+  mobile-gated, so nothing desktop moved — but that split is still an open
+  idea he has NOT approved. Don't action it unprompted.
+
 ## [2026-08-02] – Icon sizing round: rail +30%, action bank +30%, DL code
 
 Three small mobile-only adjustments at Aaron's direction. Desktop re-verified

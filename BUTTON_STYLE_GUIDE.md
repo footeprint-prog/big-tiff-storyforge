@@ -21,19 +21,27 @@ text-scale setting changes:
 | Var | Size | Meaning | Examples |
 |---|---|---|---|
 | `--tap` | 2.75rem / 44px | Anything touched **while actively writing** | Editor toolbar (`.text-tool-btn`), scene-status action bank (Save/Draft Log/Sammy), bottom nav |
-| `--tap-sm` | 1.875rem / 30px | Chrome she **sets once and ignores** | Panel close buttons, drawer-close (`.m-drawer-close`), copy-to-clipboard (`.guidance-copy-btn`), rail-collapse arrow, status-actions arrow tab |
+| `--tap-sm` | 1.875rem / 30px | Chrome she **sets once and ignores** | Panel close buttons, drawer-close (`.m-drawer-close`), copy-to-clipboard (`.guidance-copy-btn`), status-actions arrow tab |
 
 Rule of thumb before adding a new mobile button: is this something Erica
 taps repeatedly mid-writing-session, or a set-once toggle? That answers
 which var to use — don't invent a third size.
 
-Two **named, deliberate exceptions** sit outside this floor on purpose —
+Three **named, deliberate exceptions** sit outside this floor on purpose —
 don't "fix" them without asking Aaron first:
 - The guidance-rail tabs (`.rail-tab`) and the scene-status circle
   (`.status-dropdown-trigger` in mobile) are **3.5rem/56px**, one size up
   from `--tap`, so the two edge-mounted control banks read as the same
   visual weight as each other. This is a deliberate exception to `--tap`,
   not a bug.
+- The rail's collapse control (`.rail-collapse-toggle`) is **60×140px**
+  as of 2026-08-02 — it left the `--tap-sm` tier entirely when Aaron
+  respecified it as a **folder tab** centered on the rail's long left wall
+  rather than a small arrow at the strip's foot. 140px = 2.5 rail icons,
+  60px = twice the old toggle's 30px depth. It is not a "set once and
+  ignore" control any more; it's the handle you grab to reopen a collapsed
+  rail, so the generous size is the point. Don't shrink it back toward
+  `--tap-sm` without asking.
 
 ## 2. Icon (glyph) size is separate from box size — don't conflate them
 

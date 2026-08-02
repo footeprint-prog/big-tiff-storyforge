@@ -986,7 +986,17 @@
         /* Item 1 (2026-07-24): the circular mark matches the Login button's
            height, and the "Big Tiff" wordmark matches the circle's height. */
         body.mobile-layout header .w-8.h-8 { width: var(--tap-sm); height: var(--tap-sm); flex-shrink: 0; }
-        body.mobile-layout header .w-8.h-8 i { font-size: 0.95rem; }
+        /* Item (2026-08-02): the feather glyph and the "Big Tiff" wordmark
+           are now explicitly the same height, per Aaron. Kept in ONE custom
+           property rather than repeating the literal in both rules - the
+           project has already shipped a bug from two rules drifting apart
+           (--arm-pad-r, CHANGELOG 2026-07-27), and "wordmark matches the
+           feather" is exactly the kind of relationship that silently breaks
+           when only one of the two gets edited. If you delete this
+           property, grep for every var(--logo-glyph) first: an undefined
+           custom property invalidates the whole declaration. */
+        body.mobile-layout { --logo-glyph: 0.95rem; }
+        body.mobile-layout header .w-8.h-8 i { font-size: var(--logo-glyph); }
         body.mobile-layout #account-btn { height: var(--tap-sm); min-height: var(--tap-sm); }
         body.mobile-layout header .h-8 { height: var(--tap-sm); }
         body.mobile-layout header .h-14 > div { min-width: 0; }
@@ -996,8 +1006,17 @@
         body.mobile-layout header .h-14 > div:first-child > div:first-child { min-width: 0; flex-shrink: 0; }
         body.mobile-layout header .h-14 > div:last-child { flex: 0 0 auto; gap: 8px; }
         body.mobile-layout #account-btn-label { max-width: 88px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        /* Wordmark sized to the circular mark's height (item 1). */
-        body.mobile-layout header .section-title { font-size: var(--tap-sm); line-height: 1; white-space: nowrap; }
+        /* Wordmark was sized to the circular mark's height (item 1, 30px).
+           Item (2026-08-02): reduced to the FEATHER glyph's height instead
+           (var(--logo-glyph), 15.2px) per Aaron - the gold circle is 30px
+           but the feather inside it is half that, and the wordmark now
+           matches the feather, not the disc. line-height:1 keeps the
+           rendered box exactly font-size tall, so "same height" is literally
+           true of the measured rect, not just the type size.
+           MOBILE ONLY, deliberately: the header markup is shared with
+           desktop, where .section-title stays at its Tailwind text-[21px].
+           Desktop is off-limits unless Aaron names it (2026-08-02). */
+        body.mobile-layout header .section-title { font-size: var(--logo-glyph); line-height: 1; white-space: nowrap; }
         body.mobile-layout #account-btn { flex-shrink: 0; }
 
         /* ---- No moveable UI on touch: hide every drag/resize/float
@@ -1440,15 +1459,47 @@
         body.mobile-layout.scene-open #mobile-guidance-rail {
             display: flex; flex-direction: column;
             position: fixed; right: 0; top: 50%; transform: translateY(-50%);
-            z-index: 45;
+            /* Was 45. Raised above an open guidance drawer (460) so the
+               folder tab stays tappable while a drawer is open (Aaron's
+               call, 2026-08-02). It had to change HERE, not on the tab:
+               this element is position:fixed WITH a z-index, so it forms a
+               stacking context, and a z-index on the tab inside it can only
+               order the tab against its siblings - it can never lift it
+               above something that outranks its parent. Setting only the
+               tab's z-index to 470 measured as still-covered
+               (elementFromPoint returned the drawer), which is what caught
+               this.
+               465, deliberately NOT 470: #scene-status-bar is 470, and the
+               rail comes LATER in the DOM, so an equal 470 would let the
+               rail paint over the status circle and quietly invert Aaron's
+               "the status circle wins that overlap" spec (documented in
+               Mobile_Port_Handoff.md). 465 sits above the drawer and below
+               the arm, preserving both rules. */
+            z-index: 465;
             background: #3D2B1F;
-            border: 1px solid rgba(212, 175, 55, 0.55); border-right: none;
+            /* Item (2026-08-02): outer gold edge thickened 1px -> 2px per
+               Aaron. Width only - the 0.55 alpha is unchanged, as are the
+               1px inter-tab dividers inside (his ask was the OUTER edge).
+               Right stays borderless: the strip is flush to the screen. */
+            border: 2px solid rgba(212, 175, 55, 0.55); border-right: none;
             border-radius: 10px 0 0 10px;
-            /* auto (not hidden) so the six tabs stay reachable by scrolling
-               if a large UI text scale makes them outgrow a short landscape
-               viewport, rather than being silently clipped. */
+            /* Item (2026-08-02): overflow moved to .rail-tab-strip below.
+               It has to be `visible` here so the folder tab can protrude
+               past this element's left edge - and overflow-x cannot be
+               visible while overflow-y is auto (CSS computes the visible
+               one to auto), which is exactly why the scrolling moved to an
+               inner wrapper instead of just changing one axis here. */
+            overflow: visible;
+        }
+        /* Inner scroller (2026-08-02): carries what the rail itself used to.
+           auto (not hidden) so the six tabs stay reachable by scrolling if a
+           large UI text scale makes them outgrow a short landscape viewport,
+           rather than being silently clipped. */
+        body.mobile-layout.scene-open #mobile-guidance-rail .rail-tab-strip {
+            display: flex; flex-direction: column;
             overflow-y: auto; overflow-x: hidden;
             max-height: calc(100dvh - var(--mobile-header-h) - var(--mobile-nav-clear) - 12px);
+            border-radius: 8px 0 0 8px;
         }
         /* Enlarged (2026-07-25) to read as the same weight as the Sammy/
            Draft Log/Save action buttons on the opposite edge - those are
@@ -1462,41 +1513,92 @@
             /* square tabs (item 7, 2026-07-24) */
             width: 3.5rem; min-width: 3.5rem;
             height: 3.5rem; min-height: 3.5rem;
-            padding: 0;
+            /* Item (2026-08-02): halve the gap between each glyph and the
+               screen edge (measured 17.6px -> 8.8px), per Aaron. Done as
+               left padding rather than justify-content:flex-end so the icons
+               stay CENTERED in the space that remains - the six glyphs have
+               different intrinsic widths (mountain-sun is 26px, bullseye
+               20.8px), and right-aligning them would leave their left edges
+               ragged. Padding preserves the shared centerline while moving
+               it right. Box stays 56px, so the touch target is untouched.
+               The math: for a centered glyph, gap = (box - glyph) / 2, so
+               padding-left = the ORIGINAL gap exactly halves it. Tuned for
+               the 20.8px common case; the two wider glyphs land ~1px inside
+               that, same per-icon variance the centered version already had. */
+            padding: 0 0 0 17.6px;
             background: transparent; border: none;
             border-bottom: 1px solid rgba(212, 175, 55, 0.3);
             border-radius: 0;
             color: #D4AF37;
         }
         /* Item (2026-07-27): the toggle button moved from first to last
-           child in the bank (see the HTML), so it's now the divider-free
-           end instead of the "success" tab - :nth-last-child(2) targets
-           whichever tab sits immediately above the toggle regardless of
-           further reordering, rather than hardcoding "success". */
-        body.mobile-layout #mobile-guidance-rail .rail-tab:nth-last-child(2) { border-bottom: none; }
+           child in the bank, so the divider-free end is the last tab rather
+           than the "success" tab specifically.
+           Item (2026-08-02): the toggle left the flex flow entirely (it's
+           the absolutely-positioned folder tab now) and the six tabs moved
+           into .rail-tab-strip, so the old :nth-last-child(2) - which meant
+           "the tab above the toggle" - would now skip the real last tab and
+           strand a divider on the bottom edge. Plain :last-child is correct
+           again, and is stable under further reordering. */
+        body.mobile-layout #mobile-guidance-rail .rail-tab-strip .rail-tab:last-child { border-bottom: none; }
         /* Item 3 (2026-07-26): the rail collapses to just this arrow when
            docked, saving screen space; a plain tap expands it back to the
-           full 6-icon strip. Chrome-tier size (30px), matching the scene-
-           status arrow tab's own visual language on the opposite edge. */
+           full 6-icon strip.
+           Item (2026-08-02, Aaron): it is no longer a 56x30 arrow sitting
+           at the bottom of the bank - it's a FOLDER TAB centered on the
+           rail's long (left) wall. 140px tall = 2.5 rail icons (2.5 x 56),
+           60px wide = twice the old toggle's 30px depth (confirmed with him
+           - "twice the width of the chevron toggle" read literally off the
+           old 56px width would have been a 112px slab, a quarter of a 440px
+           screen, which is a panel and not a tab).
+           Absolutely positioned, so it protrudes past the rail's left edge
+           - this is why the rail's overflow had to move to .rail-tab-strip
+           (see that rule). It stays a child of #mobile-guidance-rail on
+           purpose: the rail is draggable, and a child moves with it for
+           free, whereas a separate fixed element would need the drag code
+           to move two things in sync. */
         .rail-collapse-toggle { display: none; }
         body.mobile-layout.scene-open #mobile-guidance-rail .rail-collapse-toggle {
             display: flex; align-items: center; justify-content: center;
-            width: 3.5rem; height: var(--tap-sm); min-height: var(--tap-sm);
-            background: none; border: none; color: #D4AF37; font-size: 0.85rem;
-            /* Item (2026-07-27): border moved from bottom to top - the
-               toggle is now the LAST element in the bank (divider needed
-               above it, from the tab it follows; none needed below, since
-               nothing follows it). */
-            border-top: 1px solid rgba(212, 175, 55, 0.3);
+            position: absolute;
+            top: 50%; transform: translateY(-50%);
+            left: -60px;
+            width: 60px; height: 140px;
+            background: #3D2B1F;
+            color: #D4AF37; font-size: 0.85rem;
+            /* Matches the strip's own outer edge (2px, same alpha). No right
+               border: that side butts against the rail's left wall, and the
+               rail's own border draws the seam, so the two read as one
+               shape with the tab growing out of it. */
+            border: 2px solid rgba(212, 175, 55, 0.55);
+            border-right: none;
+            border-radius: 10px 0 0 10px;
             flex-shrink: 0;
+            /* Above an open guidance drawer (.guidance-float-window, 460).
+               The old bottom-mounted toggle sat inside the 56px strip, which
+               a drawer never reached; the folder tab protrudes 60px LEFT,
+               straight into the drawer's footprint, so at the rail's own
+               z-index (45) it would be covered and untappable exactly when
+               you'd want to collapse. Same precedent as the scene-status
+               circle (470), which already wins its overlap by Aaron's spec.
+               Confirmed with him 2026-08-02. */
+            z-index: 470;
         }
-        body.mobile-layout #mobile-guidance-rail.rail-collapsed .rail-collapse-toggle {
-            border-top: none;
+        /* Collapsed: the six-tab strip disappears and the folder tab IS the
+           rail - it drops back into normal flow so the rail element sizes to
+           it (140px), which matters because the drag clamp reads
+           rail.offsetHeight to keep the thing on screen. The rail's own
+           border/background go transparent so the tab's edge isn't doubled. */
+        body.mobile-layout #mobile-guidance-rail.rail-collapsed {
+            border: none; background: transparent;
+        }
+        body.mobile-layout #mobile-guidance-rail.rail-collapsed .rail-tab-strip { display: none; }
+        body.mobile-layout.scene-open #mobile-guidance-rail.rail-collapsed .rail-collapse-toggle {
+            position: static; transform: none;
         }
         body.mobile-layout #mobile-guidance-rail.rail-collapsed .rail-collapse-toggle i {
             transform: rotate(180deg);
         }
-        body.mobile-layout #mobile-guidance-rail.rail-collapsed .rail-tab { display: none; }
         /* Glyph enlarged (2026-07-26) to squeeze the dead space around each
            icon, then reduced back down to 1rem (2026-07-27) to match the
            editor toolbar icons (.text-tool-btn, 1rem) and the scene status
@@ -2762,16 +2864,24 @@
     <!-- All six guidance tabs stacked on the right edge, icon-only, touching
          (Aaron, 2026-07-24). Drawers open to the left, toward the editor. -->
     <div id="mobile-guidance-rail" class="mobile-rail" aria-label="Scene guidance drawers">
+        <!-- Item (2026-08-02): the six tabs live in their own scroller now.
+             The rail itself must be overflow:visible so the folder tab can
+             protrude past its left edge, and overflow-y:auto can't coexist
+             with overflow-x:visible - so the scrolling moved in here. -->
+        <div class="rail-tab-strip">
         <button type="button" class="rail-tab" data-rail-key="purpose" aria-label="Purpose" title="Purpose" onclick="mobileToggleGuidanceDrawer('purpose')"><i class="fa-solid fa-bullseye"></i></button>
         <button type="button" class="rail-tab" data-rail-key="canon" aria-label="Key Canon to Honor" title="Key Canon to Honor" onclick="mobileToggleGuidanceDrawer('canon')"><i class="fa-solid fa-gem"></i></button>
         <button type="button" class="rail-tab" data-rail-key="emotional" aria-label="Emotional State" title="Emotional State" onclick="mobileToggleGuidanceDrawer('emotional')"><i class="fa-solid fa-heart-pulse"></i></button>
         <button type="button" class="rail-tab" data-rail-key="beats" aria-label="Must-Happen Beats" title="Must-Happen Beats" onclick="mobileToggleGuidanceDrawer('beats')"><i class="fa-solid fa-list-check"></i></button>
         <button type="button" class="rail-tab" data-rail-key="setting" aria-label="Setting &amp; Tone" title="Setting &amp; Tone" onclick="mobileToggleGuidanceDrawer('setting')"><i class="fa-solid fa-mountain-sun"></i></button>
         <button type="button" class="rail-tab" data-rail-key="success" aria-label="Success for This Scene" title="Success for This Scene" onclick="mobileToggleGuidanceDrawer('success')"><i class="fa-solid fa-trophy"></i></button>
+        </div>
         <!-- Item (2026-07-27): moved from the top of the bank to the bottom
              so it never sits under the (now horizontally draggable)
              scene-status arm, which lives up near the header - see
-             CHECKLIST.md / Mobile_Port_Handoff.md. -->
+             CHECKLIST.md / Mobile_Port_Handoff.md.
+             Item (2026-08-02): now the folder tab on the rail's left wall,
+             outside .rail-tab-strip and absolutely positioned (see CSS). -->
         <button type="button" id="mobile-rail-toggle" class="rail-collapse-toggle" aria-label="Collapse guidance tabs" aria-expanded="true" onclick="toggleGuidanceRailCollapsed()"><i class="fa-solid fa-chevron-right"></i></button>
     </div>
 
