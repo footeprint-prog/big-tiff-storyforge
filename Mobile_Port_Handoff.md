@@ -140,35 +140,75 @@ Two real bugs were caught this way that a naive test would have missed:
 |---|---|---|
 | Dev repo Pages preview | `big-tiff-storyforge`, branch `claude/mobile-port` (Pages config) | **Current** — has everything through the 2026-07-27 fix-up round (commit `ce16f62`: arm drag, corner-morph docking, the `--arm-pad-r` positioning fix, rail-icon revert, plus CHANGELOG/handoff docs). Rebuilds ~1 min after any push to that branch. |
 | Dev repo `main` | `big-tiff-storyforge` | **Merged and current as of 2026-07-27 evening** (commit `0faaf33`) — re-synced with `claude/mobile-port` specifically so the fix-up round (not just the buggy corner-morph round) would be what got promoted live. `main` and `claude/mobile-port` are identical at time of writing; expect `main` to trail again once new commits land on the branch. |
-| **Real live site** | `big_tiff_launchpage`, branch `main`, custom domain `bigtiffsworld.com` via Porkbun DNS (no Cloudflare in the path) | **Promoted 2026-07-27** (commit `eb5b5c4`) — has everything through the fix-up round, i.e. the corrected (not buggy) version. Assets/manifest unchanged this round (checksums verified identical), only `app/index.html` needed copying; `start_url` was already `./index.html` from a prior round. Verified byte-identical against `https://bigtiffsworld.com/app/` directly (line-ending-normalized — this Windows checkout's `core.autocrlf` makes local/live diffs look nonzero even when content is identical; don't mistake that for drift). Any future promotion is still a separate manual step Aaron requests explicitly — see the iteration-loop rule below. |
+| **Real live site** | `big_tiff_launchpage`, branch `main`, custom domain `bigtiffsworld.com` via Porkbun DNS (no Cloudflare in the path) | **Promoted 2026-07-27** (commit `eb5b5c4`) — has everything through the fix-up round, i.e. the corrected (not buggy) version. Assets/manifest unchanged this round (checksums verified identical), only `app/index.html` needed copying; `start_url` was already `./index.html` from a prior round. Verified byte-identical against `https://bigtiffsworld.com/app/` directly (line-ending-normalized — this Windows checkout's `core.autocrlf` makes local/live diffs look nonzero even when content is identical; don't mistake that for drift). |
 
-**The 2026-07-25 promotion already happened** the same way described in
-prior versions of this doc: a direct byte-verified file copy of
-`writing.html` → `app/index.html` plus the icon/manifest assets, pushed
-straight to `big_tiff_launchpage`'s `main` (commit `7c3a047`), confirmed
-live via direct requests to `bigtiffsworld.com`.
+## Complete workflow: edit → verify → push → (optional) promote
 
-**One non-obvious fix required at promotion time, worth knowing if you ever
-re-promote:** `manifest.webmanifest`'s `start_url` is `./writing.html` in
-the dev repo (correct there) but must become `./index.html` for the live
-site, since that's the file's actual name there. Skipping this makes Add to
-Home Screen launch to a 404. Check `app/manifest.webmanifest`'s
-`start_url` after any future re-promotion.
+Two local git clones, both already on disk — **edit these directly, never
+re-clone or edit via GitHub's web UI/API:**
+- `C:\Users\Erica\Desktop\AARON\STORY GIT\big-tiff-storyforge` (dev repo)
+- `C:\Users\Erica\Desktop\AARON\STORY GIT\big_tiff_launchpage` (live site repo)
 
-**If you need to promote again:** repeat the byte-identical-copy pattern
-from `big-tiff-storyforge@main` (make sure main actually has what you think
-it has first — see the table above) into `big_tiff_launchpage/app/`,
-re-apply the `start_url` fix, and verify against the live domain directly
-afterward — don't trust the Pages API alone, GitHub's raw-content CDN can
-serve a stale cached copy for a bit even after a real deploy completes.
+### Stage 1 — Standard edit loop (default; needs no special permission)
+1. Edit `writing.html` directly in the `big-tiff-storyforge` clone, on
+   branch `claude/mobile-port`.
+2. Verify per "How to test it yourself" above — real measurement, real
+   `PointerEvent` sequences for gestures, desktop re-checked unchanged.
+3. `git add`, commit, `git push origin claude/mobile-port`. Pages
+   auto-rebuilds the preview in ~1 min. Hand Aaron that URL.
+4. **Stop here by default.** Stages 2 and 3 are separate, explicit,
+   asked-for steps — never inferred from "ship this" alone.
 
-**Fast-iteration rule established 2026-07-25, still in force:** for
-ongoing small mobile UI tweaks, the loop is commit + push to
-`claude/mobile-port` only (auto-rebuilds the Pages preview in ~1 min) and
-hand Aaron the preview URL. **Never** touch `bigtiffsworld.com` or
-`big_tiff_launchpage` as part of that loop — promotion there is a separate,
-explicit, later step only after Aaron has approved changes on the preview
-URL.
+### Stage 2 — Sync to `main` (only when explicitly asked, each time)
+A "push to main" request is scoped to that one instance — don't treat it
+as standing permission for future rounds, even later the same day.
+1. `git checkout main && git pull origin main`
+2. `git merge claude/mobile-port -m "<description>"` — should be clean; if
+   it conflicts, stop and look, don't force.
+3. Sanity-check the merged file has what you expect (grep for the
+   specific fix/feature markers) before pushing — don't just trust a
+   silent merge.
+4. `git push origin main`, then `git checkout claude/mobile-port` to
+   return to the working branch.
+
+### Stage 3 — Promote to bigtiffsworld.com (only when explicitly asked)
+The highest-stakes step — a real public production site.
+1. **Make sure `main` actually has everything you think it has first**
+   (run Stage 2 if not already done). Promoting stale/buggy `main`
+   content ships that bug live — this has actually happened, always
+   double-check rather than trusting a status line in this doc.
+2. Byte-copy the file:
+   `cp big-tiff-storyforge/writing.html big_tiff_launchpage/app/index.html`
+3. Check whether assets/manifest need updating too — usually not:
+   - Diff/checksum the dev repo's icon assets against
+     `big_tiff_launchpage/app/assets/`; only copy if they've changed.
+   - Check `big_tiff_launchpage/app/manifest.webmanifest`'s `start_url`
+     is `./index.html` (**not** `./writing.html` — that's only correct in
+     the dev repo, where the file is actually named `writing.html`;
+     skipping this fix makes Add to Home Screen launch to a 404). Usually
+     already correct from a prior promotion.
+4. `cd` into `big_tiff_launchpage`, commit `app/index.html` (+ any changed
+   assets) referencing the dev-repo commit it was copied from, `git push
+   origin main`.
+5. **Wait for the actual deploy**, don't fire-and-forget:
+   `gh api repos/footeprint-prog/big_tiff_launchpage/pages/builds/latest`
+   — poll (a few seconds apart, via an until-loop, not chained sleeps)
+   until `status` is `"built"` and the commit SHA matches what you pushed.
+6. **Verify against the real live domain directly** — never trust the
+   Pages API alone, GitHub's CDN can serve stale content briefly even
+   after a real deploy completes:
+   `curl -s https://bigtiffsworld.com/app/ -o /tmp/live_check.html`, then
+   diff byte-for-byte against what you pushed. This Windows checkout's
+   `core.autocrlf` makes the local working-tree file differ from the
+   LF-only live response even when content is identical — strip `\r`
+   (`tr -d '\r'`) from both sides, or diff against `git show
+   HEAD:app/index.html` instead of the working-tree file, before
+   concluding there's a real difference. Also spot-check the manifest:
+   `curl -s https://bigtiffsworld.com/app/manifest.webmanifest`.
+7. Update this doc's Status header and the Deployment facts table above
+   to reflect the new state (which commit is live, verified how), and
+   sync that doc update back through `claude/mobile-port` → `main` too —
+   so the docs don't immediately go stale relative to what they claim.
 
 ---
 
