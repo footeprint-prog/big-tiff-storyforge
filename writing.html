@@ -1436,44 +1436,61 @@
         body.mobile-layout #scene-status-bar .status-actions-bank > button[aria-label="Send to Sammy"] { order: 1; }
         body.mobile-layout #scene-status-bar .status-actions-bank > button[aria-label="Draft Log"] { order: 2; }
         body.mobile-layout #scene-status-bar .status-actions-bank > button[aria-label="Save Draft"] { order: 3; }
-        /* Item 4: "Auto-saved…" leaves the arm and sits semi-transparent in
-           the bottom-right corner of the writing area. pointer-events:none so
-           taps pass through to the editor beneath it.
-           Item (2026-08-02): also carries the word count now (see
-           updateWordCount()) - "N words autosaved" replaces the separate
-           toolbar word counter, which is hidden on mobile (#word-count-wrap
-           below). `bottom` now reads --autosave-gap (shared with the rail's
-           JS clamp) instead of a bare 0.9rem, since the rail's new bottom
-           drag limit is deliberately pinned to this same line - see
-           getRailBand(). */
-        body.mobile-layout #auto-save-status {
-            position: fixed;
-            /* pulled further in so it never sits on the editor's rounded
-               border.
-               Item (2026-08-02, later same day): tightened 1.6rem -> 1rem.
-               Aaron: "autosave text line must appear under the handle+rail"
-               - measured that the OLD 1.6rem (25.6px) left this text's own
-               right edge 1.6px short of the COLLAPSED handle's left edge
-               (the handle is 24px/--rail-handle-w wide, flush right) - a
-               near-miss, not a real overlap, in that one state (the
-               EXPANDED handle, which sits further left, already cleared
-               this comfortably). 1rem (16px) guarantees at least 8px of
-               real overlap in BOTH states, on any viewport width (the two
-               `right`-from-edge offsets cancel viewport width out of the
-               comparison, so this isn't screen-size-dependent) - verified
-               it still clears the editor's own rounded border afterward. */
-            right: 1rem;
-            bottom: calc(var(--mobile-nav-clear) + var(--autosave-gap));
-            z-index: 30;
-            min-height: 0; padding: 0;
-            background: none;
-            /* Light brown, deliberately hardly noticeable (Aaron, 2026-07-24).
-               !important beats the global full-opacity label rule. This is
-               decorative reassurance, not content - see the CHANGELOG note on
-               it being an intentional sub-AA exception. */
+        /* This rule went through several rounds (2026-07-24 through
+           2026-08-02) as a position:fixed viewport overlay, at one point
+           carrying the merged word count too - see CHANGELOG for that
+           history if it's ever relevant again.
+           Item (2026-08-03): #auto-save-status is now DESKTOP ONLY. It used
+           to be repositioned into a position:fixed, viewport-anchored
+           overlay for mobile (the several rounds of history above this
+           comment) - that overlay had two real problems Aaron flagged: it
+           rendered on top of the Library/Outline side panels once they slid
+           open over it (fixed elements aren't affected by an unrelated
+           sibling's z-index unless that sibling explicitly outranks them,
+           and this one never did), and being fixed to the viewport rather
+           than tied to the editor's own box, it never read as "part of the
+           writing field." Both are fixed by simply hiding this element on
+           mobile and giving the same job to a NEW, purpose-built element,
+           #mobile-draft-ghost, positioned relative to #editor's own corner
+           instead of the viewport - see that element's own CSS below and
+           getAutosaveStatusEl()'s JS comment for the full reasoning
+           (including why it's a sibling of #editor, not a descendant). */
+        body.mobile-layout #auto-save-status { display: none; }
+        /* #editor-column is the positioning CONTEXT for the ghost below -
+           its own box exactly matches #editor's (DRAFT label + toolbar sit
+           above #editor, but #editor is the last child and fills the rest
+           via flex-1, so the column's bottom/right edges coincide with
+           #editor's own bottom/right edges). position:relative here has no
+           other effect - it doesn't move #editor-column itself. */
+        body.mobile-layout #editor-column { position: relative; }
+        #mobile-draft-ghost { display: none; }
+        body.mobile-layout #mobile-draft-ghost {
+            display: block;
+            position: absolute;
+            /* Inset to sit just inside #editor's own 1rem padding (see
+               body.mobile-layout #editor below) rather than overlapping its
+               rounded border/corner. */
+            right: 1.5rem; bottom: 1rem;
+            min-height: 0; padding: 0; margin: 0;
+            background: none; border: none;
+            /* Light brown, deliberately hardly noticeable (Aaron, 2026-07-24,
+               carried over from #auto-save-status). !important beats the
+               global full-opacity label rule. Decorative reassurance, not
+               content - see the CHANGELOG note on it being an intentional
+               sub-AA contrast exception. */
             color: #8B6F47 !important;
             font-size: 0.8rem;
+            /* Never tappable/selectable/copyable - see getAutosaveStatusEl()'s
+               comment on why this is a SIBLING of #editor rather than
+               relying on user-select alone to keep it out of the draft. */
             pointer-events: none;
+            -webkit-user-select: none; user-select: none;
+            /* Above #editor's own background/text (which has no z-index of
+               its own, so any positive value clears it) but far below every
+               genuinely interactive mobile control (rail 465, handle 470,
+               status arm 470) - those still win any overlap the same as
+               they did with the old element, unchanged. */
+            z-index: 5;
         }
         body.mobile-layout #scene-content .gap-3.px-1 { display: block; }
         body.mobile-layout #scene-content .w-60 { display: none; }
@@ -1611,15 +1628,18 @@
             --rail-tab-h: 3.5rem;     /* unchanged this round; shared so the JS drag clamp (setupGuidanceRailDrag) doesn't hardcode its own copy */
             --rail-border-w: 2px;
             --rail-handle-w: 24px;
-            /* Item (2026-08-02): shared between #auto-save-status's own
-               `bottom` offset and getRailBand()'s JS clamp (see that
-               function) - the rail/handle's new bottom drag limit is
-               deliberately set to the SAME line the autosave text already
-               sits on, so the two numbers must never drift apart. Was a
-               bare 0.9rem literal on #auto-save-status alone before this
-               round. */
-            --autosave-gap: 0.9rem;
         }
+        /* --autosave-gap (0.9rem) briefly lived here (2026-08-02): shared
+           between #auto-save-status's own `bottom` offset and
+           getRailBand()'s JS clamp, back when the rail's bottom drag limit
+           was deliberately pinned to the same line the autosave text sat
+           on. Both of those uses are gone as of 2026-08-03 - the rail's
+           clamp reverted to the true edge the same day it was added
+           (see getRailBand()), and #auto-save-status itself is now
+           display:none on mobile (see its own rule) - so the property
+           itself was removed rather than left defined-but-unused. If you're
+           reading this because a stale var(--autosave-gap) reference
+           surfaced somewhere, that reference is the bug, not this note. */
         body.mobile-layout .rail-tab {
             display: flex; align-items: center; justify-content: center;
             /* Item (2026-08-02, was "square tabs", item 7 2026-07-24): no
@@ -2359,7 +2379,7 @@
                             </div>
                         </div>
 
-                        <div class="flex flex-col flex-1 min-h-0">
+                        <div id="editor-column" class="flex flex-col flex-1 min-h-0">
                             <div class="flex items-center justify-between mb-1.5 flex-shrink-0">
                                 <span id="scene-label" class="section-label text-[#D4AF37]">DRAFT</span>
                             </div>
@@ -2390,6 +2410,14 @@
                                  class="flex-1 min-h-0 bg-[#3D2B1F] border border-[#D4AF37]/40 rounded-3xl p-6 text-sm leading-relaxed focus:outline-none focus:border-[#D4AF37] prose prose-invert max-w-none overflow-auto"
                                  style="white-space: pre-wrap; resize: none;">
                             </div>
+                            <!-- Mobile-only autosave/word-count ghost (2026-08-03). A
+                                 SIBLING of #editor, never a descendant - see
+                                 getAutosaveStatusEl()'s comment for why that matters
+                                 (contenteditable makes descendant text selectable/
+                                 copyable/part of the saved draft more or less
+                                 regardless of user-select). Positioned absolutely over
+                                 #editor's own corner via #editor-column's CSS. -->
+                            <div id="mobile-draft-ghost" aria-hidden="true">Auto-saved just now</div>
                         </div>
                     </div>
 
@@ -4677,8 +4705,8 @@
             return `current-draft:${sceneId}`;
         }
 
-        // Item (2026-08-02): guards #auto-save-status's two temporary flash
-        // messages ("Draft saved!" below, "Couldn't find that text" in
+        // Item (2026-08-02): guards the autosave status text's two temporary
+        // flash messages ("Draft saved!" below, "Couldn't find that text" in
         // goToProofreaderIssue) against updateWordCount(), which on mobile
         // now writes into the SAME element ("N words autosaved" - see that
         // function). Both flashes snapshot textContent before overwriting
@@ -4689,6 +4717,33 @@
         // typing resumed). True for both flash sites, so this is a single
         // shared flag rather than two separate ad hoc booleans.
         let autoSaveFlashActive = false;
+
+        // Item (2026-08-03, Aaron): the autosave/word-count status text was
+        // a position:fixed overlay anchored to the VIEWPORT - selectable
+        // nowhere (pointer-events:none), but it also rendered on top of
+        // whatever else was on screen regardless of context, including the
+        // Library/Outline side panels once they'd slid open over it. Fixed
+        // by giving it two, mode-specific homes instead of one floating
+        // one: desktop keeps the original #auto-save-status, a plain inline
+        // element in the status bar row, completely unchanged. Mobile gets
+        // a NEW element, #mobile-draft-ghost, deliberately NOT a descendant
+        // of #editor (a sibling inside #editor-column instead) - the editor
+        // is contenteditable, and text placed AS a descendant of a
+        // contenteditable region is selectable/copyable/editable by the
+        // browser's native behavior more or less regardless of user-select,
+        // and worse, could end up captured by editor.innerHTML (the actual
+        // saved draft) if the DOM ever got normalized or the user's
+        // selection spanned it. Living as a sibling, absolutely positioned
+        // over the editor's own corner, gets the visual "embedded in the
+        // field, on the same layer" result Aaron asked for with zero risk
+        // of ever touching the real draft content - see #mobile-draft-ghost
+        // in the HTML and its CSS for the corner positioning.
+        // Every call site that used to reach for #auto-save-status directly
+        // now goes through this instead, so the two flash sites and
+        // updateWordCount() don't each need their own isMobileMode() branch.
+        function getAutosaveStatusEl() {
+            return document.getElementById(isMobileMode() ? 'mobile-draft-ghost' : 'auto-save-status');
+        }
 
         /**
          * Manual "Save" - explicitly persists the live editor content as the
@@ -4706,7 +4761,7 @@
             pushDraftToServer(currentScene.id, editor.innerHTML, true);
             syncStatsToRepo('draft_saved', { sceneId: currentScene.id });
 
-            const status = document.getElementById('auto-save-status');
+            const status = getAutosaveStatusEl();
             const originalText = status.textContent;
             autoSaveFlashActive = true;
             status.textContent = 'Draft saved!';
@@ -4789,8 +4844,8 @@
             const w = text.trim().split(/\s+/).filter(Boolean).length;
             wc.textContent = `${w} words`;
 
-            // Item (2026-08-02, Aaron): mobile folds the count into
-            // #auto-save-status ("N words autosaved") instead of the
+            // Item (2026-08-02, Aaron): mobile folds the count into the
+            // autosave status text ("N words autosaved") instead of the
             // separate toolbar counter above, which is hidden on mobile
             // (#word-count-wrap) but stays live/correct here for desktop,
             // which keeps both as two independent elements exactly as
@@ -4798,9 +4853,11 @@
             // flash message is showing (autoSaveFlashActive, set by
             // saveDraft() and goToProofreaderIssue()) - see that flag's own
             // comment for why overwriting mid-flash is a real bug, not just
-            // a redundant write.
+            // a redundant write. getAutosaveStatusEl() (2026-08-03) resolves
+            // to #mobile-draft-ghost here, not #auto-save-status - see that
+            // function's comment.
             if (isMobileMode() && !autoSaveFlashActive) {
-                const status = document.getElementById('auto-save-status');
+                const status = getAutosaveStatusEl();
                 if (status) status.textContent = `${w} words autosaved`;
             }
         }
@@ -5037,7 +5094,7 @@
                 if (!range) {
                     // Nothing matched (draft edited since the check) - say so
                     // rather than silently doing nothing.
-                    const status = document.getElementById('auto-save-status');
+                    const status = getAutosaveStatusEl();
                     if (status) {
                         const prev = status.textContent;
                         autoSaveFlashActive = true;
@@ -9032,9 +9089,10 @@
         // true again as of 2026-08-02 (later same day) - the previous
         // pulled-back version (subtracting --autosave-gap from the bottom)
         // is REVERTED here per Aaron's explicit "unrestrict bottom handle
-        // slide." --autosave-gap itself is untouched and still used by
-        // #auto-save-status's own `bottom` offset (see its CSS) - only its
-        // use HERE, as a rail-boundary buffer, is gone.
+        // slide." (--autosave-gap itself was removed entirely the next day,
+        // 2026-08-03, once its other use - #auto-save-status's own `bottom`
+        // offset - also went away; see that property's own comment if a
+        // stale reference to it ever turns up again.)
         //
         // That earlier pullback existed to solve a real problem: at true
         // flush-bottom, the STRIP's own rounded corner met the dead-straight

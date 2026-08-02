@@ -2,6 +2,77 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-03] – Autosave text embedded in the editor, not a floating overlay
+
+Aaron reported two problems with the mobile autosave/word-count text: it
+needed to be selectable-proof and visually "embedded... on the same layer"
+as the writing field rather than floating over the page, and it was
+rendering on top of the Library/Outline side panels once they slid open.
+
+### Changed
+- **`#auto-save-status` is now desktop-only.** The several rounds of mobile-
+  specific repositioning on this element (2026-07-24 through 2026-08-02) are
+  gone - it's simply `display:none` on mobile now. Desktop is completely
+  unaffected: same element, same inline position in the status bar, same
+  behavior.
+- **New `#mobile-draft-ghost` element** takes over the job on mobile,
+  positioned `absolute` inside `#editor-column` (given `position:relative`
+  for this purpose) so it renders at `#editor`'s own bottom-right corner
+  instead of a fixed viewport coordinate. Because the editor is naturally
+  hidden/covered by the Library and Outline panels when they're open (same
+  as any other content behind them), the ghost is now covered along with
+  it automatically - this isn't a z-index fix, it's a structural one: the
+  ghost only exists in the same screen region as the editor, so whatever
+  covers the editor covers it too.
+- **Deliberately a SIBLING of `#editor`, never a descendant.** `#editor` is
+  `contenteditable="true"`; a descendant node inside a contenteditable
+  region is selectable/copyable/editable by native browser behavior more
+  or less regardless of `user-select`, and worse, risks ending up captured
+  by `editor.innerHTML` - the actual saved draft, sent to Sammy, pushed to
+  the repo. Living as a sibling, visually overlaid via absolute positioning,
+  gets the "embedded in the field" look with zero risk of ever touching
+  real draft content. Also carries `pointer-events: none` and
+  `user-select: none` as defense in depth, though the structural separation
+  is the real guarantee.
+- **`getAutosaveStatusEl()`** (new) centralizes the mode-dependent target -
+  `#mobile-draft-ghost` on mobile, `#auto-save-status` on desktop - so
+  `saveDraft()`'s and `goToProofreaderIssue()`'s flash messages, and
+  `updateWordCount()`'s merged-count write, don't each need their own
+  `isMobileMode()` branch. All three now go through it.
+- **`--autosave-gap` removed** (was `0.9rem`) - its last real use (this
+  element's own `bottom` offset) is gone now that the element is
+  `display:none` on mobile; its other use (the rail's boundary clamp) was
+  already removed the day before. Removed rather than left defined-but-
+  unused, and the two comments that still described it as "in use" are
+  corrected.
+
+### Verification notes
+Measured at 440×956 with a seeded scene:
+- Ghost's rect confirmed fully inside `#editor`'s own rect, and confirmed a
+  genuine DOM sibling (`editor.contains(ghost)` false) rather than a
+  descendant.
+- Selected all content within `#editor` (`Range.selectNodeContents` +
+  `Selection`) and confirmed the resulting selected text and
+  `editor.innerHTML` never contain the ghost's text - the "not selectable
+  or copied" requirement verified directly, not just asserted from the
+  structural argument.
+- Opened the Library panel and confirmed via `elementFromPoint` at the
+  ghost's exact screen location that the panel (not the ghost) is topmost
+  there - the reported bug is gone.
+- Flash-guard re-verified through the new helper: `saveDraft()`'s flash
+  survives a mid-flash keystroke intact and the eventual restore holds the
+  correct pre-flash snapshot, same as before, now via
+  `getAutosaveStatusEl()` on both branches.
+- Re-ran the existing gesture suite (rail tap/scrub, status-arm drag, Focus
+  collapsing both compound controls) - all still pass; none of this touched
+  their code paths, but the shared helper function and the removed CSS
+  property were both worth confirming nothing else broke.
+- Desktop re-verified explicitly (`isMobileMode()` reset first): `#auto-
+  save-status` still `display:flex`, same text/rect as always, same flash
+  behavior via the new helper; `#mobile-draft-ghost` `display:none`;
+  `#editor-column`'s `position` still `static` (the `position:relative`
+  rule is mobile-scoped only).
+
 ## [2026-08-02] – Rail no longer aligns with the handle; Focus resets both compound controls
 
 Four adjustments at Aaron's direction, all mobile-only, same day as the
