@@ -804,11 +804,14 @@
             --mobile-header-h: 56px;
             /* Button height only. MUST stay independent of the measured nav
                height below: the nav's buttons consume this value, so feeding
-               the measured total back into it creates a growth loop. */
-            --mobile-nav-h: 62px;
-            /* Full occupied nav height (buttons + Focus-bulge padding + safe
-               area). JS overwrites this from a real measurement; the value
-               here is just a sane fallback before that runs. */
+               the measured total back into it creates a growth loop.
+               2026-08-04: 62px -> 3.5rem/56px, matching the new Focus
+               circle and .nav-arm height (the old value included room for
+               the since-removed "bulge" reservation). */
+            --mobile-nav-h: 3.5rem;
+            /* Full occupied nav height (buttons + safe area). JS overwrites
+               this from a real measurement; the value here is just a sane
+               fallback before that runs. */
             --mobile-nav-measured: 76px;
             /* Two control tiers, both in rem so they scale with the UI text
                size in BOTH directions - scaling down genuinely shrinks the
@@ -1382,30 +1385,30 @@
            height - the target stays 30px tall and full arm width. */
         body.mobile-layout #scene-status-bar .status-actions-toggle {
             display: flex; align-items: center; justify-content: center;
-            width: 100%; min-height: var(--tap-sm);
+            width: 100%;
             background: none; border: none; color: #D4AF37; font-size: 0.7rem;
-            /* Item 1 (2026-07-26): originally align-items:flex-start + a
-               top-only pad, to pull the glyph up close to the circle rather
-               than centered in the 30px box.
-               Item (2026-07-27, round 1): switched to align-items:center so
-               top/bottom padding renders as an equal visual gap (flex-start
-               dumped leftover box height as bottom-only slack).
-               Item (2026-07-27, round 2 - margin standardization): dropped
-               the fixed `height: var(--tap-sm)` in favor of `min-height`
-               only, intending the box to hug its content (glyph + padding)
-               exactly. Padding bumped 6px -> 8px to match the arm's new
-               standardized margin (BUTTON_STYLE_GUIDE.md).
-               Measured result: still 9.4px, not 8px - the glyph is only
-               ~11px tall, so content height (glyph + 2*8px padding =
-               ~27px) is still under the 30px chrome-tier floor, and
-               min-height keeps winning. Getting an exact 8px would mean
-               either shrinking min-height below the project's 30px
-               touch-target floor (not worth it for 1.4px) or bumping
-               padding to ~9.4px (breaking the deliberately-chosen round
-               8px value). Left as 8px padding / ~9.4px rendered - close
-               enough, and the floor is the more important constraint to
-               keep. Don't "fix" this again without re-measuring first. */
-            padding: 8px 0 8px 0;
+            /* Item (2026-08-04, Aaron): "reduce the margins above and below
+               the chevron." The 30px chrome-tier min-height was EXPLICITLY
+               kept through 2026-08-02 ("Don't fix this again without
+               re-measuring first") specifically because shrinking it meant
+               going below the project's own touch-target floor for a
+               questionable 1.4px gain - that calculus only holds if nobody
+               actually asks for the smaller margin. Aaron now has.
+               min-height dropped to 0 (was var(--tap-sm)/30px) and padding
+               8px -> 2px, so the box hugs the ~11px glyph tightly instead of
+               being floor-bound. Must be set explicitly, not just omitted -
+               `#scene-status-bar button` (the shared PRIMARY-tier rule,
+               var(--tap)/44px, above) still matches this element and would
+               otherwise win the min-height property outright, making the
+               chevron TALLER than before instead of shorter. This chevron
+               toggles the Sammy/Draft Log/Save bank open/closed - a
+               chrome-tier, set-once-per-visit control, not
+               a repeatedly-tapped one, so this follows the same "deliberate,
+               Aaron-specified exception" precedent as the rail handle
+               (BUTTON_STYLE_GUIDE.md) rather than the more serious PRIMARY-
+               tier trade-off item 6 this same round made explicitly. */
+            min-height: 0;
+            padding: 2px 0 2px 0;
             margin-top: -4px; margin-bottom: -4px;
             line-height: 1;
         }
@@ -1542,9 +1545,45 @@
             overflow-x: auto; overflow-y: hidden;
         }
         body.mobile-layout #editor-toolbar > div { flex-wrap: nowrap; gap: 4px; min-width: 0; flex-shrink: 0; }
-        /* Measured: 44px-wide tools still fit on one line at 440px, so there
-           is no need to trade touch size for the single row. */
-        body.mobile-layout #editor-toolbar .text-tool-btn { min-width: var(--tap); padding-left: 0.4rem; padding-right: 0.4rem; }
+        /* Item (2026-08-04, Aaron): "reduce size of text editor tool buttons
+           ... by 50%" - confirmed with him directly this means the BOX
+           (44px -> 22px), not just the icon glyph. This is a genuine,
+           deliberate departure from --tap (the tier this project reserves
+           for controls "touched constantly while writing" - see
+           BUTTON_STYLE_GUIDE.md) for exactly the controls that tier exists
+           to protect, unlike every other below-floor exception so far this
+           session, which were all chrome-tier (set-once) controls. Scoped
+           to #editor-toolbar specifically, NOT the bare .text-tool-btn
+           class (line ~854) - that class is also used by the Notepad's own
+           text-formatting row, which was not part of this ask and must stay
+           at 44px. Icon/glyph font-size is untouched (still 1rem via the
+           global rule) - only the box shrank, per the same "size ≠ glyph"
+           principle used everywhere else, just applied to a smaller final
+           box this time. New id (#editor-text-size-btn) added below for the
+           Text button relocated here from the bottom nav - it's just
+           another .text-tool-btn, so it shrinks along with its siblings
+           automatically. */
+        /* Explicit width/height (not min-), box-sizing:border-box, zero
+           padding, and flex-centering: `min-height` alone measured 34px in
+           practice, NOT 22px - it's a floor, and the base .text-tool-btn's
+           own padding (2px 8px) + a 16px-line-height glyph + the 1px border
+           already add up to more than 22px on their own, so the floor never
+           actually binds. Forcing the box explicitly is what makes 22px
+           real rather than aspirational. box-sizing:border-box keeps the
+           1px border inside the 22px rather than adding to it. */
+        body.mobile-layout #editor-toolbar .text-tool-btn {
+            width: 22px; height: 22px; min-width: 22px; min-height: 22px;
+            box-sizing: border-box;
+            padding: 0;
+            display: flex; align-items: center; justify-content: center;
+            line-height: 1;
+        }
+        /* Text Size button (2026-08-04): mobile-only, same as the sheet it
+           opens (openTextSize()/#textsize-window never had a desktop entry
+           point - mobileCloseEverything(), which it routes through, is a
+           no-op off mobile). */
+        #editor-text-size-btn { display: none; }
+        body.mobile-layout #editor-text-size-btn { display: flex; }
         /* Item (2026-08-02): the standalone toolbar word counter is hidden
            on mobile - its count now lives folded into #auto-save-status
            ("N words autosaved", see updateWordCount()). Hide the WRAPPER
@@ -1560,26 +1599,37 @@
            prefix - see it as a guard rail, not dead code worth trimming. */
         body.mobile-layout #word-count-wrap { display: none; }
         body.mobile-layout #word-count { white-space: nowrap; font-size: 0.8rem; }
-        body.mobile-layout #editor-zoom-label { font-size: 0.8rem; }
+        /* Item (2026-08-04): label WIDTH trimmed 32px -> 28px, a modest
+           reduction rather than a strict half - "100%" (the longest value
+           this ever shows) needs real room to stay on one line at its own
+           font-size, which is deliberately NOT halved (see below). Aaron's
+           ask covered the buttons' box and the bar's overall size; this
+           balances that against not clipping the one piece of genuinely
+           informative text in this control. */
+        body.mobile-layout #editor-zoom-label { font-size: 0.8rem; width: 1.75rem; }
         /* Item (2026-08-02, Aaron): "shrink [the zoom scaler] to writing
            tool button height" - the -/100%/+ pill was taller than its
-           sibling buttons (B/I/U/Proofreader, all exactly --tap/44px) by
-           about 4px, because its OWN border+padding (py-0.5, 2px top/bottom
-           Tailwind, plus a 1px border each side) added on top of the 44px
-           the inner buttons already establish via the global
-           `.text-tool-btn` mobile rule (min-height:44px). box-sizing:
-           border-box makes the border draw INSIDE the fixed 44px rather
-           than adding to it; zeroing the wrapper's own padding removes the
-           rest. The inner buttons' min-height is overridden to `auto` here
-           specifically (they'd otherwise fight the parent's fixed height
-           with their own independent 44px floor) - this makes the -/+
-           buttons render a couple px under the project's --tap touch-target
-           floor when measured in isolation, a small, deliberate,
-           Aaron-specified exception (matching the precedent already
-           documented for the 24px-wide rail handle in
-           BUTTON_STYLE_GUIDE.md), not an oversight. */
+           sibling buttons (B/I/U/Proofreader, then --tap/44px) by about 4px,
+           because its OWN border+padding (py-0.5, 2px top/bottom Tailwind,
+           plus a 1px border each side) added on top of the 44px the inner
+           buttons already establish via the global `.text-tool-btn` mobile
+           rule. box-sizing: border-box makes the border draw INSIDE the
+           fixed height rather than adding to it; zeroing the wrapper's own
+           padding removes the rest. The inner buttons' min-height is
+           overridden to `auto` here specifically (they'd otherwise fight
+           the parent's fixed height with their own independent floor).
+           Item (2026-08-04, Aaron): "reduce size of... the scaler bar by
+           50%" - confirmed alongside the toolbar buttons as a real
+           touch-target trade-off, not just a glyph change. 44px -> 22px,
+           matching the toolbar buttons around it exactly (both now read
+           `#editor-toolbar .text-tool-btn`'s 22px, so this pill and its
+           siblings stay the same height they always were relative to each
+           other - just half the size). The 0.8rem label font-size is
+           deliberately UNCHANGED (see that rule's own comment - shrinking
+           genuinely-informative text below its current size risked
+           unreadability, unlike this box, which never had to be read). */
         body.mobile-layout #editor-zoom-control {
-            height: var(--tap); box-sizing: border-box;
+            height: 22px; box-sizing: border-box;
             padding-top: 0; padding-bottom: 0;
         }
         body.mobile-layout #editor-zoom-control .text-tool-btn { min-height: auto; }
@@ -1960,52 +2010,111 @@
         body.mobile-layout #draft-conflict-banner { top: calc(var(--mobile-header-h) + 8px); max-height: calc(100dvh - var(--mobile-header-h) - var(--mobile-nav-clear) - 16px); overflow-y: auto; }
         body.mobile-layout #draft-conflict-banner .grid-cols-2 { grid-template-columns: 1fr; }
 
-        /* ---- Bottom navigation ---- */
-        /* padding-top reserves the space the Focus bulge rises into, so the
-           bulge lives inside the nav's own padding box and is not clipped by
-           overflow-x (which the browser forces to clip vertically too). */
-        /* z-index (2026-08-02, later same day): raised 320 -> 480, ABOVE
-           #mobile-guidance-rail (465) and its handle (470) - see
-           layoutRailAroundHandle()'s comment. The expanded rail strip is now
-           deliberately allowed to extend past this bar's own top edge when
-           centering on a near-bottom handle; this nav bar's opaque
-           background and its own top border are what visually cap that
-           overflow, instead of the strip's own (mismatched) rounded corner.
-           Every OTHER mobile element that could theoretically reach this low
-           (left/right panels, the scrim, open guidance drawers) already
-           self-limits to `bottom: var(--mobile-nav-clear)` or an equivalent
-           max-height, so none of them actually overlap this bar today -
-           raising it only changes what happens for the rail. */
-        body.mobile-layout #mobile-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 480; display: flex; align-items: flex-start; background: #2A2119; border-top: 2px solid rgba(212, 175, 55, 0.6); padding-top: 0.9rem; padding-bottom: env(safe-area-inset-bottom, 0px); overflow-x: auto; overscroll-behavior-x: contain; }
-        /* min-width holds the touch floor even at high zoom, where six equal
-           flex items would be squeezed under it; the nav scrolls instead. */
-        body.mobile-layout #mobile-nav button { flex: 1 1 0; min-width: var(--tap); min-height: var(--mobile-nav-h); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: none; border: none; color: #D4AF37; font-size: 0.8rem; transition: background-color 0.18s ease, color 0.18s ease, font-size 0.18s ease; }
-        body.mobile-layout #mobile-nav button i { font-size: 1.1rem; }
+        /* ---- Bottom navigation - redesigned 2026-08-04 (Aaron) ----
+           The old full-width bar + "Focus bulges up out of it" design is
+           gone. #mobile-nav is now width:auto (hugs its own content,
+           doesn't stretch to the screen's right edge) with two children:
+           the Focus button (a standalone 56px circle, matching the scene-
+           status circle's own .status-dropdown-trigger size) and .nav-arm
+           (the remaining 4 icons, in their own shared-border/background
+           wrapper - see the HTML). Both are bottom-flush with the true
+           window edge, no gap, per Aaron's explicit spec for the arm. */
+        body.mobile-layout #mobile-nav {
+            position: fixed; left: 0; bottom: 0; z-index: 480;
+            display: flex; align-items: flex-end;
+            width: auto;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        body.mobile-layout #mobile-nav button {
+            flex: 0 0 auto;
+            min-height: var(--mobile-nav-h);
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+            background: none; border: none; color: #D4AF37; font-size: 0.8rem;
+            transition: background-color 0.18s ease, color 0.18s ease, font-size 0.18s ease;
+        }
+        /* Item (2026-08-04, Aaron): "enlarge all nav panel icons by 50%" -
+           1.1rem -> 1.65rem. Scoped to .nav-arm specifically; Focus's own
+           icon is sized independently below (fit to its new circle, not a
+           straight 50% multiple of the old crosshairs size). */
+        body.mobile-layout .nav-arm button i { font-size: 1.65rem; }
 
-        /* Focus sits in the left corner and the bar bulges up around it. */
+        /* Focus button: no longer grows/bulges - it's a fixed 56px slot
+           holding the circle, sized/positioned like any other flex item. */
         body.mobile-layout #mobile-nav button[data-nav="focus"] {
-            /* flex-basis 0 on every button makes widths strictly
-               proportional to grow, so 1.3 is exactly 30% wider. */
-            flex: 1.3 1 0;
-            min-width: calc(var(--tap) * 1.1);
-            margin-top: -0.9rem;
-            padding-top: 0.75rem;
+            min-width: 3.5rem;
+            padding: 0;
+        }
+        /* Item (2026-08-04, Aaron): "put in a circle the same size as the
+           scene status circle" - 3.5rem/56px, matching
+           #scene-status-bar .status-dropdown-trigger exactly. Fill/border
+           carried over from the old "bulge" (#2A2119 dark fill, translucent
+           gold ring) rather than copying the status circle's own green -
+           Focus is a nav control, not a status indicator, and the ask was
+           about SIZE, not the status circle's specific color language. */
+        body.mobile-layout .focus-circle {
+            width: 3.5rem; height: 3.5rem; min-width: 3.5rem; min-height: 3.5rem;
+            border-radius: 50%;
+            box-sizing: border-box;
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
             background: #2A2119;
             border: 2px solid rgba(212, 175, 55, 0.6);
-            border-bottom: none;
-            border-radius: 1.1rem 1.1rem 0 0;
+            flex-shrink: 0;
         }
-        body.mobile-layout #mobile-nav button[data-nav="focus"] i { font-size: 1.45rem; }
+        /* "Enlarge focus button icon" + "bullseye icon" (was fa-crosshairs -
+           see the HTML) - sized to fill most of the 56px circle while
+           leaving room for the border. */
+        body.mobile-layout .focus-circle i { font-size: 2rem; color: #D4AF37; }
+        /* "FOCUS label on tight brown filled text box across middle of
+           enlarged bullseye icon in the circle" - a banner overlaid dead
+           center on the icon, not a caption below it (the OLD Focus button
+           had a plain <span>Focus</span> caption like every other nav
+           button; this replaces that concept entirely for Focus only).
+           #3D2B1F is the app's standard dark-brown fill (matches the
+           editor's own background, .status-dropdown-trigger's letter
+           color, etc.) - "brown filled" per Aaron's wording, not the
+           circle's own #2A2119. Deliberately small/tight per his own word -
+           this is a decorative badge treatment, not the button's
+           accessible name (the <button> carries aria-label="Focus" for
+           that; the circle and its contents are aria-hidden). */
+        body.mobile-layout .focus-label {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: #3D2B1F; color: #D4AF37;
+            font-size: 0.5rem; font-weight: 700; letter-spacing: 0.4px;
+            padding: 1px 5px; white-space: nowrap; line-height: 1.4;
+        }
 
-        /* Whichever view is open stays visibly raised until it is closed. */
+        /* The arm: 4 icons in one shared shape, mirroring .rail-tab-strip's
+           own "shared outer border/background, transparent individual
+           buttons" pattern (see #mobile-guidance-rail), just horizontal and
+           bottom-anchored instead of vertical and right-anchored. No left
+           border (grows out of the circle, whose own curve makes a
+           straight border line there look detached) and no bottom-left/
+           bottom-right radius (flush with the true window edge - Aaron's
+           "no gap to bottom edge" - and with the circle it's adjoining).
+           Only the free top-right corner rounds. */
+        body.mobile-layout .nav-arm {
+            display: flex; align-items: stretch;
+            height: 3.5rem;
+            background: #2A2119;
+            border: 2px solid rgba(212, 175, 55, 0.6);
+            border-left: none;
+            border-radius: 0 1.1rem 0 0;
+        }
+        body.mobile-layout .nav-arm button { min-width: var(--tap); padding: 0 0.6rem; }
+
+        /* Whichever view is open stays visibly raised until it is closed.
+           Focus never receives .nav-active (updateNavActiveState() hardcodes
+           its own state to false - it's a momentary action, not a
+           persistent view), so no Focus-specific override is needed here
+           any more. */
         body.mobile-layout #mobile-nav button.nav-active {
             background: #D4AF37;
             color: #3D2B1F;
             border-radius: 0.9rem;
             font-size: 0.9rem;
         }
-        body.mobile-layout #mobile-nav button.nav-active i { font-size: 1.3rem; }
-        body.mobile-layout #mobile-nav button[data-nav="focus"].nav-active { border-radius: 1.1rem 1.1rem 0 0; border-color: #D4AF37; }
+        body.mobile-layout .nav-arm button.nav-active i { font-size: 1.5rem; }
 
         /* Very narrow effective widths (e.g. Safari Page Zoom at 200% on a
            440px screen = ~220 CSS px): collapse the rail to one thinner
@@ -2013,7 +2122,11 @@
            only as a refinement INSIDE mobile mode, never for detection. */
         @media (max-width: 340px) {
             body.mobile-layout .guidance-float-window { width: min(80vw, 300px) !important; }
-            body.mobile-layout #mobile-nav button span { font-size: 0.75rem; }
+            /* :not(.focus-label) (2026-08-04): this selector's ID-based
+               specificity would otherwise beat .focus-label's own 0.5rem
+               font-size at this narrow width, making the FOCUS banner
+               render LARGER right when everything else shrinks. */
+            body.mobile-layout #mobile-nav button span:not(.focus-label) { font-size: 0.75rem; }
             /* At this effective width (roughly Safari Page Zoom 200% on a
                440px phone) the header cannot hold branding AND controls on
                one line. Drop the decorative branding and let the remaining
@@ -2441,6 +2554,15 @@
                                     <button onclick="openProofreader()" aria-label="Proofreader" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 flex items-center justify-center gap-x-1.5">
                                         <i class="fa-solid fa-glasses"></i>
                                         <span class="btn-text">Proofreader</span>
+                                    </button>
+                                    <!-- Item (2026-08-04, Aaron): moved here from the bottom
+                                         nav (see #mobile-nav) - opens the same Text Size
+                                         sheet via the same mobileNav('text') path, so the
+                                         close-everything/toggle behavior is unchanged, just
+                                         triggered from a different button. Desktop never
+                                         shows this (mobile-only rail below). -->
+                                    <button id="editor-text-size-btn" onclick="mobileNav('text')" aria-label="Text Size" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 flex items-center justify-center">
+                                        <i class="fa-solid fa-font"></i>
                                     </button>
                                     <div id="editor-zoom-control" class="flex items-center gap-x-1 border border-[#D4AF37]/40 rounded-xl px-1.5 py-0.5" title="Display size only — does not affect saved draft">
                                         <button onclick="adjustEditorZoom(-1)" class="text-tool-btn px-1.5 leading-none">−</button>
@@ -3134,19 +3256,39 @@
     <!-- Dismiss layer for open side panels (mobile only; see #panel-scrim CSS) -->
     <div id="panel-scrim" onclick="mobileCloseEverything(null)" aria-hidden="true"></div>
 
-    <!-- Bottom navigation (mobile only): thumb-reachable, safe-area padded.
-         Focus = close every open drawer/panel/sheet, back to a calm column. -->
+    <!-- Bottom navigation (mobile only), redesigned 2026-08-04 (Aaron): the
+         old full-width brown bar is gone. Focus is now a standalone circle
+         (matching the scene-status circle's own 56px, see .focus-circle
+         below) with a compact "arm" of the remaining 4 icons extending
+         right from it - same "edge-anchored compound shape" language the
+         guidance rail and the scene-status arm already use, mirrored onto
+         the bottom edge instead of the right one. #mobile-nav itself is
+         still the single element every other measurement/JS reference
+         (syncMobileHeaderHeight, mobileNav(), updateNavActiveState())
+         expects - only its INTERNAL shape changed, not its id or role.
+         Text (fa-font) moved out entirely, into the editor toolbar - see
+         #editor-toolbar. Focus = close every open drawer/panel/sheet, back
+         to a calm column. -->
     <nav id="mobile-nav" aria-label="Main navigation">
-        <button type="button" data-nav="focus" onclick="mobileNav('focus')"><i class="fa-solid fa-crosshairs"></i><span>Focus</span></button>
-        <!-- Item (2026-08-03, Aaron): Stats replaces Home in this slot - Home
-             moved to the Outline panel (next to its changelog button, see
-             #outline-home-btn); Stats moved here FROM the header (see
-             #header-stats-btn), an award-ribbon icon per his spec. -->
-        <button type="button" data-nav="stats" onclick="mobileNav('stats')"><i class="fa-solid fa-award"></i><span>Stats</span></button>
-        <button type="button" data-nav="outline" onclick="mobileNav('outline')"><i class="fa-solid fa-sitemap"></i><span>Outline</span></button>
-        <button type="button" data-nav="library" onclick="mobileNav('library')"><i class="fa-solid fa-book-open"></i><span>Library</span></button>
-        <button type="button" data-nav="notepad" onclick="mobileNav('notepad')"><i class="fa-solid fa-book"></i><span>Notepad</span></button>
-        <button type="button" data-nav="text" onclick="mobileNav('text')"><i class="fa-solid fa-font"></i><span>Text</span></button>
+        <button type="button" data-nav="focus" onclick="mobileNav('focus')" aria-label="Focus">
+            <span class="focus-circle" aria-hidden="true">
+                <i class="fa-solid fa-bullseye"></i>
+                <span class="focus-label">FOCUS</span>
+            </span>
+        </button>
+        <!-- The arm: same "shared outer border/background, transparent
+             individual buttons" shape as .rail-tab-strip on the guidance
+             rail (see #mobile-guidance-rail), mirrored onto the bottom
+             edge. Kept as its own wrapper rather than styling #mobile-nav
+             itself, so the circle (full gold ring) and the arm (per-side
+             border, dropped on the edges touching the screen/the circle)
+             don't have to fight over one shared border. -->
+        <div class="nav-arm">
+            <button type="button" data-nav="outline" onclick="mobileNav('outline')"><i class="fa-solid fa-sitemap"></i><span>Outline</span></button>
+            <button type="button" data-nav="library" onclick="mobileNav('library')"><i class="fa-solid fa-book-open"></i><span>Library</span></button>
+            <button type="button" data-nav="notepad" onclick="mobileNav('notepad')"><i class="fa-solid fa-book"></i><span>Notepad</span></button>
+            <button type="button" data-nav="stats" onclick="mobileNav('stats')"><i class="fa-solid fa-award"></i><span>Stats</span></button>
+        </div>
     </nav>
 
     <!-- ==================== TEXT SIZE (mobile sheet) ====================
@@ -9552,8 +9694,17 @@
             function onPointerDown(e) {
                 if (e.pointerType === 'mouse' && e.button !== 0) return;
                 if (!isMobileMode()) return;
-                const trigger = e.target.closest('#scene-status-bar .status-dropdown-trigger');
-                if (!trigger) return;
+                // Item (2026-08-04, Aaron): "the entire green area... not
+                // just the scene status circle" - was
+                // `.status-dropdown-trigger` only, now any point inside the
+                // whole arm. This doesn't change how a quick tap on the
+                // circle/chevron/action buttons behaves - armDrag() only
+                // fires after the full 300ms hold, so a normal tap anywhere
+                // still releases well before that and its own onclick fires
+                // exactly as it always did. Only a genuine press-and-hold,
+                // wherever on the arm it starts, now arms a drag.
+                const inBar = e.target.closest('#scene-status-bar');
+                if (!inBar) return;
                 barEl = document.getElementById('scene-status-bar');
                 if (!barEl) return;
                 didDrag = false;

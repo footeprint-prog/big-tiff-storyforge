@@ -2,6 +2,68 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-04] – Whole-arm status drag, Focus circle, bottom nav rebuilt as an arm
+
+Six adjustments at Aaron's direction, all mobile-only.
+
+### Changed
+- **Scene-status arm drag now arms from anywhere in the green box**, not
+  just the status circle - `setupStatusBarDrag()`'s pointerdown target
+  check widened from `.status-dropdown-trigger` to `#scene-status-bar`
+  itself. A quick tap anywhere (chevron, action buttons, circle) still
+  behaves exactly as before; only a genuine 300ms press-and-hold now arms
+  a drag, regardless of where on the arm it starts.
+- **Chevron margins reduced** - `.status-actions-toggle`'s `min-height`
+  dropped from the 30px chrome-tier floor to 0, padding 8px → 2px. Had to
+  be set explicitly rather than just removed: `#scene-status-bar button`
+  (a shared PRIMARY-tier 44px rule) would otherwise win the property and
+  make the chevron *taller* than before. Measures ~15px now, about half.
+- **Focus is now a 56px circle** matching the scene-status circle exactly,
+  with an enlarged bullseye icon (was crosshairs) and a small brown-filled
+  "FOCUS" banner overlaid across its middle - not a caption below it, the
+  old layout every other nav button still uses.
+- **Bottom nav rebuilt as an arm.** The old full-width bar is gone;
+  `#mobile-nav` now hugs its own content width. The Focus circle sits at
+  the true left edge; the remaining four icons (Outline/Library/Notepad/
+  Stats) live in a new `.nav-arm` wrapper extending right from it, mirroring
+  `.rail-tab-strip`'s "shared border/background, transparent buttons"
+  pattern. Both the circle and the arm are bottom-flush with the window,
+  no gap. Arm icons enlarged 1.1rem → 1.65rem (+50%).
+- **Text moved from the nav to the editor toolbar** (`#editor-text-size-btn`,
+  mobile-only, same `mobileNav('text')` path as before) - the nav arm now
+  holds only Outline/Library/Notepad/Stats.
+- **Editor toolbar buttons and the zoom scaler shrunk to 22px** (from 44px),
+  confirmed directly with Aaron as a real touch-target trade-off, not a
+  glyph-only change - unlike every other below-floor exception this
+  project has made so far, this is the first on a PRIMARY-tier ("touched
+  constantly while writing") control. `min-height` alone measured 34px in
+  practice (Tailwind's own padding + line-height already exceeded the
+  floor), so explicit `width`/`height` + `box-sizing:border-box` +
+  `padding:0` were needed to make 22px real. Scoped to `#editor-toolbar
+  .text-tool-btn` specifically - the bare `.text-tool-btn` class is also
+  used by the Notepad's own formatting row, which stays at 44px.
+
+### Verification notes
+Measured at 440×956 and 1280×800 with a seeded scene:
+- Drag armed and moved the arm from a press on the chevron specifically
+  (not the circle); the trailing click was swallowed (didn't also toggle
+  the action bank open); a plain tap on the chevron still toggles normally.
+- Focus circle measured exactly 56×56, matching the status circle; the
+  banner text renders centered on the icon.
+- Nav confirmed narrower than the viewport (arm hugs its 4 icons, doesn't
+  stretch full width), both the circle and the arm's bottom edges flush
+  with the window height, arm's left edge adjacent to the circle's right
+  edge.
+- All toolbar buttons and the zoom control confirmed at exactly 22×22 /
+  22px height after fixing the min-height floor issue above; "100%" label
+  still renders without clipping.
+- Functional pass: Focus closes an open panel; each arm button opens its
+  view and picks up `nav-active`; the relocated Text button opens the
+  text-size sheet from its new toolbar location.
+- Desktop A/B against pristine `HEAD` at 1280×800: toolbar button rect,
+  zoom control rect, chevron (`display:none`), and nav (`display:none`)
+  all byte-identical to pristine.
+
 ## [2026-08-03] – Panel icon sizes unified; Home/Stats swap places
 
 Four adjustments at Aaron's direction, all mobile-only.
