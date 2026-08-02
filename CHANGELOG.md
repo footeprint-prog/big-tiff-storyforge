@@ -2,6 +2,69 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-03] – Panel icon sizes unified; Home/Stats swap places
+
+Four adjustments at Aaron's direction, all mobile-only.
+
+### Changed
+- **Outline/Library panel close arrows** (`#outline-close-btn`,
+  `#library-close-btn`) enlarged to match `.count-badge` (the gold
+  entry-count circle, 1.5rem/24px) — icon `font-size` only, `1.125rem` →
+  `1.5rem`. The `fa-arrow-alt-circle-left/right` glyphs are already
+  circular outlines, so this alone lands the rendered icon at ~24px without
+  needing a background/border to match. The button's own tap target is
+  unaffected (the panels' generic `button` rule already floors it at
+  `--tap-sm`).
+- **Every `.review-flag-btn` ("!" review marker) in the Library panel
+  unified to 1.5rem/24px**, matching `.count-badge` — Aaron's wording was
+  explicit ("ALL of the review exclamation mark's outer circle"). This
+  collapsed three different sizes into one: a 30px generic fallback that
+  nothing actually rendered at, a 44px category-header marker
+  (`--lib-banner-h`), and a 28px per-entry marker. Icon `font-size` inside
+  the circle is untouched in both real contexts — only the box changed.
+- **Home moved from the bottom nav to the Outline panel**, as a new
+  icon-only button (`#outline-home-btn`) next to that panel's own
+  changelog button, matching its `h-8 w-8` box classes exactly ("same
+  size"). Reuses the existing `mobileNav('home')` case rather than
+  duplicating its close-everything-then-`goHome()` logic at the new call
+  site.
+- **Stats moved from the header to the bottom nav**, taking Home's old
+  slot, with an award-ribbon icon (`fa-award`, matching the icon this app
+  already uses elsewhere for achievement/stats iconography). The header's
+  own Stats button (`#header-stats-btn`, newly given an id for this)
+  is now `display:none` on mobile — desktop keeps it exactly as it was.
+  New `case 'stats'` in `mobileNav()` mirrors the existing Notepad/Text
+  pattern (check if `#stats-window` is already open, close everything,
+  reopen if it wasn't), and `updateNavActiveState()` gained a `stats` key
+  (`visible('stats-window')`) so the nav button highlights while the
+  window is open, the same way Notepad/Text already do. The now-dead
+  `home` key in that same state object was removed — no `#mobile-nav`
+  button carries `data-nav="home"` anymore for it to apply to.
+
+### Verification notes
+Measured at 440×956 with a seeded scene:
+- Close-arrow icons confirmed at exactly 24px (`getComputedStyle`), both
+  panels.
+- Seeded library data with review-flagged entries, expanded every category
+  accordion (the per-entry markers render at 0×0 while their category is
+  collapsed — genuinely invisible, not a measurement bug, caught by
+  re-checking after expanding), and measured all 12 review-flag-btn
+  instances actually present: every one exactly 24×24, in both the
+  category-header and per-entry contexts, with each context's own icon
+  `font-size` unchanged (16px / 13.6px respectively).
+- `#outline-home-btn` measured pixel-identical (32×32) to the changelog
+  button beside it.
+- Functional pass: `mobileNav('stats')` opens `#stats-window` on first
+  call, closes it on a second call, and the nav button picks up
+  `nav-active` while it's open; the relocated Home button correctly closes
+  the open Outline panel and calls through to the existing `goHome()` flow.
+- Desktop A/B against pristine `HEAD` (which predates all four new ids,
+  so compared by class/behavior rather than by id where a direct pristine
+  read wasn't possible): close-arrow icons still 18px (`text-lg`,
+  unchanged), `.count-badge` still 24px, `#header-stats-btn` still
+  `display:flex`, `#outline-home-btn` correctly `display:none`,
+  `#mobile-nav` still `display:none` entirely.
+
 ## [2026-08-03] – Autosave text embedded in the editor, not a floating overlay
 
 Aaron reported two problems with the mobile autosave/word-count text: it

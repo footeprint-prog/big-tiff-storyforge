@@ -901,7 +901,35 @@
         body.mobile-layout .notepad-main button { min-height: 44px; }
         body.mobile-layout #notes-list > div, body.mobile-layout #draftpad-list > div { min-height: 48px; }
         body.mobile-layout .library-entry { padding-top: 10px; padding-bottom: 10px; }
-        body.mobile-layout .review-flag-btn { display: inline-flex; align-items: center; justify-content: center; min-width: var(--tap-sm); min-height: var(--tap-sm); border: 1px solid #D4AF37; border-radius: 9999px; font-size: 0.8rem; }
+        /* Item (2026-08-03): new Home button in the Outline panel, mobile
+           only - replaces the bottom nav's own Home button (removed from
+           #mobile-nav, see that HTML). Desktop never had a Home concept in
+           this panel and doesn't get one now. */
+        #outline-home-btn { display: none; }
+        body.mobile-layout #outline-home-btn { display: flex; }
+        /* Item (2026-08-03, Aaron): "same size as the entry-count circle"
+           (.count-badge, 1.5rem/24px - see that class's own rule near the
+           top of this file). This is the FALLBACK size; the two more
+           specific rules below (category-header marker, per-entry marker)
+           override it for their own contexts and are updated to the same
+           1.5rem for the same reason - "ALL of the review exclamation
+           mark's outer circle in the Library panel," not just one spot.
+           Below the --tap-sm (30px) chrome-tier touch floor - a deliberate,
+           Aaron-specified exception, same precedent as the 24px-wide rail
+           handle documented in BUTTON_STYLE_GUIDE.md. Icon font-size is
+           untouched in all three rules - "outer circle" means the box, not
+           the glyph. */
+        body.mobile-layout .review-flag-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 1.5rem; min-height: 1.5rem; border: 1px solid #D4AF37; border-radius: 9999px; font-size: 0.8rem; }
+        /* Item (2026-08-03): close arrows on the Outline/Library panels -
+           "same size as the entry-count circle" (1.5rem/24px). The
+           fa-arrow-alt-circle-left/right glyphs are already circular
+           outlines, so matching the glyph's own font-size to 1.5rem lands
+           the rendered icon at very close to 24px, without needing to add
+           a background/border the count-badge has but this button never
+           did. The button's own tap target is unaffected - the generic
+           `#left-panel button, #right-panel button` rule above already
+           floors it at --tap-sm (30px) independent of the icon's size. */
+        body.mobile-layout #outline-close-btn i, body.mobile-layout #library-close-btn i { font-size: 1.5rem; }
 
         /* ---- Half-width Outline + Library: strip the breathing room ---- */
         body.mobile-layout #dynamic-outline { font-size: 0.85rem; }
@@ -934,14 +962,18 @@
             overflow: hidden;
             line-height: 1.25;
         }
-        /* Category review icon matches the banner height; entry markers stay
-           a compact inline size. */
+        /* Category review icon previously matched the banner height (44px)
+           and the entry marker was 28px - two different sizes, neither
+           matching .count-badge. Item (2026-08-03, Aaron): unified to
+           1.5rem/24px, same as the base .review-flag-btn rule above - see
+           that rule's comment. Icon font-size in both stays as it was
+           (1rem / 0.85rem) - only the box changed. */
         body.mobile-layout #right-panel .library-category > button .review-flag-btn {
-            width: var(--lib-banner-h); height: var(--lib-banner-h); min-width: var(--lib-banner-h); min-height: var(--lib-banner-h);
+            width: 1.5rem; height: 1.5rem; min-width: 1.5rem; min-height: 1.5rem;
             font-size: 1rem;
         }
         body.mobile-layout .library-entry .review-flag-btn {
-            min-width: 1.75rem; min-height: 1.75rem; width: 1.75rem; height: 1.75rem; font-size: 0.85rem;
+            min-width: 1.5rem; min-height: 1.5rem; width: 1.5rem; height: 1.5rem; font-size: 0.85rem;
             vertical-align: middle;
         }
         body.mobile-layout #proofreader-issues-list button { min-height: 44px; padding: 8px 16px; font-size: 0.875rem; }
@@ -977,6 +1009,10 @@
         body.mobile-layout #header-notepad-btn,
         body.mobile-layout #header-divider,
         body.mobile-layout #progress-pill-track,
+        /* Item (2026-08-03, Aaron): Stats moved to the bottom nav row (see
+           #mobile-nav) - the header copy is now redundant on mobile.
+           Desktop keeps this exactly as it was. */
+        body.mobile-layout #header-stats-btn,
         body.mobile-layout #logo-storyforge { display: none !important; }
         /* The header is a fixed-height flex row inside a body that clips
            overflow, so anything past the viewport edge becomes unreachable
@@ -2060,7 +2096,7 @@
                         </div>
 
                         <!-- Stats -->
-                        <button onclick="showStoryStats()"
+                        <button id="header-stats-btn" onclick="showStoryStats()"
                                 class="flex items-center gap-x-2 px-3 py-1 text-sm rounded-xl hover:bg-[#4A3A2E] transition-colors">
                             <i class="fa-solid fa-chart-line text-[#D4AF37]"></i>
                             <span class="font-medium text-xs tracking-wider">STATS</span>
@@ -2124,7 +2160,7 @@
             
             <div class="p-4">
                 <div class="flex justify-end mb-1 -mr-1">
-                    <button onclick="toggleLeftPanel()" class="text-[#D4AF37] hover:text-[#E8C86B] px-3 py-1">
+                    <button id="outline-close-btn" onclick="toggleLeftPanel()" class="text-[#D4AF37] hover:text-[#E8C86B] px-3 py-1">
                         <i class="fa-solid fa-arrow-alt-circle-left text-lg"></i>
                     </button>
                 </div>
@@ -2146,6 +2182,14 @@
                         <button onclick="openChangelog('scene')" title="Scene Changelog" aria-label="Scene Changelog"
                                 class="h-8 w-8 flex-shrink-0 flex items-center justify-center rounded-xl border border-[#D4AF37]/30 hover:border-[#D4AF37]/50 hover:bg-[#D4AF37]/5 text-[#D4AF37]/80 hover:text-[#D4AF37] transition-all">
                             <i class="fa-solid fa-file-lines text-xs"></i>
+                        </button>
+                        <!-- Item (2026-08-03, Aaron): Home moved here from the
+                             bottom nav row (replaced there by Stats - see
+                             #mobile-nav). Same box classes as the changelog
+                             button beside it ("same size"); mobile-only. -->
+                        <button id="outline-home-btn" onclick="mobileNav('home')" title="Home" aria-label="Home"
+                                class="h-8 w-8 flex-shrink-0 flex items-center justify-center rounded-xl border border-[#D4AF37]/30 hover:border-[#D4AF37]/50 hover:bg-[#D4AF37]/5 text-[#D4AF37]/80 hover:text-[#D4AF37] transition-all">
+                            <i class="fa-solid fa-house text-xs"></i>
                         </button>
                     </div>
                     <div id="last-sync-time" class="m-hide text-[10px] text-[#D4AF37]/40 text-center mt-1"></div>
@@ -2527,7 +2571,7 @@
             
             <div class="p-4">
                 <div class="flex justify-start mb-1 -ml-1">
-                    <button onclick="toggleRightPanel()" class="text-[#D4AF37] hover:text-[#E8C86B] px-3 py-1">
+                    <button id="library-close-btn" onclick="toggleRightPanel()" class="text-[#D4AF37] hover:text-[#E8C86B] px-3 py-1">
                         <i class="fa-solid fa-arrow-alt-circle-right text-lg"></i>
                     </button>
                 </div>
@@ -3094,7 +3138,11 @@
          Focus = close every open drawer/panel/sheet, back to a calm column. -->
     <nav id="mobile-nav" aria-label="Main navigation">
         <button type="button" data-nav="focus" onclick="mobileNav('focus')"><i class="fa-solid fa-crosshairs"></i><span>Focus</span></button>
-        <button type="button" data-nav="home" onclick="mobileNav('home')"><i class="fa-solid fa-house"></i><span>Home</span></button>
+        <!-- Item (2026-08-03, Aaron): Stats replaces Home in this slot - Home
+             moved to the Outline panel (next to its changelog button, see
+             #outline-home-btn); Stats moved here FROM the header (see
+             #header-stats-btn), an award-ribbon icon per his spec. -->
+        <button type="button" data-nav="stats" onclick="mobileNav('stats')"><i class="fa-solid fa-award"></i><span>Stats</span></button>
         <button type="button" data-nav="outline" onclick="mobileNav('outline')"><i class="fa-solid fa-sitemap"></i><span>Outline</span></button>
         <button type="button" data-nav="library" onclick="mobileNav('library')"><i class="fa-solid fa-book-open"></i><span>Library</span></button>
         <button type="button" data-nav="notepad" onclick="mobileNav('notepad')"><i class="fa-solid fa-book"></i><span>Notepad</span></button>
@@ -8985,7 +9033,11 @@
                 library: right && !right.classList.contains('translate-x-full'),
                 notepad: visible('notepad-window'),
                 text: visible('textsize-window'),
-                home: !currentScene,
+                // 'home' removed (2026-08-03) along with the nav bar's own
+                // Home button - it moved to the Outline panel, which isn't
+                // a #mobile-nav[data-nav] button and has no active-state
+                // concept of its own.
+                stats: visible('stats-window'),
                 focus: false
             };
             document.querySelectorAll('#mobile-nav button[data-nav]').forEach(btn => {
@@ -9567,9 +9619,22 @@
             const right = document.getElementById('right-panel');
             switch (what) {
                 case 'home':
+                    // No longer called from #mobile-nav (2026-08-03) - the
+                    // Home button moved to the Outline panel
+                    // (#outline-home-btn), Stats took its old slot here.
+                    // Kept as its own case rather than inlined at the new
+                    // call site, so "what closing everything and going home
+                    // means" stays defined in one place.
                     mobileCloseEverything(null);
                     goHome();
                     break;
+                case 'stats': {
+                    const sw = document.getElementById('stats-window');
+                    const wasOpen = sw.classList.contains('active') && sw.style.display !== 'none';
+                    mobileCloseEverything(null);
+                    if (!wasOpen) showStoryStats();
+                    break;
+                }
                 case 'outline': {
                     const wasOpen = !left.classList.contains('-translate-x-full');
                     mobileCloseEverything(null);

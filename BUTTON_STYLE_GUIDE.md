@@ -27,7 +27,7 @@ Rule of thumb before adding a new mobile button: is this something Erica
 taps repeatedly mid-writing-session, or a set-once toggle? That answers
 which var to use — don't invent a third size.
 
-Three **named, deliberate exceptions** sit outside this floor on purpose —
+Five **named, deliberate exceptions** sit outside this floor on purpose —
 don't "fix" them without asking Aaron first:
 - The guidance-rail tabs (`.rail-tab`) and the scene-status circle
   (`.status-dropdown-trigger` in mobile) are one size up from `--tap`, so
@@ -73,6 +73,26 @@ don't "fix" them without asking Aaron first:
   inside this control specifically, so they don't fight the pill's own
   fixed height). The pill as a whole still meets the 44px floor; only the
   two glyphs inside it individually read slightly under it.
+- **`.review-flag-btn`** (the "!" review marker, Library panel only —
+  category-header and per-entry contexts both) is **1.5rem/24px** as of
+  2026-08-03, matching `.count-badge` (the gold entry-count circle) —
+  Aaron: "same size as the entry-count circle," explicitly "ALL of" the
+  marker's occurrences in that panel. Was three different sizes before this
+  (30px generic fallback, 44px at category headers via `--lib-banner-h`,
+  28px per-entry) — none of them matched `.count-badge` and none matched
+  each other. Below the 30×30 chrome floor, same category of exception as
+  the rail handle above. Icon `font-size` inside the circle is untouched in
+  every context — this only changed the box.
+- **`#outline-close-btn` / `#library-close-btn`** (the Outline/Library
+  panels' own close arrows) had their icon `font-size` raised `1.125rem` →
+  `1.5rem` the same day, also to match `.count-badge` — the
+  `fa-arrow-alt-circle-left/right` glyphs are already circular outlines, so
+  matching font-size to 1.5rem lands the rendered icon at very close to
+  24px without adding the background/border `.count-badge` has. The
+  button's own tap target is unaffected — the generic panel-button rule
+  already floors it at `--tap-sm` independent of the icon's size, so this
+  one isn't actually a touch-target exception, just an icon-size note
+  worth keeping next to the others above.
 
 ## 2. Icon (glyph) size is separate from box size — don't conflate them
 
