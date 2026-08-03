@@ -804,11 +804,14 @@
             --mobile-header-h: 56px;
             /* Button height only. MUST stay independent of the measured nav
                height below: the nav's buttons consume this value, so feeding
-               the measured total back into it creates a growth loop. */
-            --mobile-nav-h: 62px;
-            /* Full occupied nav height (buttons + Focus-bulge padding + safe
-               area). JS overwrites this from a real measurement; the value
-               here is just a sane fallback before that runs. */
+               the measured total back into it creates a growth loop.
+               2026-08-04: 62px -> 3.5rem/56px, matching the new Focus
+               circle and .nav-arm height (the old value included room for
+               the since-removed "bulge" reservation). */
+            --mobile-nav-h: 3.5rem;
+            /* Full occupied nav height (buttons + safe area). JS overwrites
+               this from a real measurement; the value here is just a sane
+               fallback before that runs. */
             --mobile-nav-measured: 76px;
             /* Two control tiers, both in rem so they scale with the UI text
                size in BOTH directions - scaling down genuinely shrinks the
@@ -901,7 +904,35 @@
         body.mobile-layout .notepad-main button { min-height: 44px; }
         body.mobile-layout #notes-list > div, body.mobile-layout #draftpad-list > div { min-height: 48px; }
         body.mobile-layout .library-entry { padding-top: 10px; padding-bottom: 10px; }
-        body.mobile-layout .review-flag-btn { display: inline-flex; align-items: center; justify-content: center; min-width: var(--tap-sm); min-height: var(--tap-sm); border: 1px solid #D4AF37; border-radius: 9999px; font-size: 0.8rem; }
+        /* Item (2026-08-03): new Home button in the Outline panel, mobile
+           only - replaces the bottom nav's own Home button (removed from
+           #mobile-nav, see that HTML). Desktop never had a Home concept in
+           this panel and doesn't get one now. */
+        #outline-home-btn { display: none; }
+        body.mobile-layout #outline-home-btn { display: flex; }
+        /* Item (2026-08-03, Aaron): "same size as the entry-count circle"
+           (.count-badge, 1.5rem/24px - see that class's own rule near the
+           top of this file). This is the FALLBACK size; the two more
+           specific rules below (category-header marker, per-entry marker)
+           override it for their own contexts and are updated to the same
+           1.5rem for the same reason - "ALL of the review exclamation
+           mark's outer circle in the Library panel," not just one spot.
+           Below the --tap-sm (30px) chrome-tier touch floor - a deliberate,
+           Aaron-specified exception, same precedent as the 24px-wide rail
+           handle documented in BUTTON_STYLE_GUIDE.md. Icon font-size is
+           untouched in all three rules - "outer circle" means the box, not
+           the glyph. */
+        body.mobile-layout .review-flag-btn { display: inline-flex; align-items: center; justify-content: center; min-width: 1.5rem; min-height: 1.5rem; border: 1px solid #D4AF37; border-radius: 9999px; font-size: 0.8rem; }
+        /* Item (2026-08-03): close arrows on the Outline/Library panels -
+           "same size as the entry-count circle" (1.5rem/24px). The
+           fa-arrow-alt-circle-left/right glyphs are already circular
+           outlines, so matching the glyph's own font-size to 1.5rem lands
+           the rendered icon at very close to 24px, without needing to add
+           a background/border the count-badge has but this button never
+           did. The button's own tap target is unaffected - the generic
+           `#left-panel button, #right-panel button` rule above already
+           floors it at --tap-sm (30px) independent of the icon's size. */
+        body.mobile-layout #outline-close-btn i, body.mobile-layout #library-close-btn i { font-size: 1.5rem; }
 
         /* ---- Half-width Outline + Library: strip the breathing room ---- */
         body.mobile-layout #dynamic-outline { font-size: 0.85rem; }
@@ -934,14 +965,18 @@
             overflow: hidden;
             line-height: 1.25;
         }
-        /* Category review icon matches the banner height; entry markers stay
-           a compact inline size. */
+        /* Category review icon previously matched the banner height (44px)
+           and the entry marker was 28px - two different sizes, neither
+           matching .count-badge. Item (2026-08-03, Aaron): unified to
+           1.5rem/24px, same as the base .review-flag-btn rule above - see
+           that rule's comment. Icon font-size in both stays as it was
+           (1rem / 0.85rem) - only the box changed. */
         body.mobile-layout #right-panel .library-category > button .review-flag-btn {
-            width: var(--lib-banner-h); height: var(--lib-banner-h); min-width: var(--lib-banner-h); min-height: var(--lib-banner-h);
+            width: 1.5rem; height: 1.5rem; min-width: 1.5rem; min-height: 1.5rem;
             font-size: 1rem;
         }
         body.mobile-layout .library-entry .review-flag-btn {
-            min-width: 1.75rem; min-height: 1.75rem; width: 1.75rem; height: 1.75rem; font-size: 0.85rem;
+            min-width: 1.5rem; min-height: 1.5rem; width: 1.5rem; height: 1.5rem; font-size: 0.85rem;
             vertical-align: middle;
         }
         body.mobile-layout #proofreader-issues-list button { min-height: 44px; padding: 8px 16px; font-size: 0.875rem; }
@@ -953,6 +988,17 @@
         body.mobile-layout #login-modal input, body.mobile-layout #token-setup-modal input { min-height: 44px; }
 
         /* ---- Header: slim down; Notepad + Focus move to the bottom nav ---- */
+        /* z-index (2026-08-02, later same day): raised from the shared
+           `z-50` Tailwind class to 480 on mobile only - ABOVE
+           #mobile-guidance-rail (465)/its handle (470), same reasoning as
+           #mobile-nav's own z-index bump - see layoutRailAroundHandle()'s
+           comment. The expanded rail strip can now extend past this
+           header's own bottom edge when centering on a near-top handle;
+           this header's opaque background + its own 2px gold bottom border
+           cap that overflow visually. Higher specificity (2 classes) than
+           the `.z-50` utility wins without `!important`. Desktop keeps the
+           shared z-50 - this selector requires body.mobile-layout. */
+        body.mobile-layout .fantasy-header { z-index: 480; }
         body.mobile-layout header .max-w-screen-2xl { padding-left: 0.25rem; padding-right: 0.25rem; }
         /* Buy back enough width for the header to stay on one row at the
            default text scale; it still wraps gracefully when scaled up. */
@@ -966,6 +1012,10 @@
         body.mobile-layout #header-notepad-btn,
         body.mobile-layout #header-divider,
         body.mobile-layout #progress-pill-track,
+        /* Item (2026-08-03, Aaron): Stats moved to the bottom nav row (see
+           #mobile-nav) - the header copy is now redundant on mobile.
+           Desktop keeps this exactly as it was. */
+        body.mobile-layout #header-stats-btn,
         body.mobile-layout #logo-storyforge { display: none !important; }
         /* The header is a fixed-height flex row inside a body that clips
            overflow, so anything past the viewport edge becomes unreachable
@@ -986,7 +1036,17 @@
         /* Item 1 (2026-07-24): the circular mark matches the Login button's
            height, and the "Big Tiff" wordmark matches the circle's height. */
         body.mobile-layout header .w-8.h-8 { width: var(--tap-sm); height: var(--tap-sm); flex-shrink: 0; }
-        body.mobile-layout header .w-8.h-8 i { font-size: 0.95rem; }
+        /* Item (2026-08-02): the feather glyph and the "Big Tiff" wordmark
+           are now explicitly the same height, per Aaron. Kept in ONE custom
+           property rather than repeating the literal in both rules - the
+           project has already shipped a bug from two rules drifting apart
+           (--arm-pad-r, CHANGELOG 2026-07-27), and "wordmark matches the
+           feather" is exactly the kind of relationship that silently breaks
+           when only one of the two gets edited. If you delete this
+           property, grep for every var(--logo-glyph) first: an undefined
+           custom property invalidates the whole declaration. */
+        body.mobile-layout { --logo-glyph: 0.95rem; }
+        body.mobile-layout header .w-8.h-8 i { font-size: var(--logo-glyph); }
         body.mobile-layout #account-btn { height: var(--tap-sm); min-height: var(--tap-sm); }
         body.mobile-layout header .h-8 { height: var(--tap-sm); }
         body.mobile-layout header .h-14 > div { min-width: 0; }
@@ -996,8 +1056,22 @@
         body.mobile-layout header .h-14 > div:first-child > div:first-child { min-width: 0; flex-shrink: 0; }
         body.mobile-layout header .h-14 > div:last-child { flex: 0 0 auto; gap: 8px; }
         body.mobile-layout #account-btn-label { max-width: 88px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        /* Wordmark sized to the circular mark's height (item 1). */
-        body.mobile-layout header .section-title { font-size: var(--tap-sm); line-height: 1; white-space: nowrap; }
+        /* Wordmark was sized to the circular mark's height (item 1, 30px),
+           then reduced to the FEATHER glyph's height instead (2026-08-02,
+           var(--logo-glyph), 15.2px).
+           Item (2026-08-05, Aaron): "a font size larger than its current
+           but smaller than the previous size" - i.e. strictly between
+           15.2px and 30px. This deliberately DECOUPLES the wordmark from
+           --logo-glyph (which continues to size ONLY the feather icon,
+           unchanged at 0.95rem) rather than bumping that shared property -
+           the "wordmark matches the feather" relationship the property
+           existed to protect is exactly what's being broken here on
+           purpose, so keeping them shared would be actively wrong now, not
+           just redundant. 1.4rem/22.4px sits roughly midway between the two
+           bounds. line-height:1 kept, so "the given size" stays literally
+           true of the measured rect. MOBILE ONLY - desktop's .section-title
+           stays at its Tailwind text-[21px], untouched. */
+        body.mobile-layout header .section-title { font-size: 1.4rem; line-height: 1; white-space: nowrap; }
         body.mobile-layout #account-btn { flex-shrink: 0; }
 
         /* ---- No moveable UI on touch: hide every drag/resize/float
@@ -1032,6 +1106,38 @@
         /* Item 6: the thick gold line is now the scene summary's bottom border
            (it used to cap the status bar, which has moved to the left arm). */
         body.mobile-layout #scene-summary-bar { position: static; padding: 12px; border-bottom: 5px solid rgba(212, 175, 55, 0.7); }
+        /* Item (2026-08-05, Aaron): "extend to the walls... flush with the
+           header above... thicker golden border on the bottom edge."
+           Negative side margins cancel #scene-content's own 0.5rem padding
+           (a child can extend past its parent's content-box into the
+           padding area this way, without touching #scene-content's padding
+           itself, which the editor/guidance rail below still rely on).
+           margin-top cancels `body.mobile-layout header`'s own 4px
+           margin-bottom (added 2026-07-26 specifically as breathing room
+           for FLOW content below the header) - the same "let this element's
+           own bottom border be the header's own cap" technique already
+           used for the scene-status arm, applied here to the header's TOP
+           edge instead. Top/left/right borders and the top corner rounding
+           (rounded-t-2xl) are dropped so the 5px gold border on the bottom
+           is the ONLY border remaining - "the thicker golden border on the
+           bottom edge" describes that border (already thick relative to
+           the 1px borders used elsewhere in this tool), not a request to
+           thicken it further. */
+        /* Item (2026-08-05, Aaron): "same margin below the scene summary as
+           there is below the review window" - #review-note-box carries
+           mb-3 (12px, Tailwind, in the HTML); #scene-summary-bar carried
+           mb-0 (0, also Tailwind) since it was designed to stack directly
+           into #scene-status-bar with no gap. Overridden here to match
+           review's 12px instead of the other direction, since 12px is the
+           value already explicitly chosen and named (review's), rather
+           than assuming review's should drop to match summary's implicit
+           zero. */
+        body.mobile-layout.scene-open #scene-summary-bar {
+            margin-left: -0.5rem; margin-right: -0.5rem;
+            margin-top: -4px; margin-bottom: 0.75rem;
+            border-top: none; border-left: none; border-right: none;
+            border-radius: 0;
+        }
         /* The review box's translucent gold tint (bg-[#D4AF37]/15) lightens
            the backdrop enough that its gold heading measured 4.19:1 - under
            AA. A solid #3D2B1F ground (already used across the tool) takes the
@@ -1107,6 +1213,19 @@
             position: fixed !important;
             top: var(--mobile-header-h) !important;
             left: 0;
+            /* Item (2026-08-02): kill text selection + the iOS callout on the
+               whole arm. Both drag gestures in this tool arm on a 300ms
+               press-and-hold, which is ALSO iOS Safari's own trigger for
+               select-word / "Copy | Look Up" - so grabbing the status circle
+               would start selecting its status code ("UF" / "C" / "R") and
+               the selection would then extend as the finger moved. The
+               circle looks like a graphic but is real text, which is why it
+               is selectable at all. -webkit-touch-callout is the separate
+               property for the callout bubble; user-select alone does not
+               suppress it on iOS. Applied to the whole arm rather than just
+               the circle so the action buttons behave the same way. */
+            -webkit-user-select: none; user-select: none;
+            -webkit-touch-callout: none;
             /* Item (2026-07-27): raised above the guidance rail (z-index 45)
                and, critically, above an OPEN guidance drawer
                (.guidance-float-window, z-index 460) - now that the arm is
@@ -1150,6 +1269,17 @@
             padding: 8px; margin: 0; padding-bottom: 14px;
             display: flex; flex-direction: column; align-items: center; gap: 4px;
         }
+        /* Item (2026-08-02): that 14px bottom padding was derived from the
+           OPEN state - it matches the 14-16px side clearance the 44px action
+           buttons get once centered under the 56px circle. Collapsed, there
+           are no action buttons, so the same 14px stacks on top of the
+           chevron toggle's own ~9.4px internal bottom padding and left ~25px
+           of green under the glyph against only 8px above the circle. Zeroing
+           it here (collapsed only - the open state keeps its 14px) leaves the
+           toggle's own padding as the whole bottom gap: measured 9.4px green
+           + the 2px gold border, which reads symmetric with the 8px above the
+           circle. Nothing else in the arm's geometry moves. */
+        body.mobile-layout #scene-status-bar:not(.actions-open) { padding-bottom: 0; }
         /* Item (2026-07-27): dock-state overrides. Only the wall-facing
            side's border and that corner's radius change - the opposite
            side keeps its border and rounded corner from the base rule
@@ -1292,30 +1422,30 @@
            height - the target stays 30px tall and full arm width. */
         body.mobile-layout #scene-status-bar .status-actions-toggle {
             display: flex; align-items: center; justify-content: center;
-            width: 100%; min-height: var(--tap-sm);
+            width: 100%;
             background: none; border: none; color: #D4AF37; font-size: 0.7rem;
-            /* Item 1 (2026-07-26): originally align-items:flex-start + a
-               top-only pad, to pull the glyph up close to the circle rather
-               than centered in the 30px box.
-               Item (2026-07-27, round 1): switched to align-items:center so
-               top/bottom padding renders as an equal visual gap (flex-start
-               dumped leftover box height as bottom-only slack).
-               Item (2026-07-27, round 2 - margin standardization): dropped
-               the fixed `height: var(--tap-sm)` in favor of `min-height`
-               only, intending the box to hug its content (glyph + padding)
-               exactly. Padding bumped 6px -> 8px to match the arm's new
-               standardized margin (BUTTON_STYLE_GUIDE.md).
-               Measured result: still 9.4px, not 8px - the glyph is only
-               ~11px tall, so content height (glyph + 2*8px padding =
-               ~27px) is still under the 30px chrome-tier floor, and
-               min-height keeps winning. Getting an exact 8px would mean
-               either shrinking min-height below the project's 30px
-               touch-target floor (not worth it for 1.4px) or bumping
-               padding to ~9.4px (breaking the deliberately-chosen round
-               8px value). Left as 8px padding / ~9.4px rendered - close
-               enough, and the floor is the more important constraint to
-               keep. Don't "fix" this again without re-measuring first. */
-            padding: 8px 0 8px 0;
+            /* Item (2026-08-04, Aaron): "reduce the margins above and below
+               the chevron." The 30px chrome-tier min-height was EXPLICITLY
+               kept through 2026-08-02 ("Don't fix this again without
+               re-measuring first") specifically because shrinking it meant
+               going below the project's own touch-target floor for a
+               questionable 1.4px gain - that calculus only holds if nobody
+               actually asks for the smaller margin. Aaron now has.
+               min-height dropped to 0 (was var(--tap-sm)/30px) and padding
+               8px -> 2px, so the box hugs the ~11px glyph tightly instead of
+               being floor-bound. Must be set explicitly, not just omitted -
+               `#scene-status-bar button` (the shared PRIMARY-tier rule,
+               var(--tap)/44px, above) still matches this element and would
+               otherwise win the min-height property outright, making the
+               chevron TALLER than before instead of shorter. This chevron
+               toggles the Sammy/Draft Log/Save bank open/closed - a
+               chrome-tier, set-once-per-visit control, not
+               a repeatedly-tapped one, so this follows the same "deliberate,
+               Aaron-specified exception" precedent as the rail handle
+               (BUTTON_STYLE_GUIDE.md) rather than the more serious PRIMARY-
+               tier trade-off item 6 this same round made explicitly. */
+            min-height: 0;
+            padding: 2px 0 2px 0;
             margin-top: -4px; margin-bottom: -4px;
             line-height: 1;
         }
@@ -1353,49 +1483,228 @@
             display: flex; align-items: center; justify-content: center;
             border-radius: 10px;
         }
+        /* Item (2026-08-02): action-bank glyphs grown 30% (the inherited
+           .control-bar-item 0.9375rem -> 1.21875rem), matching the same 30%
+           applied to the rail icons the same round. Aaron's ask named the
+           "button size"; confirmed with him it's the GLYPH that grows, not
+           the box - the 44px --tap boxes stay exactly as they are, because
+           44 * 1.3 = 57.2px would make these buttons WIDER than the 56px
+           status circle above them, widening the whole arm and inverting
+           the "buttons centered under the wider circle" geometry the 8px/
+           14px padding values were derived from. Box unchanged = none of
+           that moves. */
+        body.mobile-layout #scene-status-bar .status-actions-bank > button i { font-size: 1.21875rem; }
+        /* Draft Log renders the letters "DL" instead of its icon on mobile
+           (2026-08-02, Aaron). Same pattern as .status-trigger-label /
+           .status-trigger-code on the status circle: both forms live in the
+           DOM, CSS picks one per layout, so no JS branching and desktop
+           keeps the icon + "Draft Log" text it has always had. The button's
+           aria-label still carries the real name, so the swap is purely
+           visual. */
+        .btn-code { display: none; }
+        body.mobile-layout #scene-status-bar .status-actions-bank > button[aria-label="Draft Log"] i { display: none; }
+        body.mobile-layout #scene-status-bar .status-actions-bank > button[aria-label="Draft Log"] .btn-code {
+            display: block;
+            font-size: 1.21875rem; font-weight: 700; line-height: 1;
+            letter-spacing: 0.02em;
+        }
         /* Item 4: Sammy above Save in the stack. */
         body.mobile-layout #scene-status-bar .status-actions-bank > button[aria-label="Send to Sammy"] { order: 1; }
         body.mobile-layout #scene-status-bar .status-actions-bank > button[aria-label="Draft Log"] { order: 2; }
         body.mobile-layout #scene-status-bar .status-actions-bank > button[aria-label="Save Draft"] { order: 3; }
-        /* Item 4: "Auto-saved…" leaves the arm and sits semi-transparent in
-           the bottom-right corner of the writing area. pointer-events:none so
-           taps pass through to the editor beneath it. */
-        body.mobile-layout #auto-save-status {
-            position: fixed;
-            /* pulled further in so it never sits on the editor's rounded
-               border */
-            right: 1.6rem;
-            bottom: calc(var(--mobile-nav-clear) + 0.9rem);
-            z-index: 30;
-            min-height: 0; padding: 0;
-            background: none;
-            /* Light brown, deliberately hardly noticeable (Aaron, 2026-07-24).
-               !important beats the global full-opacity label rule. This is
-               decorative reassurance, not content - see the CHANGELOG note on
-               it being an intentional sub-AA exception. */
+        /* This rule went through several rounds (2026-07-24 through
+           2026-08-02) as a position:fixed viewport overlay, at one point
+           carrying the merged word count too - see CHANGELOG for that
+           history if it's ever relevant again.
+           Item (2026-08-03): #auto-save-status is now DESKTOP ONLY. It used
+           to be repositioned into a position:fixed, viewport-anchored
+           overlay for mobile (the several rounds of history above this
+           comment) - that overlay had two real problems Aaron flagged: it
+           rendered on top of the Library/Outline side panels once they slid
+           open over it (fixed elements aren't affected by an unrelated
+           sibling's z-index unless that sibling explicitly outranks them,
+           and this one never did), and being fixed to the viewport rather
+           than tied to the editor's own box, it never read as "part of the
+           writing field." Both are fixed by simply hiding this element on
+           mobile and giving the same job to a NEW, purpose-built element,
+           #mobile-draft-ghost, positioned relative to #editor's own corner
+           instead of the viewport - see that element's own CSS below and
+           getAutosaveStatusEl()'s JS comment for the full reasoning
+           (including why it's a sibling of #editor, not a descendant). */
+        body.mobile-layout #auto-save-status { display: none; }
+        /* #editor-column is the positioning CONTEXT for the ghost below -
+           its own box exactly matches #editor's (DRAFT label + toolbar sit
+           above #editor, but #editor is the last child and fills the rest
+           via flex-1, so the column's bottom/right edges coincide with
+           #editor's own bottom/right edges). position:relative here has no
+           other effect - it doesn't move #editor-column itself. */
+        body.mobile-layout #editor-column { position: relative; }
+        #mobile-draft-ghost { display: none; }
+        body.mobile-layout #mobile-draft-ghost {
+            display: block;
+            position: absolute;
+            /* Inset to sit just inside #editor's own 1rem padding (see
+               body.mobile-layout #editor below) rather than overlapping its
+               rounded border/corner. */
+            right: 1.5rem; bottom: 1rem;
+            min-height: 0; padding: 0; margin: 0;
+            background: none; border: none;
+            /* Light brown, deliberately hardly noticeable (Aaron, 2026-07-24,
+               carried over from #auto-save-status). !important beats the
+               global full-opacity label rule. Decorative reassurance, not
+               content - see the CHANGELOG note on it being an intentional
+               sub-AA contrast exception. */
             color: #8B6F47 !important;
             font-size: 0.8rem;
+            /* Never tappable/selectable/copyable - see getAutosaveStatusEl()'s
+               comment on why this is a SIBLING of #editor rather than
+               relying on user-select alone to keep it out of the draft. */
             pointer-events: none;
+            -webkit-user-select: none; user-select: none;
+            /* Above #editor's own background/text (which has no z-index of
+               its own, so any positive value clears it) but far below every
+               genuinely interactive mobile control (rail 465, handle 470,
+               status arm 470) - those still win any overlap the same as
+               they did with the old element, unchanged. */
+            z-index: 5;
         }
         body.mobile-layout #scene-content .gap-3.px-1 { display: block; }
         body.mobile-layout #scene-content .w-60 { display: none; }
         body.mobile-layout #scene-content .h-\[496px\] { height: auto; min-height: 60vh; min-height: 60svh; }
         /* Item 6 (2026-07-24): every editor tool on ONE line above the field.
            It scrolls horizontally rather than wrapping, so a large text scale
-           can never push tools onto a second row. */
+           can never push tools onto a second row.
+           Item (2026-08-05, Aaron): "remove the container" - dropped the
+           bar's own background/rounded-corner/padding (was #4A3A2E fill,
+           0 0 12px 12px radius, 5px 6px padding), so the buttons read as
+           floating directly above the editor rather than inside a bounded
+           bar. justify-content reverted from flex-start to the base
+           class's own justify-between (removed here, not re-declared) -
+           flex-start was needed when this was one undifferentiated row of
+           6 same-weight buttons; now the left cluster (Bold/Italic/
+           Underline/Copy/Paste) and right cluster (Proofreader/Zoom/Text)
+           are two deliberately separated groups, and justify-between's
+           gap between them IS the second separator Aaron asked for. */
         body.mobile-layout #editor-toolbar {
             position: sticky; top: 0; z-index: 25;
-            background: #4A3A2E; border-radius: 0 0 12px 12px;
-            flex-wrap: nowrap; gap: 4px; padding: 5px 6px;
-            justify-content: flex-start;
+            flex-wrap: nowrap; gap: 4px;
             overflow-x: auto; overflow-y: hidden;
         }
         body.mobile-layout #editor-toolbar > div { flex-wrap: nowrap; gap: 4px; min-width: 0; flex-shrink: 0; }
-        /* Measured: 44px-wide tools still fit on one line at 440px, so there
-           is no need to trade touch size for the single row. */
-        body.mobile-layout #editor-toolbar .text-tool-btn { min-width: var(--tap); padding-left: 0.4rem; padding-right: 0.4rem; }
+        /* Explicit divider bar between Underline and Copy (the first of the
+           two separators Aaron asked for - see the HTML comment above
+           #editor-toolbar for why only one is rendered explicitly).
+           Matches #header-divider's own treatment (w-px h-6 bg-gold/40). */
+        body.mobile-layout .editor-toolbar-sep {
+            display: inline-block;
+            width: 1px; height: 1.5rem;
+            background: rgba(212, 175, 55, 0.4);
+            flex-shrink: 0;
+        }
+        /* Item (2026-08-04, Aaron): "reduce size of text editor tool buttons
+           ... by 50%" - confirmed with him directly this means the BOX
+           (44px -> 22px), not just the icon glyph. This is a genuine,
+           deliberate departure from --tap (the tier this project reserves
+           for controls "touched constantly while writing" - see
+           BUTTON_STYLE_GUIDE.md) for exactly the controls that tier exists
+           to protect, unlike every other below-floor exception so far this
+           session, which were all chrome-tier (set-once) controls. Scoped
+           to #editor-toolbar specifically, NOT the bare .text-tool-btn
+           class (line ~854) - that class is also used by the Notepad's own
+           text-formatting row, which was not part of this ask and must stay
+           at 44px. Icon/glyph font-size is untouched (still 1rem via the
+           global rule) - only the box shrank, per the same "size ≠ glyph"
+           principle used everywhere else, just applied to a smaller final
+           box this time. New id (#editor-text-size-btn) added below for the
+           Text button relocated here from the bottom nav - it's just
+           another .text-tool-btn, so it shrinks along with its siblings
+           automatically.
+           Item (2026-08-05, Aaron): "increase all buttons and scaler to
+           36px" - the very floor-departure this comment describes is now
+           being partially walked back (still well under --tap/44px, but
+           bigger than the 22px round produced). 22px -> 36px throughout. */
+        /* Explicit width/height (not min-), box-sizing:border-box, zero
+           padding, and flex-centering: `min-height` alone measured taller
+           than the target in practice - it's a floor, and the base
+           .text-tool-btn's own padding (2px 8px) + a 16px-line-height glyph
+           + the 1px border already add up to more than 22px (the previous
+           target) on their own, so the floor never actually binds. Forcing
+           the box explicitly is what makes the target size real rather than
+           aspirational. box-sizing:border-box keeps the 1px border inside
+           the box rather than adding to it. */
+        body.mobile-layout #editor-toolbar .text-tool-btn {
+            width: 36px; height: 36px; min-width: 36px; min-height: 36px;
+            box-sizing: border-box;
+            padding: 0;
+            display: flex; align-items: center; justify-content: center;
+            line-height: 1;
+        }
+        /* Copy/Paste + the divider before them (2026-08-05): mobile-only,
+           same reasoning as #editor-text-size-btn immediately below - this
+           whole reorder is a mobile-specific ask, and these are new shared-
+           markup elements that would otherwise also render on desktop's
+           existing, unrelated toolbar. */
+        #editor-copy-btn, #editor-paste-btn, #editor-toolbar-sep-1 { display: none; }
+        body.mobile-layout #editor-copy-btn,
+        body.mobile-layout #editor-paste-btn { display: flex; }
+        body.mobile-layout #editor-toolbar-sep-1 { display: inline-block; }
+        /* Text Size button (2026-08-04): mobile-only, same as the sheet it
+           opens (openTextSize()/#textsize-window never had a desktop entry
+           point - mobileCloseEverything(), which it routes through, is a
+           no-op off mobile). */
+        #editor-text-size-btn { display: none; }
+        body.mobile-layout #editor-text-size-btn { display: flex; }
+        /* Item (2026-08-02): the standalone toolbar word counter is hidden
+           on mobile - its count now lives folded into #auto-save-status
+           ("N words autosaved", see updateWordCount()). Hide the WRAPPER
+           div (#word-count-wrap), not just the #word-count span inside it -
+           hiding only the span would leave an empty-but-present flex child,
+           still consuming its share of the row's gap-x-3 spacing on both
+           sides. Desktop keeps both elements exactly as they were; this
+           rule is mobile-scoped. The #word-count font-size rule below stays
+           harmless dead weight (never rendered while its wrapper is
+           display:none) rather than being deleted, since deleting it would
+           silently change desktop's shared (non-mobile-scoped) styling if
+           this line were ever mis-edited to drop the `body.mobile-layout`
+           prefix - see it as a guard rail, not dead code worth trimming. */
+        body.mobile-layout #word-count-wrap { display: none; }
         body.mobile-layout #word-count { white-space: nowrap; font-size: 0.8rem; }
-        body.mobile-layout #editor-zoom-label { font-size: 0.8rem; }
+        /* Item (2026-08-04): label WIDTH trimmed 32px -> 28px, a modest
+           reduction rather than a strict half - "100%" (the longest value
+           this ever shows) needs real room to stay on one line at its own
+           font-size, which is deliberately NOT halved (see below). Aaron's
+           ask covered the buttons' box and the bar's overall size; this
+           balances that against not clipping the one piece of genuinely
+           informative text in this control. */
+        body.mobile-layout #editor-zoom-label { font-size: 0.8rem; width: 1.75rem; }
+        /* Item (2026-08-02, Aaron): "shrink [the zoom scaler] to writing
+           tool button height" - the -/100%/+ pill was taller than its
+           sibling buttons (B/I/U/Proofreader, then --tap/44px) by about 4px,
+           because its OWN border+padding (py-0.5, 2px top/bottom Tailwind,
+           plus a 1px border each side) added on top of the 44px the inner
+           buttons already establish via the global `.text-tool-btn` mobile
+           rule. box-sizing: border-box makes the border draw INSIDE the
+           fixed height rather than adding to it; zeroing the wrapper's own
+           padding removes the rest. The inner buttons' min-height is
+           overridden to `auto` here specifically (they'd otherwise fight
+           the parent's fixed height with their own independent floor).
+           Item (2026-08-04, Aaron): "reduce size of... the scaler bar by
+           50%" - confirmed alongside the toolbar buttons as a real
+           touch-target trade-off, not just a glyph change. 44px -> 22px,
+           matching the toolbar buttons around it exactly. The 0.8rem label
+           font-size is deliberately UNCHANGED (see that rule's own comment -
+           shrinking genuinely-informative text below its current size
+           risked unreadability, unlike this box, which never had to be
+           read).
+           Item (2026-08-05, Aaron): "increase all buttons and scaler to
+           36px" - 22px -> 36px, matching #editor-toolbar .text-tool-btn's
+           own size exactly so this pill still reads as the same height as
+           its neighbors. */
+        body.mobile-layout #editor-zoom-control {
+            height: 36px; box-sizing: border-box;
+            padding-top: 0; padding-bottom: 0;
+        }
+        body.mobile-layout #editor-zoom-control .text-tool-btn { min-height: auto; }
         body.mobile-layout #editor { font-size: 1.0625rem; line-height: 1.65; min-height: 55vh; min-height: 55svh; padding: 1rem; border-radius: 1rem; }
 
         /* Guidance rail: all six tabs as one icon-only strip on the right
@@ -1404,15 +1713,57 @@
         body.mobile-layout.scene-open #mobile-guidance-rail {
             display: flex; flex-direction: column;
             position: fixed; right: 0; top: 50%; transform: translateY(-50%);
-            z-index: 45;
+            /* Was 45. Raised above an open guidance drawer (460) so the
+               folder tab stays tappable while a drawer is open (Aaron's
+               call, 2026-08-02). It had to change HERE, not on the tab:
+               this element is position:fixed WITH a z-index, so it forms a
+               stacking context, and a z-index on the tab inside it can only
+               order the tab against its siblings - it can never lift it
+               above something that outranks its parent. Setting only the
+               tab's z-index to 470 measured as still-covered
+               (elementFromPoint returned the drawer), which is what caught
+               this.
+               465, deliberately NOT 470: #scene-status-bar is 470, and the
+               rail comes LATER in the DOM, so an equal 470 would let the
+               rail paint over the status circle and quietly invert Aaron's
+               "the status circle wins that overlap" spec (documented in
+               Mobile_Port_Handoff.md). 465 sits above the drawer and below
+               the arm, preserving both rules. */
+            z-index: 465;
             background: #3D2B1F;
-            border: 1px solid rgba(212, 175, 55, 0.55); border-right: none;
+            /* Item (2026-08-02): outer gold edge thickened 1px -> 2px per
+               Aaron. Width only - the 0.55 alpha is unchanged, as are the
+               1px inter-tab dividers inside (his ask was the OUTER edge).
+               Right stays borderless: the strip is flush to the screen. */
+            border: var(--rail-border-w) solid rgba(212, 175, 55, 0.55); border-right: none;
             border-radius: 10px 0 0 10px;
-            /* auto (not hidden) so the six tabs stay reachable by scrolling
-               if a large UI text scale makes them outgrow a short landscape
-               viewport, rather than being silently clipped. */
+            /* Item (2026-08-02): same press-and-hold/selection problem as the
+               scene-status arm - see the matching comment on
+               #scene-status-bar. The rail arms a reposition drag on a 300ms
+               hold, which collides with iOS's own select/callout gesture;
+               the FontAwesome glyphs in the tabs and in the handle are text
+               as far as the selection engine is concerned. Set on the rail
+               so every descendant (the six tabs AND the handle, which is a
+               child of this element) inherits it in one place. */
+            -webkit-user-select: none; user-select: none;
+            -webkit-touch-callout: none;
+            /* Item (2026-08-02): overflow moved to .rail-tab-strip below.
+               It has to be `visible` here so the folder tab can protrude
+               past this element's left edge - and overflow-x cannot be
+               visible while overflow-y is auto (CSS computes the visible
+               one to auto), which is exactly why the scrolling moved to an
+               inner wrapper instead of just changing one axis here. */
+            overflow: visible;
+        }
+        /* Inner scroller (2026-08-02): carries what the rail itself used to.
+           auto (not hidden) so the six tabs stay reachable by scrolling if a
+           large UI text scale makes them outgrow a short landscape viewport,
+           rather than being silently clipped. */
+        body.mobile-layout.scene-open #mobile-guidance-rail .rail-tab-strip {
+            display: flex; flex-direction: column;
             overflow-y: auto; overflow-x: hidden;
             max-height: calc(100dvh - var(--mobile-header-h) - var(--mobile-nav-clear) - 12px);
+            border-radius: 8px 0 0 8px;
         }
         /* Enlarged (2026-07-25) to read as the same weight as the Sammy/
            Draft Log/Save action buttons on the opposite edge - those are
@@ -1421,46 +1772,148 @@
            bordered pills, so simply bumping this past --tap was the way to
            make them feel like peers without breaking the "connected bank"
            layout Aaron asked to keep. */
+        /* Item (2026-08-02): rail-tab width and the rail's total footprint
+           now share custom properties, specifically so the guidance-drawer
+           offset below (`right` on .guidance-float-window) can reference the
+           SAME numbers instead of a hardcoded literal that silently drifts
+           the next time this shape changes - the project has already shipped
+           that exact bug twice (--arm-pad-r, CHANGELOG 2026-07-27; the
+           folder-tab z-index note above). If any of these three values move
+           again, grep for var(--rail-tab-w) / var(--rail-border-w) /
+           var(--rail-handle-w) before calling the change done. */
+        body.mobile-layout {
+            --rail-tab-w: 2.95rem;    /* was 3.5rem (56px); now 47.2px, see below */
+            --rail-tab-h: 3.5rem;     /* unchanged this round; shared so the JS drag clamp (setupGuidanceRailDrag) doesn't hardcode its own copy */
+            --rail-border-w: 2px;
+            --rail-handle-w: 24px;
+        }
+        /* --autosave-gap (0.9rem) briefly lived here (2026-08-02): shared
+           between #auto-save-status's own `bottom` offset and
+           getRailBand()'s JS clamp, back when the rail's bottom drag limit
+           was deliberately pinned to the same line the autosave text sat
+           on. Both of those uses are gone as of 2026-08-03 - the rail's
+           clamp reverted to the true edge the same day it was added
+           (see getRailBand()), and #auto-save-status itself is now
+           display:none on mobile (see its own rule) - so the property
+           itself was removed rather than left defined-but-unused. If you're
+           reading this because a stale var(--autosave-gap) reference
+           surfaced somewhere, that reference is the bug, not this note. */
         body.mobile-layout .rail-tab {
             display: flex; align-items: center; justify-content: center;
-            /* square tabs (item 7, 2026-07-24) */
-            width: 3.5rem; min-width: 3.5rem;
+            /* Item (2026-08-02, was "square tabs", item 7 2026-07-24): no
+               longer square. Aaron asked for the icon's top/bottom/left
+               margins to match (the right margin, 8.8px, was deliberately
+               set differently just last round and wasn't part of this ask,
+               so it's held fixed). Height stays 3.5rem/56px, unchanged -
+               with the 20.8px common-case icon that centers to a 17.6px
+               top/bottom margin already. Matching left to that means the
+               box only needs to be exactly left(17.6) + icon(20.8) +
+               right(8.8) = 47.2px wide, instead of the old fixed 56px
+               square with ~26px of unused space on the icon's left (editor-
+               facing) side. That 8.8px reduction IS the "make the rail
+               narrower" half of the ask - it's a direct consequence of
+               removing the dead space, not a separate change.
+               padding-left/-right are both explicit now (not just
+               padding-left + centering slack) so the common-case icon's
+               content-box is exactly its own width and justify-content:
+               center has nothing left to redistribute - the two wider
+               glyphs (mountain-sun 26px, trophy 23.4px) still slightly
+               exceed that content-box and get centered into the padding by
+               a couple px, same per-icon variance already accepted last
+               round. */
+            width: var(--rail-tab-w); min-width: var(--rail-tab-w);
             height: 3.5rem; min-height: 3.5rem;
-            padding: 0;
+            padding: 0 0.55rem 0 1.1rem;
             background: transparent; border: none;
             border-bottom: 1px solid rgba(212, 175, 55, 0.3);
             border-radius: 0;
             color: #D4AF37;
         }
         /* Item (2026-07-27): the toggle button moved from first to last
-           child in the bank (see the HTML), so it's now the divider-free
-           end instead of the "success" tab - :nth-last-child(2) targets
-           whichever tab sits immediately above the toggle regardless of
-           further reordering, rather than hardcoding "success". */
-        body.mobile-layout #mobile-guidance-rail .rail-tab:nth-last-child(2) { border-bottom: none; }
+           child in the bank, so the divider-free end is the last tab rather
+           than the "success" tab specifically.
+           Item (2026-08-02): the toggle left the flex flow entirely (it's
+           the absolutely-positioned folder tab now) and the six tabs moved
+           into .rail-tab-strip, so the old :nth-last-child(2) - which meant
+           "the tab above the toggle" - would now skip the real last tab and
+           strand a divider on the bottom edge. Plain :last-child is correct
+           again, and is stable under further reordering. */
+        body.mobile-layout #mobile-guidance-rail .rail-tab-strip .rail-tab:last-child { border-bottom: none; }
         /* Item 3 (2026-07-26): the rail collapses to just this arrow when
            docked, saving screen space; a plain tap expands it back to the
-           full 6-icon strip. Chrome-tier size (30px), matching the scene-
-           status arrow tab's own visual language on the opposite edge. */
+           full 6-icon strip.
+           Item (2026-08-02, Aaron): it is no longer a 56x30 arrow sitting
+           at the bottom of the bank - it's a HANDLE centered on the rail's
+           long (left) wall.
+           Item (2026-08-02, same day, revised): first built at 60x140
+           (2.5 rail icons tall), then Aaron pointed at iOS's own
+           hidden-PiP-window handle - the translucent pill on the right edge
+           of a phone screenshot - and asked for the same size and shape.
+           Eyeballed off that screenshot: ~55x217 image px on a 923px-wide
+           capture of a 393pt screen (~2.35x), so ~24x96 CSS px, a roughly
+           4:1 vertical pill with its outboard corners fully rounded. Hence
+           24x96 with a 12px radius (= half the width, so the left edge is a
+           true semicircle) rather than the previous 60x140/10px.
+           Item (2026-08-02, further revised): height 96px -> 112px
+           (`calc(2 * var(--rail-tab-h))`), per Aaron - "as tall as 2
+           rail-drawer boxes" (a rail-tab, 3.5rem/56px, is the box that opens
+           a drawer). This deliberately breaks the 4:1 iOS-PiP-handle ratio
+           the previous round matched exactly - Aaron's new explicit number
+           supersedes that fidelity goal. Width (24px, --rail-handle-w) and
+           the 12px corner radius are unchanged - the radius is derived from
+           WIDTH, not height, so it's still correct (still a true semicircle
+           on the left edge) at the new taller size.
+           Absolutely positioned, so it protrudes past the rail's left edge
+           - this is why the rail's overflow had to move to .rail-tab-strip
+           (see that rule). It stays a child of #mobile-guidance-rail on
+           purpose: the rail is draggable, and a child moves with it for
+           free, whereas a separate fixed element would need the drag code
+           to move two things in sync. */
         .rail-collapse-toggle { display: none; }
         body.mobile-layout.scene-open #mobile-guidance-rail .rail-collapse-toggle {
             display: flex; align-items: center; justify-content: center;
-            width: 3.5rem; height: var(--tap-sm); min-height: var(--tap-sm);
-            background: none; border: none; color: #D4AF37; font-size: 0.85rem;
-            /* Item (2026-07-27): border moved from bottom to top - the
-               toggle is now the LAST element in the bank (divider needed
-               above it, from the tab it follows; none needed below, since
-               nothing follows it). */
-            border-top: 1px solid rgba(212, 175, 55, 0.3);
+            position: absolute;
+            top: 50%; transform: translateY(-50%);
+            left: calc(-1 * var(--rail-handle-w));
+            width: var(--rail-handle-w); height: calc(2 * var(--rail-tab-h));
+            background: #3D2B1F;
+            color: #D4AF37; font-size: 0.7rem;
+            /* Matches the strip's own outer edge (2px, same alpha). No right
+               border: that side butts against the rail's left wall, and the
+               rail's own border draws the seam, so the two read as one
+               shape with the tab growing out of it. */
+            border: 2px solid rgba(212, 175, 55, 0.55);
+            border-right: none;
+            /* 12px = half the 24px width, so the outboard edge is a true
+               semicircle, matching the iOS handle's fully-rounded end. */
+            border-radius: 12px 0 0 12px;
             flex-shrink: 0;
+            /* Above an open guidance drawer (.guidance-float-window, 460).
+               The old bottom-mounted toggle sat inside the 56px strip, which
+               a drawer never reached; this handle protrudes LEFT,
+               straight into the drawer's footprint, so at the rail's own
+               z-index (45) it would be covered and untappable exactly when
+               you'd want to collapse. Same precedent as the scene-status
+               circle (470), which already wins its overlap by Aaron's spec.
+               Confirmed with him 2026-08-02. */
+            z-index: 470;
         }
-        body.mobile-layout #mobile-guidance-rail.rail-collapsed .rail-collapse-toggle {
-            border-top: none;
+        /* Collapsed: the six-tab strip disappears and the handle IS the
+           rail - it drops back into normal flow so the rail element sizes to
+           it (112px as of 2026-08-02, was 96px), which matters because the
+           layout code reads offsetHeight/offsetWidth to keep the thing on
+           screen. The rail's own border/background go transparent so the
+           tab's edge isn't doubled. */
+        body.mobile-layout #mobile-guidance-rail.rail-collapsed {
+            border: none; background: transparent;
+        }
+        body.mobile-layout #mobile-guidance-rail.rail-collapsed .rail-tab-strip { display: none; }
+        body.mobile-layout.scene-open #mobile-guidance-rail.rail-collapsed .rail-collapse-toggle {
+            position: static; transform: none;
         }
         body.mobile-layout #mobile-guidance-rail.rail-collapsed .rail-collapse-toggle i {
             transform: rotate(180deg);
         }
-        body.mobile-layout #mobile-guidance-rail.rail-collapsed .rail-tab { display: none; }
         /* Glyph enlarged (2026-07-26) to squeeze the dead space around each
            icon, then reduced back down to 1rem (2026-07-27) to match the
            editor toolbar icons (.text-tool-btn, 1rem) and the scene status
@@ -1472,7 +1925,16 @@
            the icon itself. Reverted to 1rem. If the margin still needs
            addressing, the fix has to come from somewhere other than
            glyph size - ask before changing this again. */
-        body.mobile-layout .rail-tab i { font-size: 1rem; line-height: 1; }
+        /* Item (2026-08-02): glyph grown 30% (1rem -> 1.3rem) per Aaron, to
+           close up the dead space inside the 56px box. The box, its zero
+           padding, and the 1px divider borders are all UNCHANGED - this is
+           deliberately a glyph-only change this time, so the touch target
+           and the strip's connected-bank geometry stay exactly as measured.
+           Note this revisits the 2026-07-27 revert (1rem <- 2.5rem): that
+           attempt overshot at 2.5x and read as a different control family;
+           1.3rem was Aaron's own number. Keep BUTTON_STYLE_GUIDE.md's
+           icon table in sync if this moves again. */
+        body.mobile-layout .rail-tab i { font-size: 1.3rem; line-height: 1; }
         body.mobile-layout .rail-tab.active { background: #D4AF37; color: #3D2B1F; }
         /* Armed after a 1s press-and-hold (setupGuidanceRailDrag): a visible
            cue that the next finger movement now drags the whole bank rather
@@ -1488,10 +1950,35 @@
             box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.8), 0 4px 14px rgba(0,0,0,0.4);
         }
 
+        /* Item (2026-08-02): belt-and-braces for the same selection problem.
+           The rules on #scene-status-bar / #mobile-guidance-rail stop a
+           selection STARTING on those controls, which is the actual bug
+           Aaron hit. This one covers the drag's whole lifetime: once a drag
+           is armed the finger travels across the editor and the rest of the
+           page, and a selection anchored anywhere en route would still show
+           highlight. Set for the duration of an armed drag only (both drag
+           setups add/remove it), never permanently - the editor and the
+           guidance text must stay selectable the rest of the time, since
+           copying scene text is a real thing Erica does. */
+        body.ui-dragging,
+        body.ui-dragging * {
+            -webkit-user-select: none !important; user-select: none !important;
+            -webkit-touch-callout: none !important;
+        }
+
         /* Guidance drawer: the float-window shells reused as fixed,
            non-draggable pop-open drawers anchored just left of the rail.
-           !important beats the shells' inline desktop geometry. */
-        body.mobile-layout .guidance-float-window { position: fixed; left: auto !important; right: 3rem !important; top: 50% !important; transform: translateY(-50%); width: min(74vw, 340px) !important; height: auto !important; max-height: calc(100dvh - var(--mobile-header-h) - var(--mobile-nav-clear) - 24px); min-width: 0; min-height: 0; z-index: 460; overscroll-behavior: contain; border-width: 2px; }
+           !important beats the shells' inline desktop geometry.
+           Item (2026-08-02): `right` was a flat 3rem (48px), which cleared
+           the OLD strip-foot toggle fine but not the new left-protruding
+           handle - the handle spans from (rail's left edge) another
+           --rail-handle-w further left, so the drawer's right edge has to
+           clear rail-tab-w + rail-border-w + rail-handle-w, not just the
+           strip. Expressed via the SAME custom properties the rail/handle
+           use (not a re-derived literal), plus 8px breathing room matching
+           the project's standard margin, so this can't drift out of sync
+           with those shapes the way --arm-pad-r once did. */
+        body.mobile-layout .guidance-float-window { position: fixed; left: auto !important; right: calc(var(--rail-tab-w) + var(--rail-border-w) + var(--rail-handle-w) + 8px) !important; top: 50% !important; transform: translateY(-50%); width: min(74vw, 340px) !important; height: auto !important; max-height: calc(100dvh - var(--mobile-header-h) - var(--mobile-nav-clear) - 24px); min-width: 0; min-height: 0; z-index: 460; overscroll-behavior: contain; border-width: 2px; }
 
         /* Item 8: the drawer's own header row (a duplicate title) is removed;
            the ONLY internal line is the separator under the card's own
@@ -1595,40 +2082,136 @@
         body.mobile-layout #draft-conflict-banner { top: calc(var(--mobile-header-h) + 8px); max-height: calc(100dvh - var(--mobile-header-h) - var(--mobile-nav-clear) - 16px); overflow-y: auto; }
         body.mobile-layout #draft-conflict-banner .grid-cols-2 { grid-template-columns: 1fr; }
 
-        /* ---- Bottom navigation ---- */
-        /* padding-top reserves the space the Focus bulge rises into, so the
-           bulge lives inside the nav's own padding box and is not clipped by
-           overflow-x (which the browser forces to clip vertically too). */
-        body.mobile-layout #mobile-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 320; display: flex; align-items: flex-start; background: #2A2119; border-top: 2px solid rgba(212, 175, 55, 0.6); padding-top: 0.9rem; padding-bottom: env(safe-area-inset-bottom, 0px); overflow-x: auto; overscroll-behavior-x: contain; }
-        /* min-width holds the touch floor even at high zoom, where six equal
-           flex items would be squeezed under it; the nav scrolls instead. */
-        body.mobile-layout #mobile-nav button { flex: 1 1 0; min-width: var(--tap); min-height: var(--mobile-nav-h); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: none; border: none; color: #D4AF37; font-size: 0.8rem; transition: background-color 0.18s ease, color 0.18s ease, font-size 0.18s ease; }
-        body.mobile-layout #mobile-nav button i { font-size: 1.1rem; }
+        /* ---- Bottom navigation - redesigned 2026-08-05 (Aaron) ----
+           Supersedes 2026-08-04's "one arm growing right from the circle"
+           layout. Order is now Notepad, Outline, Focus, Library, Stats,
+           left to right - Focus sits at the TRUE HORIZONTAL CENTER of the
+           window, flanked by two independent 2-icon arms (Notepad+Outline
+           on the left, Library+Stats on the right), not attached to either.
+           #mobile-nav is full-width again (was width:auto/content-hugging)
+           so justify-content:space-between can push the two arms to the
+           true left/right edges; Focus is taken OUT of that flex flow
+           entirely (position:fixed of its own) so its centering is exact
+           regardless of the two arms' own (unequal) widths - a flex
+           middle-child's centering would only be approximate, DEPENDENT on
+           its neighbors' widths, which isn't what "centered in the middle
+           of the bottom edge of the window" asks for. */
+        body.mobile-layout #mobile-nav {
+            position: fixed; left: 0; right: 0; bottom: 0; z-index: 480;
+            display: flex; justify-content: space-between; align-items: flex-end;
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        body.mobile-layout #mobile-nav button {
+            flex: 0 0 auto;
+            min-height: var(--mobile-nav-h);
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+            background: none; border: none; color: #D4AF37; font-size: 0.8rem;
+            transition: background-color 0.18s ease, color 0.18s ease, font-size 0.18s ease;
+        }
+        /* Item (2026-08-04, Aaron): "enlarge all nav panel icons by 50%" -
+           1.1rem -> 1.65rem. Scoped to .nav-arm specifically; Focus's own
+           icon is sized independently below. */
+        body.mobile-layout .nav-arm button i { font-size: 1.65rem; }
 
-        /* Focus sits in the left corner and the bar bulges up around it. */
+        /* Item (2026-08-05, Aaron): "center it in the middle of the bottom
+           edge of the window... its circle shape should flatten against
+           the edge." Taken as descriptive of a normal bottom-flush
+           resting position (same "no gap to the true edge" language used
+           for the arm last round), not a request to literally clip/submerge
+           the circle - a full 84px circle sitting flush against the bottom
+           edge already reads as "flattening against" it, the same way the
+           arm's own bottom-flush position did, without needing the icon+
+           label composition to be half off-screen to achieve it.
+           position:fixed (not relative to #mobile-nav's own flex box) is
+           what makes left:50%/translateX(-50%) resolve against the true
+           viewport width - a descendant of a position:fixed ancestor still
+           uses the viewport as ITS OWN containing block for position:fixed,
+           not the ancestor's box, as long as nothing between them applies a
+           transform/filter (nothing here does). */
         body.mobile-layout #mobile-nav button[data-nav="focus"] {
-            /* flex-basis 0 on every button makes widths strictly
-               proportional to grow, so 1.3 is exactly 30% wider. */
-            flex: 1.3 1 0;
-            min-width: calc(var(--tap) * 1.1);
-            margin-top: -0.9rem;
-            padding-top: 0.75rem;
+            position: fixed;
+            left: 50%; transform: translateX(-50%);
+            bottom: env(safe-area-inset-bottom, 0px);
+            width: 5.25rem; height: 5.25rem;
+            padding: 0;
+            z-index: 481;
+        }
+        /* Item (2026-08-05, Aaron): "enlarge the focus button circle+icon by
+           50%" - 3.5rem/56px -> 5.25rem/84px (matching the button's own new
+           size above). "Inverse its current colors so it is a yellow circle
+           with brown icon" - background flips from the dark #2A2119 fill to
+           #D4AF37 gold (this app's one "yellow"); the icon (below) flips
+           from gold to #3D2B1F brown to match. Border kept at the same
+           translucent gold ring, now reading as a slightly darker rim
+           against the now-gold fill rather than a highlight against the
+           old dark one. */
+        body.mobile-layout .focus-circle {
+            width: 5.25rem; height: 5.25rem; min-width: 5.25rem; min-height: 5.25rem;
+            border-radius: 50%;
+            box-sizing: border-box;
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
+            background: #D4AF37;
+            border: 2px solid rgba(212, 175, 55, 0.6);
+            flex-shrink: 0;
+        }
+        /* "Enlarge the Focus icon to fill the circle" - 2rem -> 3.5rem/56px,
+           leaving ~14px clearance to the 84px circle's own edge on each
+           side (comfortably inside the 2px border). Color flipped to
+           #3D2B1F brown per the color inversion above. */
+        body.mobile-layout .focus-circle i { font-size: 3.5rem; color: #3D2B1F; }
+        /* "Make sure the color of the box behind the word Focus matches the
+           color of the circle" - background #3D2B1F -> #D4AF37, matching
+           .focus-circle's own new fill exactly. Text color flipped from
+           gold to #3D2B1F brown to stay legible against its now-gold
+           background (a gold-on-gold label would be invisible) - the same
+           inversion logic applied to the circle+icon pair above, extended
+           to this third piece for consistency rather than left as the one
+           unreadable combination. */
+        body.mobile-layout .focus-label {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: #D4AF37; color: #3D2B1F;
+            font-size: 0.5rem; font-weight: 700; letter-spacing: 0.4px;
+            padding: 1px 5px; white-space: nowrap; line-height: 1.4;
+        }
+
+        /* The two arms: same "shared outer border/background, transparent
+           individual buttons" shape .rail-tab-strip uses (see
+           #mobile-guidance-rail), now MIRRORED - one hugs the screen's left
+           edge (Notepad, Outline), one hugs the right (Library, Stats).
+           Each drops the border on its OUTER touching side (left-arm: no
+           left border; right-arm: no right border) and keeps both bottom
+           corners square (flush with the true window edge, matching
+           "no gap to bottom edge" from last round) - only the single
+           corner that touches neither wall rounds. */
+        body.mobile-layout .nav-arm {
+            display: flex; align-items: stretch;
+            height: 3.5rem;
             background: #2A2119;
             border: 2px solid rgba(212, 175, 55, 0.6);
-            border-bottom: none;
-            border-radius: 1.1rem 1.1rem 0 0;
         }
-        body.mobile-layout #mobile-nav button[data-nav="focus"] i { font-size: 1.45rem; }
+        body.mobile-layout .nav-arm-left {
+            border-left: none;
+            border-radius: 0 1.1rem 0 0;
+        }
+        body.mobile-layout .nav-arm-right {
+            border-right: none;
+            border-radius: 1.1rem 0 0 0;
+        }
+        body.mobile-layout .nav-arm button { min-width: var(--tap); padding: 0 0.6rem; }
 
-        /* Whichever view is open stays visibly raised until it is closed. */
+        /* Whichever view is open stays visibly raised until it is closed.
+           Focus never receives .nav-active (updateNavActiveState() hardcodes
+           its own state to false - it's a momentary action, not a
+           persistent view), so no Focus-specific override is needed here
+           any more. */
         body.mobile-layout #mobile-nav button.nav-active {
             background: #D4AF37;
             color: #3D2B1F;
             border-radius: 0.9rem;
             font-size: 0.9rem;
         }
-        body.mobile-layout #mobile-nav button.nav-active i { font-size: 1.3rem; }
-        body.mobile-layout #mobile-nav button[data-nav="focus"].nav-active { border-radius: 1.1rem 1.1rem 0 0; border-color: #D4AF37; }
+        body.mobile-layout .nav-arm button.nav-active i { font-size: 1.5rem; }
 
         /* Very narrow effective widths (e.g. Safari Page Zoom at 200% on a
            440px screen = ~220 CSS px): collapse the rail to one thinner
@@ -1636,7 +2219,11 @@
            only as a refinement INSIDE mobile mode, never for detection. */
         @media (max-width: 340px) {
             body.mobile-layout .guidance-float-window { width: min(80vw, 300px) !important; }
-            body.mobile-layout #mobile-nav button span { font-size: 0.75rem; }
+            /* :not(.focus-label) (2026-08-04): this selector's ID-based
+               specificity would otherwise beat .focus-label's own 0.5rem
+               font-size at this narrow width, making the FOCUS banner
+               render LARGER right when everything else shrinks. */
+            body.mobile-layout #mobile-nav button span:not(.focus-label) { font-size: 0.75rem; }
             /* At this effective width (roughly Safari Page Zoom 200% on a
                440px phone) the header cannot hold branding AND controls on
                one line. Drop the decorative branding and let the remaining
@@ -1719,7 +2306,7 @@
                         </div>
 
                         <!-- Stats -->
-                        <button onclick="showStoryStats()"
+                        <button id="header-stats-btn" onclick="showStoryStats()"
                                 class="flex items-center gap-x-2 px-3 py-1 text-sm rounded-xl hover:bg-[#4A3A2E] transition-colors">
                             <i class="fa-solid fa-chart-line text-[#D4AF37]"></i>
                             <span class="font-medium text-xs tracking-wider">STATS</span>
@@ -1783,7 +2370,7 @@
             
             <div class="p-4">
                 <div class="flex justify-end mb-1 -mr-1">
-                    <button onclick="toggleLeftPanel()" class="text-[#D4AF37] hover:text-[#E8C86B] px-3 py-1">
+                    <button id="outline-close-btn" onclick="toggleLeftPanel()" class="text-[#D4AF37] hover:text-[#E8C86B] px-3 py-1">
                         <i class="fa-solid fa-arrow-alt-circle-left text-lg"></i>
                     </button>
                 </div>
@@ -1805,6 +2392,14 @@
                         <button onclick="openChangelog('scene')" title="Scene Changelog" aria-label="Scene Changelog"
                                 class="h-8 w-8 flex-shrink-0 flex items-center justify-center rounded-xl border border-[#D4AF37]/30 hover:border-[#D4AF37]/50 hover:bg-[#D4AF37]/5 text-[#D4AF37]/80 hover:text-[#D4AF37] transition-all">
                             <i class="fa-solid fa-file-lines text-xs"></i>
+                        </button>
+                        <!-- Item (2026-08-03, Aaron): Home moved here from the
+                             bottom nav row (replaced there by Stats - see
+                             #mobile-nav). Same box classes as the changelog
+                             button beside it ("same size"); mobile-only. -->
+                        <button id="outline-home-btn" onclick="mobileNav('home')" title="Home" aria-label="Home"
+                                class="h-8 w-8 flex-shrink-0 flex items-center justify-center rounded-xl border border-[#D4AF37]/30 hover:border-[#D4AF37]/50 hover:bg-[#D4AF37]/5 text-[#D4AF37]/80 hover:text-[#D4AF37] transition-all">
+                            <i class="fa-solid fa-house text-xs"></i>
                         </button>
                     </div>
                     <div id="last-sync-time" class="m-hide text-[10px] text-[#D4AF37]/40 text-center mt-1"></div>
@@ -1920,6 +2515,7 @@
                         </button>
                         <button onclick="openDraftPad()" aria-label="Draft Log" class="control-bar-item bg-transparent border border-[#D4AF37]/60 hover:bg-[#D4AF37]/10 rounded-xl text-[#F4EDE4] transition-colors flex items-center gap-x-1.5">
                             <i class="fa-solid fa-layer-group"></i>
+                            <span class="btn-code" aria-hidden="true">DL</span>
                             <span class="btn-text">Draft Log</span>
                         </button>
                         <button onclick="sendSceneToSammy()" aria-label="Send to Sammy" class="control-bar-item bg-transparent border border-[#D4AF37]/60 hover:bg-[#D4AF37]/10 rounded-xl text-[#F4EDE4] transition-colors flex items-center gap-x-1.5">
@@ -2037,30 +2633,69 @@
                             </div>
                         </div>
 
-                        <div class="flex flex-col flex-1 min-h-0">
+                        <div id="editor-column" class="flex flex-col flex-1 min-h-0">
                             <div class="flex items-center justify-between mb-1.5 flex-shrink-0">
                                 <span id="scene-label" class="section-label text-[#D4AF37]">DRAFT</span>
                             </div>
 
-                            <div id="editor-toolbar" class="flex items-center justify-between mb-2 border-b border-[#D4AF37]/20 pb-2 flex-shrink-0">
+                            <!-- Item (2026-08-05, Aaron): "remove the container" -
+                                 the old border-b/mb-2/pb-2 made this read as a
+                                 bounded bar sitting apart from the editor. Now a
+                                 bare flex row with no border/background/gap of its
+                                 own, so the buttons sit immediately above the
+                                 field. Reordered per his spec: Bold/Italic/
+                                 Underline, a divider, Copy/Paste on the left;
+                                 Proofreader/Zoom/Text on the right - the
+                                 justify-between gap between the two groups IS the
+                                 second separator he asked for, so only one
+                                 explicit divider bar is needed (see
+                                 .editor-toolbar-sep). -->
+                            <div id="editor-toolbar" class="flex items-center justify-between flex-shrink-0">
                                 <div class="flex items-center gap-x-1">
                                     <button onclick="formatEditorText('bold')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 font-bold">B</button>
                                     <button onclick="formatEditorText('italic')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 italic">I</button>
                                     <button onclick="formatEditorText('underline')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1">U</button>
+                                    <span id="editor-toolbar-sep-1" class="editor-toolbar-sep" aria-hidden="true"></span>
+                                    <!-- Copy/Paste (new, 2026-08-05, mobile-only - same
+                                         reasoning as #editor-text-size-btn below: this
+                                         reorder was a mobile-specific ask, so these two new
+                                         shared-markup buttons must not leak onto desktop's
+                                         existing, unrelated toolbar). copySelection() already
+                                         reads window.getSelection() generically (it was
+                                         written for the Notepad but isn't Notepad-specific),
+                                         so it's reused as-is. Paste needed its own function
+                                         (pasteToEditor()) - the existing pasteFromClipboard()
+                                         is hardcoded to #note-content and does Notepad-specific
+                                         bookkeeping (notepadNotes), not reusable here. -->
+                                    <button id="editor-copy-btn" onclick="copySelection()" aria-label="Copy" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 flex items-center justify-center">
+                                        <i class="fa-solid fa-copy"></i>
+                                    </button>
+                                    <button id="editor-paste-btn" onclick="pasteToEditor()" aria-label="Paste" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 flex items-center justify-center">
+                                        <i class="fa-solid fa-paste"></i>
+                                    </button>
                                 </div>
                                 <div class="flex items-center gap-x-3">
-                                    <div class="text-xs text-[#D4AF37]/70">
+                                    <div id="word-count-wrap" class="text-xs text-[#D4AF37]/70">
                                         <span id="word-count">0 words</span>
                                     </div>
                                     <button onclick="openProofreader()" aria-label="Proofreader" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 flex items-center justify-center gap-x-1.5">
                                         <i class="fa-solid fa-glasses"></i>
                                         <span class="btn-text">Proofreader</span>
                                     </button>
-                                    <div class="flex items-center gap-x-1 border border-[#D4AF37]/40 rounded-xl px-1.5 py-0.5" title="Display size only — does not affect saved draft">
+                                    <div id="editor-zoom-control" class="flex items-center gap-x-1 border border-[#D4AF37]/40 rounded-xl px-1.5 py-0.5" title="Display size only — does not affect saved draft">
                                         <button onclick="adjustEditorZoom(-1)" class="text-tool-btn px-1.5 leading-none">−</button>
                                         <span id="editor-zoom-label" class="text-[10px] text-[#D4AF37]/70 w-8 text-center select-none">100%</span>
                                         <button onclick="adjustEditorZoom(1)" class="text-tool-btn px-1.5 leading-none">+</button>
                                     </div>
+                                    <!-- Item (2026-08-04, Aaron): moved here from the bottom
+                                         nav (see #mobile-nav) - opens the same Text Size
+                                         sheet via the same mobileNav('text') path, so the
+                                         close-everything/toggle behavior is unchanged, just
+                                         triggered from a different button. Desktop never
+                                         shows this (mobile-only rail below). -->
+                                    <button id="editor-text-size-btn" onclick="mobileNav('text')" aria-label="Text Size" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 flex items-center justify-center">
+                                        <i class="fa-solid fa-font"></i>
+                                    </button>
                                 </div>
                             </div>
 
@@ -2068,6 +2703,14 @@
                                  class="flex-1 min-h-0 bg-[#3D2B1F] border border-[#D4AF37]/40 rounded-3xl p-6 text-sm leading-relaxed focus:outline-none focus:border-[#D4AF37] prose prose-invert max-w-none overflow-auto"
                                  style="white-space: pre-wrap; resize: none;">
                             </div>
+                            <!-- Mobile-only autosave/word-count ghost (2026-08-03). A
+                                 SIBLING of #editor, never a descendant - see
+                                 getAutosaveStatusEl()'s comment for why that matters
+                                 (contenteditable makes descendant text selectable/
+                                 copyable/part of the saved draft more or less
+                                 regardless of user-select). Positioned absolutely over
+                                 #editor's own corner via #editor-column's CSS. -->
+                            <div id="mobile-draft-ghost" aria-hidden="true">Auto-saved just now</div>
                         </div>
                     </div>
 
@@ -2177,7 +2820,7 @@
             
             <div class="p-4">
                 <div class="flex justify-start mb-1 -ml-1">
-                    <button onclick="toggleRightPanel()" class="text-[#D4AF37] hover:text-[#E8C86B] px-3 py-1">
+                    <button id="library-close-btn" onclick="toggleRightPanel()" class="text-[#D4AF37] hover:text-[#E8C86B] px-3 py-1">
                         <i class="fa-solid fa-arrow-alt-circle-right text-lg"></i>
                     </button>
                 </div>
@@ -2716,31 +3359,64 @@
     <!-- All six guidance tabs stacked on the right edge, icon-only, touching
          (Aaron, 2026-07-24). Drawers open to the left, toward the editor. -->
     <div id="mobile-guidance-rail" class="mobile-rail" aria-label="Scene guidance drawers">
+        <!-- Item (2026-08-02): the six tabs live in their own scroller now.
+             The rail itself must be overflow:visible so the folder tab can
+             protrude past its left edge, and overflow-y:auto can't coexist
+             with overflow-x:visible - so the scrolling moved in here. -->
+        <div class="rail-tab-strip">
         <button type="button" class="rail-tab" data-rail-key="purpose" aria-label="Purpose" title="Purpose" onclick="mobileToggleGuidanceDrawer('purpose')"><i class="fa-solid fa-bullseye"></i></button>
         <button type="button" class="rail-tab" data-rail-key="canon" aria-label="Key Canon to Honor" title="Key Canon to Honor" onclick="mobileToggleGuidanceDrawer('canon')"><i class="fa-solid fa-gem"></i></button>
         <button type="button" class="rail-tab" data-rail-key="emotional" aria-label="Emotional State" title="Emotional State" onclick="mobileToggleGuidanceDrawer('emotional')"><i class="fa-solid fa-heart-pulse"></i></button>
         <button type="button" class="rail-tab" data-rail-key="beats" aria-label="Must-Happen Beats" title="Must-Happen Beats" onclick="mobileToggleGuidanceDrawer('beats')"><i class="fa-solid fa-list-check"></i></button>
         <button type="button" class="rail-tab" data-rail-key="setting" aria-label="Setting &amp; Tone" title="Setting &amp; Tone" onclick="mobileToggleGuidanceDrawer('setting')"><i class="fa-solid fa-mountain-sun"></i></button>
         <button type="button" class="rail-tab" data-rail-key="success" aria-label="Success for This Scene" title="Success for This Scene" onclick="mobileToggleGuidanceDrawer('success')"><i class="fa-solid fa-trophy"></i></button>
+        </div>
         <!-- Item (2026-07-27): moved from the top of the bank to the bottom
              so it never sits under the (now horizontally draggable)
              scene-status arm, which lives up near the header - see
-             CHECKLIST.md / Mobile_Port_Handoff.md. -->
+             CHECKLIST.md / Mobile_Port_Handoff.md.
+             Item (2026-08-02): now the folder tab on the rail's left wall,
+             outside .rail-tab-strip and absolutely positioned (see CSS). -->
         <button type="button" id="mobile-rail-toggle" class="rail-collapse-toggle" aria-label="Collapse guidance tabs" aria-expanded="true" onclick="toggleGuidanceRailCollapsed()"><i class="fa-solid fa-chevron-right"></i></button>
     </div>
 
     <!-- Dismiss layer for open side panels (mobile only; see #panel-scrim CSS) -->
     <div id="panel-scrim" onclick="mobileCloseEverything(null)" aria-hidden="true"></div>
 
-    <!-- Bottom navigation (mobile only): thumb-reachable, safe-area padded.
-         Focus = close every open drawer/panel/sheet, back to a calm column. -->
+    <!-- Bottom navigation (mobile only). 2026-08-04: the old full-width
+         brown bar became a standalone Focus circle with one arm of the
+         remaining 4 icons growing out of it. 2026-08-05 (Aaron): that single
+         arm split into TWO (Notepad+Outline / Library+Stats), one per screen
+         edge, with Focus independently centered between them - see the CSS
+         above #mobile-nav for the full current geometry. #mobile-nav itself
+         is still the single element every other measurement/JS reference
+         (syncMobileHeaderHeight, mobileNav(), updateNavActiveState())
+         expects - only its INTERNAL shape changed, not its id or role.
+         Text (fa-font) lives in the editor toolbar, not here - see
+         #editor-toolbar. Focus = close every open drawer/panel/sheet, back
+         to a calm column. -->
     <nav id="mobile-nav" aria-label="Main navigation">
-        <button type="button" data-nav="focus" onclick="mobileNav('focus')"><i class="fa-solid fa-crosshairs"></i><span>Focus</span></button>
-        <button type="button" data-nav="home" onclick="mobileNav('home')"><i class="fa-solid fa-house"></i><span>Home</span></button>
-        <button type="button" data-nav="outline" onclick="mobileNav('outline')"><i class="fa-solid fa-sitemap"></i><span>Outline</span></button>
-        <button type="button" data-nav="library" onclick="mobileNav('library')"><i class="fa-solid fa-book-open"></i><span>Library</span></button>
-        <button type="button" data-nav="notepad" onclick="mobileNav('notepad')"><i class="fa-solid fa-book"></i><span>Notepad</span></button>
-        <button type="button" data-nav="text" onclick="mobileNav('text')"><i class="fa-solid fa-font"></i><span>Text</span></button>
+        <!-- Item (2026-08-05, Aaron): order is now Notepad, Outline, Focus,
+             Library, Stats, left to right - Focus is no longer attached to
+             one arm; it's independently centered (position:fixed, see its
+             CSS) and floats above/between these two, which are each their
+             own "shared outer border/background, transparent individual
+             buttons" shape (same pattern as .rail-tab-strip on the guidance
+             rail), one hugging each screen edge. -->
+        <div class="nav-arm nav-arm-left">
+            <button type="button" data-nav="notepad" onclick="mobileNav('notepad')"><i class="fa-solid fa-book"></i><span>Notepad</span></button>
+            <button type="button" data-nav="outline" onclick="mobileNav('outline')"><i class="fa-solid fa-sitemap"></i><span>Outline</span></button>
+        </div>
+        <button type="button" data-nav="focus" onclick="mobileNav('focus')" aria-label="Focus">
+            <span class="focus-circle" aria-hidden="true">
+                <i class="fa-solid fa-bullseye"></i>
+                <span class="focus-label">FOCUS</span>
+            </span>
+        </button>
+        <div class="nav-arm nav-arm-right">
+            <button type="button" data-nav="library" onclick="mobileNav('library')"><i class="fa-solid fa-book-open"></i><span>Library</span></button>
+            <button type="button" data-nav="stats" onclick="mobileNav('stats')"><i class="fa-solid fa-award"></i><span>Stats</span></button>
+        </div>
     </nav>
 
     <!-- ==================== TEXT SIZE (mobile sheet) ====================
@@ -3593,6 +4269,27 @@
             }
         }
 
+        /**
+         * Paste for the MAIN editor's toolbar (2026-08-05) - a separate
+         * function from pasteFromClipboard() above, which is hardcoded to
+         * #note-content and does Notepad-specific bookkeeping (notepadNotes,
+         * renderNotesList) that doesn't apply here. execCommand('insertText')
+         * fires a real `input` event, so the editor's existing autosave/
+         * word-count listeners pick up the change the same way typing would -
+         * no manual updateWordCount() call needed here.
+         */
+        async function pasteToEditor() {
+            const editor = document.getElementById('editor');
+            if (!editor) return;
+            editor.focus();
+            try {
+                const text = await navigator.clipboard.readText();
+                document.execCommand('insertText', false, text);
+            } catch (err) {
+                alert("Unable to paste. Please use Ctrl+V / Cmd+V manually.");
+            }
+        }
+
         function setupKeyboardShortcuts() {
             const editor = document.getElementById('note-content');
             if (!editor) return;
@@ -4347,6 +5044,46 @@
             return `current-draft:${sceneId}`;
         }
 
+        // Item (2026-08-02): guards the autosave status text's two temporary
+        // flash messages ("Draft saved!" below, "Couldn't find that text" in
+        // goToProofreaderIssue) against updateWordCount(), which on mobile
+        // now writes into the SAME element ("N words autosaved" - see that
+        // function). Both flashes snapshot textContent before overwriting
+        // and restore that exact snapshot after their timeout; without this
+        // guard, a keystroke during the flash window would both cut the
+        // flash short (overwritten early by a word count) AND leave the
+        // eventual restore holding a stale count (the snapshot taken before
+        // typing resumed). True for both flash sites, so this is a single
+        // shared flag rather than two separate ad hoc booleans.
+        let autoSaveFlashActive = false;
+
+        // Item (2026-08-03, Aaron): the autosave/word-count status text was
+        // a position:fixed overlay anchored to the VIEWPORT - selectable
+        // nowhere (pointer-events:none), but it also rendered on top of
+        // whatever else was on screen regardless of context, including the
+        // Library/Outline side panels once they'd slid open over it. Fixed
+        // by giving it two, mode-specific homes instead of one floating
+        // one: desktop keeps the original #auto-save-status, a plain inline
+        // element in the status bar row, completely unchanged. Mobile gets
+        // a NEW element, #mobile-draft-ghost, deliberately NOT a descendant
+        // of #editor (a sibling inside #editor-column instead) - the editor
+        // is contenteditable, and text placed AS a descendant of a
+        // contenteditable region is selectable/copyable/editable by the
+        // browser's native behavior more or less regardless of user-select,
+        // and worse, could end up captured by editor.innerHTML (the actual
+        // saved draft) if the DOM ever got normalized or the user's
+        // selection spanned it. Living as a sibling, absolutely positioned
+        // over the editor's own corner, gets the visual "embedded in the
+        // field, on the same layer" result Aaron asked for with zero risk
+        // of ever touching the real draft content - see #mobile-draft-ghost
+        // in the HTML and its CSS for the corner positioning.
+        // Every call site that used to reach for #auto-save-status directly
+        // now goes through this instead, so the two flash sites and
+        // updateWordCount() don't each need their own isMobileMode() branch.
+        function getAutosaveStatusEl() {
+            return document.getElementById(isMobileMode() ? 'mobile-draft-ghost' : 'auto-save-status');
+        }
+
         /**
          * Manual "Save" - explicitly persists the live editor content as the
          * scene's current draft. Autosave (on every input) already keeps this
@@ -4363,14 +5100,16 @@
             pushDraftToServer(currentScene.id, editor.innerHTML, true);
             syncStatsToRepo('draft_saved', { sceneId: currentScene.id });
 
-            const status = document.getElementById('auto-save-status');
+            const status = getAutosaveStatusEl();
             const originalText = status.textContent;
+            autoSaveFlashActive = true;
             status.textContent = 'Draft saved!';
             status.style.color = '#E8C86B';
-            
+
             setTimeout(() => {
                 status.textContent = originalText;
                 status.style.color = '';
+                autoSaveFlashActive = false;
             }, 1500);
 
             // Keep the Draft Pad's "Current Draft" preview in sync if it's open
@@ -4443,6 +5182,23 @@
             const text = editor.innerText || editor.textContent || '';
             const w = text.trim().split(/\s+/).filter(Boolean).length;
             wc.textContent = `${w} words`;
+
+            // Item (2026-08-02, Aaron): mobile folds the count into the
+            // autosave status text ("N words autosaved") instead of the
+            // separate toolbar counter above, which is hidden on mobile
+            // (#word-count-wrap) but stays live/correct here for desktop,
+            // which keeps both as two independent elements exactly as
+            // before - this block is mobile-only. Skipped while a temporary
+            // flash message is showing (autoSaveFlashActive, set by
+            // saveDraft() and goToProofreaderIssue()) - see that flag's own
+            // comment for why overwriting mid-flash is a real bug, not just
+            // a redundant write. getAutosaveStatusEl() (2026-08-03) resolves
+            // to #mobile-draft-ghost here, not #auto-save-status - see that
+            // function's comment.
+            if (isMobileMode() && !autoSaveFlashActive) {
+                const status = getAutosaveStatusEl();
+                if (status) status.textContent = `${w} words autosaved`;
+            }
         }
 
         // ==================== PROOFREADER ====================
@@ -4677,11 +5433,12 @@
                 if (!range) {
                     // Nothing matched (draft edited since the check) - say so
                     // rather than silently doing nothing.
-                    const status = document.getElementById('auto-save-status');
+                    const status = getAutosaveStatusEl();
                     if (status) {
                         const prev = status.textContent;
+                        autoSaveFlashActive = true;
                         status.textContent = "Couldn't find that text";
-                        setTimeout(() => { status.textContent = prev; }, 2200);
+                        setTimeout(() => { status.textContent = prev; autoSaveFlashActive = false; }, 2200);
                     }
                     return;
                 }
@@ -8567,7 +9324,11 @@
                 library: right && !right.classList.contains('translate-x-full'),
                 notepad: visible('notepad-window'),
                 text: visible('textsize-window'),
-                home: !currentScene,
+                // 'home' removed (2026-08-03) along with the nav bar's own
+                // Home button - it moved to the Outline panel, which isn't
+                // a #mobile-nav[data-nav] button and has no active-state
+                // concept of its own.
+                stats: visible('stats-window'),
                 focus: false
             };
             document.querySelectorAll('#mobile-nav button[data-nav]').forEach(btn => {
@@ -8657,13 +9418,187 @@
             });
         }
 
+        // ---- Rail layout: the HANDLE is the anchor (2026-08-02, Aaron) ----
+        // Aaron's spec, in his words: the icons "appear immediately behind
+        // wherever the rail handle is parked", opening the rail must
+        // "preserve the handle's Y-axis position", and the handle is NOT to
+        // be re-centered on the rail. So the handle's viewport Y is the
+        // single source of truth and the strip is positioned around it -
+        // the inverse of the original design, where the rail was positioned
+        // and the handle rode along at a fixed 50% centre.
+        //
+        // getRailBand() is the HANDLE's own boundary - "the top of the nav
+        // button to the bottom of the header," flush, no inset. This is
+        // true again as of 2026-08-02 (later same day) - the previous
+        // pulled-back version (subtracting --autosave-gap from the bottom)
+        // is REVERTED here per Aaron's explicit "unrestrict bottom handle
+        // slide." (--autosave-gap itself was removed entirely the next day,
+        // 2026-08-03, once its other use - #auto-save-status's own `bottom`
+        // offset - also went away; see that property's own comment if a
+        // stale reference to it ever turns up again.)
+        //
+        // That earlier pullback existed to solve a real problem: at true
+        // flush-bottom, the STRIP's own rounded corner met the dead-straight
+        // top edge of the bottom nav bar with nothing to round into - a
+        // visible notch where two different, unrelated corner radii (the
+        // strip's, the handle's) collided at the same Y. Pulling the
+        // boundary back fixed it by never letting them reach that point at
+        // all - but Aaron's next round wanted the handle to keep the full
+        // range instead, so the fix has moved to layoutRailAroundHandle()
+        // below: the STRIP no longer clamps to this same band - it is
+        // deliberately left free to extend past it when centering on a
+        // near-edge handle, with #mobile-nav's and .fantasy-header's own
+        // (now-raised) z-index and opaque backgrounds capping the overflow
+        // with THEIR OWN straight edge instead of the strip's mismatched
+        // rounded one. See that function's own comment for the mechanism.
+        function getRailBand() {
+            const cs = getComputedStyle(document.body);
+            const headerH = parseFloat(cs.getPropertyValue('--mobile-header-h')) || 56;
+            const navClear = parseFloat(cs.getPropertyValue('--mobile-nav-clear')) || 56;
+            return { top: headerH, bottom: window.innerHeight - navClear };
+        }
+
+        // The rail's outer height when EXPANDED. Computed from the tab count
+        // and --rail-tab-h rather than measured, because the common case for
+        // needing it is while the strip is collapsed (display:none) and
+        // therefore unmeasurable. Reads --rail-border-w rather than the
+        // rail's live border, which is `none` while collapsed - that exact
+        // mistake caused a 4px undershoot when this was first written.
+        function getExpandedRailHeight(rail) {
+            const strip = rail.querySelector('.rail-tab-strip');
+            const tabCount = strip ? strip.querySelectorAll('.rail-tab').length : rail.querySelectorAll('.rail-tab').length;
+            const remPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+            const bodyCs = getComputedStyle(document.body);
+            const tabRem = parseFloat(bodyCs.getPropertyValue('--rail-tab-h')) || 3.5;
+            const borderW = parseFloat(bodyCs.getPropertyValue('--rail-border-w')) || 0;
+            return tabCount * tabRem * remPx + borderW * 2;
+        }
+
+        // Places the rail so the handle's top edge lands on `handleTop`
+        // (viewport coords), in whichever collapse state the rail is in.
+        // Returns the clamped handle top actually used.
+        function layoutRailAroundHandle(rail, handleTop) {
+            const tog = document.getElementById('mobile-rail-toggle');
+            if (!rail || !tog) return handleTop;
+            const band = getRailBand();
+            const bandH = Math.max(0, band.bottom - band.top);
+            const handleH = tog.offsetHeight || 112; // fallback only; live measurement always wins
+            // The handle itself always stays inside the band - this is the
+            // full range Aaron asked for ("the top of the nav button to the
+            // bottom of the header"), unrestricted.
+            handleTop = Math.min(Math.max(handleTop, band.top), Math.max(band.top, band.bottom - handleH));
+            rail.style.transform = 'none';
+
+            if (rail.classList.contains('rail-collapsed')) {
+                // Collapsed the handle IS the rail (position:static), so the
+                // rail's own top is the handle's top.
+                rail.style.top = handleTop + 'px';
+                return handleTop;
+            }
+
+            // Expanded: centre the strip on the handle, UNCLAMPED as of
+            // 2026-08-02 (later same day) - Aaron: "the rail cannot bottom
+            // or top align with handle." Clamping the strip into the SAME
+            // band the handle uses (the old behavior) is EXACTLY what forced
+            // the strip's own edge to land at the same Y as the handle's
+            // whenever the handle neared either extreme - two unrelated
+            // corner radii (the strip's 8/10px, the handle's 12px) meeting
+            // at one point, which is what read as a glitch. Left uncentered-
+            // clamp-free, the strip naturally extends past headerH/navTop
+            // whenever a near-edge handle's centering math calls for it -
+            // "the rail opens under the nav button row / under the header,"
+            // in Aaron's words. #mobile-nav and .fantasy-header were raised
+            // above the rail's z-index specifically so their own opaque
+            // backgrounds (and #mobile-nav's own top border) cap that
+            // overflow with a clean straight edge, rather than the strip's
+            // mismatched rounded corner being what's visible at the seam.
+            // Cap the STRIP'S OWN SIZE (not its position) at the band height
+            // for the large-text-scale case, where its own max-height makes
+            // it shorter than its natural tab-count size - unrelated to the
+            // position-clamp removal above, this guards the centering math
+            // against a too-tall theoretical height, not a boundary.
+            const railH = Math.min(getExpandedRailHeight(rail), bandH || Infinity);
+            const railTop = handleTop + handleH / 2 - railH / 2;
+            rail.style.top = railTop + 'px';
+
+            // Offset the handle within the rail so it does not move. `top`
+            // on an absolutely positioned child resolves against the
+            // containing block's PADDING box (inside the border), so the
+            // rail's own top border has to come out of the offset or the
+            // handle sits low by that amount. Now a FIXED constant,
+            // independent of handleTop: since railTop above is no longer
+            // independently clamped, it always tracks the exact centered
+            // position relative to the handle, so the handle's placement
+            // WITHIN the rail never varies - simpler than the old min/max
+            // clamp, which existed only to cover the case (now gone) where
+            // railTop and handleTop could diverge at a clamped boundary.
+            const borderTop = parseFloat(getComputedStyle(document.body).getPropertyValue('--rail-border-w')) || 0;
+            const offset = (railH - handleH) / 2 - borderTop;
+            tog.style.top = offset + 'px';
+            tog.style.transform = 'none';
+            return handleTop;
+        }
+
         // Item 3 (2026-07-26): manual collapse/expand for the rail bank.
         function toggleGuidanceRailCollapsed() {
             const rail = document.getElementById('mobile-guidance-rail');
             if (!rail) return;
             const toggle = document.getElementById('mobile-rail-toggle');
+            // Capture where the handle is BEFORE the class flips - that's the
+            // position the whole layout is then rebuilt around, so the handle
+            // stays put and the icons appear behind it.
+            const handleTop = toggle ? toggle.getBoundingClientRect().top : null;
             const collapsed = rail.classList.toggle('rail-collapsed');
             if (toggle) toggle.setAttribute('aria-expanded', String(!collapsed));
+            if (handleTop !== null) layoutRailAroundHandle(rail, handleTop);
+        }
+
+        // Item (2026-08-02, later same day, Aaron): Focus force-collapses
+        // the rail, same "one calm action" spirit as mobileCloseEverything -
+        // see mobileNav('focus'). Idempotent (a no-op if already collapsed),
+        // matching the existing resetStatusActionsBank()/
+        // toggleStatusActionsBank() pair's pattern rather than sharing code
+        // with toggleGuidanceRailCollapsed(). Reuses layoutRailAroundHandle
+        // so the handle's Y position is preserved exactly like a manual
+        // collapse via the handle itself.
+        function collapseGuidanceRail() {
+            const rail = document.getElementById('mobile-guidance-rail');
+            if (!rail || rail.classList.contains('rail-collapsed')) return;
+            const toggle = document.getElementById('mobile-rail-toggle');
+            const handleTop = toggle ? toggle.getBoundingClientRect().top : null;
+            rail.classList.add('rail-collapsed');
+            if (toggle) toggle.setAttribute('aria-expanded', 'false');
+            if (handleTop !== null) layoutRailAroundHandle(rail, handleTop);
+        }
+
+        // ---- Shared drag/selection guard (2026-08-02, Aaron) ----
+        // Both mobile drag gestures arm on a 300ms press-and-hold, which is
+        // also iOS Safari's own trigger for select-word + the "Copy | Look
+        // Up" callout. CSS on #scene-status-bar / #mobile-guidance-rail stops
+        // a selection from STARTING on those controls; these two helpers
+        // cover the rest of the drag, when the finger is travelling over the
+        // editor and other page text that must stay selectable normally.
+        // Deliberately a temporary body class rather than a permanent
+        // user-select:none - copying scene text is a real thing Erica does.
+        // clearSelectionRanges() drops anything that already got selected
+        // before the guard went up (e.g. during the hold itself, on browsers
+        // that begin a selection before the CSS applies).
+        function beginUiDrag() {
+            document.body.classList.add('ui-dragging');
+            clearSelectionRanges();
+        }
+        function endUiDrag() {
+            document.body.classList.remove('ui-dragging');
+        }
+        function clearSelectionRanges() {
+            const sel = window.getSelection && window.getSelection();
+            if (!sel || sel.isCollapsed) return;
+            // Never disturb a selection the user has inside the editor - that
+            // would fight the caret while they're writing.
+            const anchor = sel.anchorNode;
+            const editor = document.getElementById('editor');
+            if (editor && anchor && editor.contains(anchor.nodeType === 1 ? anchor : anchor.parentNode)) return;
+            sel.removeAllRanges();
         }
 
         // ---- Guidance rail: tap-and-hold to drag reposition (2026-07-25),
@@ -8690,24 +9625,23 @@
             let scrubbing = false;
             let didScrub = false;
             let startY = 0;
-            let startTop = 0;
+            let startHandleTop = 0;
             let railEl = null;
 
-            function clampTop(top, rail) {
-                const cs = getComputedStyle(document.body);
-                const headerH = parseFloat(cs.getPropertyValue('--mobile-header-h')) || 56;
-                const navClear = parseFloat(cs.getPropertyValue('--mobile-nav-clear')) || 56;
-                const minTop = headerH + 8;
-                const maxTop = Math.max(minTop, window.innerHeight - navClear - rail.offsetHeight - 8);
-                return Math.min(Math.max(top, minTop), maxTop);
-            }
-
+            // Item (2026-08-02, Aaron): the drag now moves the HANDLE, not
+            // the rail - see layoutRailAroundHandle() above for why the
+            // handle is the anchor. Whatever collapse state we're in, the
+            // finger's delta is applied to the handle's own start position
+            // and the rail is rebuilt around the result, so the handle
+            // tracks the finger 1:1 in both states instead of tracking the
+            // rail's top edge (which is a different point in each state).
             function armDrag() {
                 dragging = true;
                 railEl.classList.add('rail-dragging');
-                const rect = railEl.getBoundingClientRect();
-                railEl.style.transform = 'none';
-                railEl.style.top = clampTop(rect.top, railEl) + 'px';
+                beginUiDrag();
+                const tog = document.getElementById('mobile-rail-toggle');
+                startHandleTop = tog ? tog.getBoundingClientRect().top : railEl.getBoundingClientRect().top;
+                layoutRailAroundHandle(railEl, startHandleTop);
             }
 
             // Hit-tests e.clientY against the visible .rail-tab elements and
@@ -8745,9 +9679,13 @@
                     // available in this state - see file header comment.
                     scrubbing = true;
                     didScrub = false;
+                    // Scrubbing has no hold delay, so it can't collide with
+                    // iOS's long-press select the way arming does - but the
+                    // finger still travels across tabs, so suppress for the
+                    // duration here too.
+                    beginUiDrag();
                 } else {
                     scrubbing = false;
-                    startTop = railEl.getBoundingClientRect().top;
                     clearTimeout(pressTimer);
                     pressTimer = setTimeout(armDrag, LONG_PRESS_MS);
                 }
@@ -8762,7 +9700,7 @@
                     e.preventDefault();
                 } else if (dragging) {
                     didDrag = true;
-                    railEl.style.top = clampTop(startTop + (e.clientY - startY), railEl) + 'px';
+                    layoutRailAroundHandle(railEl, startHandleTop + (e.clientY - startY));
                     e.preventDefault();
                 } else if (pressTimer && Math.abs(e.clientY - startY) > MOVE_CANCEL_PX) {
                     clearTimeout(pressTimer);
@@ -8778,6 +9716,9 @@
                     dragging = false;
                     railEl.classList.remove('rail-dragging');
                 }
+                // Unconditional: this also runs for pointercancel, and the
+                // scrub path arms it without ever setting `dragging`.
+                endUiDrag();
                 document.removeEventListener('pointermove', onPointerMove);
             }
 
@@ -8804,6 +9745,14 @@
                 rail.classList.remove('rail-dragging');
                 rail.style.top = '';
                 rail.style.transform = '';
+                // Item (2026-08-02): the handle now carries its own inline
+                // offset along the rail (it is no longer always centred), so
+                // clearing only the rail would leave a dragged handle stuck
+                // at an old offset on the freshly re-centred rail. Clearing
+                // both returns to the pure-CSS default: rail centred in the
+                // viewport, handle centred on the rail.
+                const tog = document.getElementById('mobile-rail-toggle');
+                if (tog) { tog.style.top = ''; tog.style.transform = ''; }
             };
         })();
 
@@ -8883,6 +9832,7 @@
             function armDrag() {
                 dragging = true;
                 barEl.classList.add('status-bar-dragging');
+                beginUiDrag();
                 // Mid-drag, the arm is neither wall's shape - clear dock
                 // classes so it reads as freely floating while in motion;
                 // updateStatusBarDock re-evaluates and re-applies on release.
@@ -8893,8 +9843,17 @@
             function onPointerDown(e) {
                 if (e.pointerType === 'mouse' && e.button !== 0) return;
                 if (!isMobileMode()) return;
-                const trigger = e.target.closest('#scene-status-bar .status-dropdown-trigger');
-                if (!trigger) return;
+                // Item (2026-08-04, Aaron): "the entire green area... not
+                // just the scene status circle" - was
+                // `.status-dropdown-trigger` only, now any point inside the
+                // whole arm. This doesn't change how a quick tap on the
+                // circle/chevron/action buttons behaves - armDrag() only
+                // fires after the full 300ms hold, so a normal tap anywhere
+                // still releases well before that and its own onclick fires
+                // exactly as it always did. Only a genuine press-and-hold,
+                // wherever on the arm it starts, now arms a drag.
+                const inBar = e.target.closest('#scene-status-bar');
+                if (!inBar) return;
                 barEl = document.getElementById('scene-status-bar');
                 if (!barEl) return;
                 didDrag = false;
@@ -8925,6 +9884,9 @@
                     barEl.classList.remove('status-bar-dragging');
                     updateStatusBarDock(barEl);
                 }
+                // Unconditional - also covers pointercancel, where `dragging`
+                // may already have been cleared.
+                endUiDrag();
                 document.removeEventListener('pointermove', onPointerMove);
             }
 
@@ -8957,9 +9919,22 @@
             const right = document.getElementById('right-panel');
             switch (what) {
                 case 'home':
+                    // No longer called from #mobile-nav (2026-08-03) - the
+                    // Home button moved to the Outline panel
+                    // (#outline-home-btn), Stats took its old slot here.
+                    // Kept as its own case rather than inlined at the new
+                    // call site, so "what closing everything and going home
+                    // means" stays defined in one place.
                     mobileCloseEverything(null);
                     goHome();
                     break;
+                case 'stats': {
+                    const sw = document.getElementById('stats-window');
+                    const wasOpen = sw.classList.contains('active') && sw.style.display !== 'none';
+                    mobileCloseEverything(null);
+                    if (!wasOpen) showStoryStats();
+                    break;
+                }
                 case 'outline': {
                     const wasOpen = !left.classList.contains('-translate-x-full');
                     mobileCloseEverything(null);
@@ -8987,8 +9962,16 @@
                     break;
                 }
                 case 'focus':
-                    // One calm action: close every drawer, panel and sheet.
+                    // One calm action: close every drawer, panel and sheet,
+                    // AND put the guidance rail and the scene-status arm's
+                    // action bank back to their own resting/collapsed state
+                    // (2026-08-02, later same day, Aaron) - mobileCloseEverything
+                    // alone never touched either of those two, so Focus could
+                    // leave the rail expanded or the arm's Sammy/Draft Log/
+                    // Save bank open even after "closing everything."
                     mobileCloseEverything(null);
+                    collapseGuidanceRail();
+                    resetStatusActionsBank();
                     break;
             }
             updateNavActiveState();

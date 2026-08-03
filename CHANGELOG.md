@@ -2,6 +2,842 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-05] – Toolbar rebuilt, scene summary flush with header, Focus centered gold circle
+
+Eight adjustments at Aaron's direction, all mobile-only.
+
+### Changed
+- **Editor toolbar "container" removed** - dropped its background fill,
+  bottom border, and margin/padding, so the buttons sit immediately above
+  the editor field with zero gap, rather than inside a visually bounded bar.
+- **All toolbar buttons and the zoom scaler enlarged 22px → 36px** (this
+  project's most recent PRIMARY-tier touch-target trade-off, from
+  2026-08-04, partially walked back).
+- **Toolbar reordered**: Bold/Italic/Underline, a divider, Copy/Paste (both
+  new - Copy reuses the existing generic `copySelection()`; Paste is a new
+  `pasteToEditor()`, since the existing `pasteFromClipboard()` is hardcoded
+  to the Notepad's own editor and bookkeeping) - then Proofreader, the zoom
+  scaler, and Text, pushed to the row's right edge via `justify-content:
+  space-between` (restored from a mobile override that had forced
+  `flex-start`). That gap between the two clusters doubles as the second
+  separator Aaron asked for; only one explicit divider bar is rendered.
+- **Scene summary and review-note bottom margins equalized** at 12px (was
+  0 / 12px) - matched to review's existing value rather than the reverse.
+- **Scene summary now spans wall-to-wall and sits flush under the header**,
+  with only its bottom border (5px gold, unchanged) remaining - top/left/
+  right borders and the top corner rounding are dropped, and negative
+  margins cancel both `#scene-content`'s side padding and the header's own
+  4px breathing-room margin.
+- **"Big Tiff" wordmark resized** to 1.4rem/22.4px - strictly between its
+  immediately-previous size (0.95rem/15.2px, matched to the feather icon)
+  and the size before that (30px, matched to the gold disc). Deliberately
+  decoupled from `--logo-glyph` (which still sizes only the feather,
+  unchanged) rather than bumping that shared property, since the two are
+  now intentionally different sizes, not accidentally-drifted ones.
+- **Focus rebuilt as a centered gold circle.** Enlarged 56px → 84px (+50%),
+  independently `position:fixed`-centered at the true horizontal middle of
+  the window (not a flex child's approximate centering, which would depend
+  on its neighbors' widths), bottom-flush with the window like everything
+  else in this nav. Colors inverted - gold fill (`#D4AF37`) with a brown
+  bullseye icon (`#3D2B1F`, was gold on dark `#2A2119`) - and the "FOCUS"
+  label banner's own background now matches the circle's gold exactly, with
+  its text flipped to brown to stay legible (gold-on-gold would have been
+  invisible). Icon enlarged 2rem → 3.5rem to fill the bigger circle.
+- **Bottom nav reordered to Notepad, Outline, Focus, Library, Stats.** The
+  single arm from 2026-08-04 (growing right from the circle) is gone -
+  replaced by two independent arms, one per screen edge (`.nav-arm-left`:
+  Notepad, Outline; `.nav-arm-right`: Library, Stats), each mirroring the
+  other's border/radius treatment, with Focus floating independently
+  between them.
+
+### Verification notes
+Measured at 440×956 and 1280×800 with a seeded scene:
+- Toolbar: transparent background, 0px border, 0px gap to the editor;
+  every button and the zoom pill measured exactly 36px; order confirmed
+  B/I/U/sep/Copy/Paste/Proofreader/−/+/Text with a 13px gap between the two
+  clusters.
+- Scene summary: both margins 12px; rect flush to both walls and to the
+  header's own bottom edge; only the 5px bottom border remains, 0 radius.
+- Wordmark measured 22.4px; the feather icon confirmed unchanged at 15.2px
+  (decoupling verified, not just asserted).
+- Focus circle: 84×84, horizontally centered and bottom-flush to sub-pixel
+  precision, gold background, brown icon at 56px, label background
+  byte-equal to the circle's background, 6.39:1 contrast on both the icon
+  and the label text.
+- Nav order confirmed `[notepad, outline, focus, library, stats]`; both
+  arms flush to their respective screen edges with no overlap against the
+  84px circle (48px+ clearance on the tighter side).
+- Functional pass: all four arm buttons open their views and the relocated
+  Text button opens the text-size sheet; Focus closes an open panel; Copy
+  ran without throwing on a real selection; Paste's `execCommand
+  ('insertText')` path confirmed to fire a real `input` event that the
+  editor's existing autosave/word-count listener already picks up, with no
+  manual `updateWordCount()` call needed.
+- Desktop A/B against pristine `HEAD` at 1280×800: toolbar button rect
+  (34.67×28, byte-identical), scene summary rect, wordmark font-size, nav
+  display, and the new Copy/Paste/separator elements (all `display:none`)
+  all matched pristine exactly on a clean re-check.
+
+## [2026-08-04] – Whole-arm status drag, Focus circle, bottom nav rebuilt as an arm
+
+Six adjustments at Aaron's direction, all mobile-only.
+
+### Changed
+- **Scene-status arm drag now arms from anywhere in the green box**, not
+  just the status circle - `setupStatusBarDrag()`'s pointerdown target
+  check widened from `.status-dropdown-trigger` to `#scene-status-bar`
+  itself. A quick tap anywhere (chevron, action buttons, circle) still
+  behaves exactly as before; only a genuine 300ms press-and-hold now arms
+  a drag, regardless of where on the arm it starts.
+- **Chevron margins reduced** - `.status-actions-toggle`'s `min-height`
+  dropped from the 30px chrome-tier floor to 0, padding 8px → 2px. Had to
+  be set explicitly rather than just removed: `#scene-status-bar button`
+  (a shared PRIMARY-tier 44px rule) would otherwise win the property and
+  make the chevron *taller* than before. Measures ~15px now, about half.
+- **Focus is now a 56px circle** matching the scene-status circle exactly,
+  with an enlarged bullseye icon (was crosshairs) and a small brown-filled
+  "FOCUS" banner overlaid across its middle - not a caption below it, the
+  old layout every other nav button still uses.
+- **Bottom nav rebuilt as an arm.** The old full-width bar is gone;
+  `#mobile-nav` now hugs its own content width. The Focus circle sits at
+  the true left edge; the remaining four icons (Outline/Library/Notepad/
+  Stats) live in a new `.nav-arm` wrapper extending right from it, mirroring
+  `.rail-tab-strip`'s "shared border/background, transparent buttons"
+  pattern. Both the circle and the arm are bottom-flush with the window,
+  no gap. Arm icons enlarged 1.1rem → 1.65rem (+50%).
+- **Text moved from the nav to the editor toolbar** (`#editor-text-size-btn`,
+  mobile-only, same `mobileNav('text')` path as before) - the nav arm now
+  holds only Outline/Library/Notepad/Stats.
+- **Editor toolbar buttons and the zoom scaler shrunk to 22px** (from 44px),
+  confirmed directly with Aaron as a real touch-target trade-off, not a
+  glyph-only change - unlike every other below-floor exception this
+  project has made so far, this is the first on a PRIMARY-tier ("touched
+  constantly while writing") control. `min-height` alone measured 34px in
+  practice (Tailwind's own padding + line-height already exceeded the
+  floor), so explicit `width`/`height` + `box-sizing:border-box` +
+  `padding:0` were needed to make 22px real. Scoped to `#editor-toolbar
+  .text-tool-btn` specifically - the bare `.text-tool-btn` class is also
+  used by the Notepad's own formatting row, which stays at 44px.
+
+### Verification notes
+Measured at 440×956 and 1280×800 with a seeded scene:
+- Drag armed and moved the arm from a press on the chevron specifically
+  (not the circle); the trailing click was swallowed (didn't also toggle
+  the action bank open); a plain tap on the chevron still toggles normally.
+- Focus circle measured exactly 56×56, matching the status circle; the
+  banner text renders centered on the icon.
+- Nav confirmed narrower than the viewport (arm hugs its 4 icons, doesn't
+  stretch full width), both the circle and the arm's bottom edges flush
+  with the window height, arm's left edge adjacent to the circle's right
+  edge.
+- All toolbar buttons and the zoom control confirmed at exactly 22×22 /
+  22px height after fixing the min-height floor issue above; "100%" label
+  still renders without clipping.
+- Functional pass: Focus closes an open panel; each arm button opens its
+  view and picks up `nav-active`; the relocated Text button opens the
+  text-size sheet from its new toolbar location.
+- Desktop A/B against pristine `HEAD` at 1280×800: toolbar button rect,
+  zoom control rect, chevron (`display:none`), and nav (`display:none`)
+  all byte-identical to pristine.
+
+## [2026-08-03] – Panel icon sizes unified; Home/Stats swap places
+
+Four adjustments at Aaron's direction, all mobile-only.
+
+### Changed
+- **Outline/Library panel close arrows** (`#outline-close-btn`,
+  `#library-close-btn`) enlarged to match `.count-badge` (the gold
+  entry-count circle, 1.5rem/24px) — icon `font-size` only, `1.125rem` →
+  `1.5rem`. The `fa-arrow-alt-circle-left/right` glyphs are already
+  circular outlines, so this alone lands the rendered icon at ~24px without
+  needing a background/border to match. The button's own tap target is
+  unaffected (the panels' generic `button` rule already floors it at
+  `--tap-sm`).
+- **Every `.review-flag-btn` ("!" review marker) in the Library panel
+  unified to 1.5rem/24px**, matching `.count-badge` — Aaron's wording was
+  explicit ("ALL of the review exclamation mark's outer circle"). This
+  collapsed three different sizes into one: a 30px generic fallback that
+  nothing actually rendered at, a 44px category-header marker
+  (`--lib-banner-h`), and a 28px per-entry marker. Icon `font-size` inside
+  the circle is untouched in both real contexts — only the box changed.
+- **Home moved from the bottom nav to the Outline panel**, as a new
+  icon-only button (`#outline-home-btn`) next to that panel's own
+  changelog button, matching its `h-8 w-8` box classes exactly ("same
+  size"). Reuses the existing `mobileNav('home')` case rather than
+  duplicating its close-everything-then-`goHome()` logic at the new call
+  site.
+- **Stats moved from the header to the bottom nav**, taking Home's old
+  slot, with an award-ribbon icon (`fa-award`, matching the icon this app
+  already uses elsewhere for achievement/stats iconography). The header's
+  own Stats button (`#header-stats-btn`, newly given an id for this)
+  is now `display:none` on mobile — desktop keeps it exactly as it was.
+  New `case 'stats'` in `mobileNav()` mirrors the existing Notepad/Text
+  pattern (check if `#stats-window` is already open, close everything,
+  reopen if it wasn't), and `updateNavActiveState()` gained a `stats` key
+  (`visible('stats-window')`) so the nav button highlights while the
+  window is open, the same way Notepad/Text already do. The now-dead
+  `home` key in that same state object was removed — no `#mobile-nav`
+  button carries `data-nav="home"` anymore for it to apply to.
+
+### Verification notes
+Measured at 440×956 with a seeded scene:
+- Close-arrow icons confirmed at exactly 24px (`getComputedStyle`), both
+  panels.
+- Seeded library data with review-flagged entries, expanded every category
+  accordion (the per-entry markers render at 0×0 while their category is
+  collapsed — genuinely invisible, not a measurement bug, caught by
+  re-checking after expanding), and measured all 12 review-flag-btn
+  instances actually present: every one exactly 24×24, in both the
+  category-header and per-entry contexts, with each context's own icon
+  `font-size` unchanged (16px / 13.6px respectively).
+- `#outline-home-btn` measured pixel-identical (32×32) to the changelog
+  button beside it.
+- Functional pass: `mobileNav('stats')` opens `#stats-window` on first
+  call, closes it on a second call, and the nav button picks up
+  `nav-active` while it's open; the relocated Home button correctly closes
+  the open Outline panel and calls through to the existing `goHome()` flow.
+- Desktop A/B against pristine `HEAD` (which predates all four new ids,
+  so compared by class/behavior rather than by id where a direct pristine
+  read wasn't possible): close-arrow icons still 18px (`text-lg`,
+  unchanged), `.count-badge` still 24px, `#header-stats-btn` still
+  `display:flex`, `#outline-home-btn` correctly `display:none`,
+  `#mobile-nav` still `display:none` entirely.
+
+## [2026-08-03] – Autosave text embedded in the editor, not a floating overlay
+
+Aaron reported two problems with the mobile autosave/word-count text: it
+needed to be selectable-proof and visually "embedded... on the same layer"
+as the writing field rather than floating over the page, and it was
+rendering on top of the Library/Outline side panels once they slid open.
+
+### Changed
+- **`#auto-save-status` is now desktop-only.** The several rounds of mobile-
+  specific repositioning on this element (2026-07-24 through 2026-08-02) are
+  gone - it's simply `display:none` on mobile now. Desktop is completely
+  unaffected: same element, same inline position in the status bar, same
+  behavior.
+- **New `#mobile-draft-ghost` element** takes over the job on mobile,
+  positioned `absolute` inside `#editor-column` (given `position:relative`
+  for this purpose) so it renders at `#editor`'s own bottom-right corner
+  instead of a fixed viewport coordinate. Because the editor is naturally
+  hidden/covered by the Library and Outline panels when they're open (same
+  as any other content behind them), the ghost is now covered along with
+  it automatically - this isn't a z-index fix, it's a structural one: the
+  ghost only exists in the same screen region as the editor, so whatever
+  covers the editor covers it too.
+- **Deliberately a SIBLING of `#editor`, never a descendant.** `#editor` is
+  `contenteditable="true"`; a descendant node inside a contenteditable
+  region is selectable/copyable/editable by native browser behavior more
+  or less regardless of `user-select`, and worse, risks ending up captured
+  by `editor.innerHTML` - the actual saved draft, sent to Sammy, pushed to
+  the repo. Living as a sibling, visually overlaid via absolute positioning,
+  gets the "embedded in the field" look with zero risk of ever touching
+  real draft content. Also carries `pointer-events: none` and
+  `user-select: none` as defense in depth, though the structural separation
+  is the real guarantee.
+- **`getAutosaveStatusEl()`** (new) centralizes the mode-dependent target -
+  `#mobile-draft-ghost` on mobile, `#auto-save-status` on desktop - so
+  `saveDraft()`'s and `goToProofreaderIssue()`'s flash messages, and
+  `updateWordCount()`'s merged-count write, don't each need their own
+  `isMobileMode()` branch. All three now go through it.
+- **`--autosave-gap` removed** (was `0.9rem`) - its last real use (this
+  element's own `bottom` offset) is gone now that the element is
+  `display:none` on mobile; its other use (the rail's boundary clamp) was
+  already removed the day before. Removed rather than left defined-but-
+  unused, and the two comments that still described it as "in use" are
+  corrected.
+
+### Verification notes
+Measured at 440×956 with a seeded scene:
+- Ghost's rect confirmed fully inside `#editor`'s own rect, and confirmed a
+  genuine DOM sibling (`editor.contains(ghost)` false) rather than a
+  descendant.
+- Selected all content within `#editor` (`Range.selectNodeContents` +
+  `Selection`) and confirmed the resulting selected text and
+  `editor.innerHTML` never contain the ghost's text - the "not selectable
+  or copied" requirement verified directly, not just asserted from the
+  structural argument.
+- Opened the Library panel and confirmed via `elementFromPoint` at the
+  ghost's exact screen location that the panel (not the ghost) is topmost
+  there - the reported bug is gone.
+- Flash-guard re-verified through the new helper: `saveDraft()`'s flash
+  survives a mid-flash keystroke intact and the eventual restore holds the
+  correct pre-flash snapshot, same as before, now via
+  `getAutosaveStatusEl()` on both branches.
+- Re-ran the existing gesture suite (rail tap/scrub, status-arm drag, Focus
+  collapsing both compound controls) - all still pass; none of this touched
+  their code paths, but the shared helper function and the removed CSS
+  property were both worth confirming nothing else broke.
+- Desktop re-verified explicitly (`isMobileMode()` reset first): `#auto-
+  save-status` still `display:flex`, same text/rect as always, same flash
+  behavior via the new helper; `#mobile-draft-ghost` `display:none`;
+  `#editor-column`'s `position` still `static` (the `position:relative`
+  rule is mobile-scoped only).
+
+## [2026-08-02] – Rail no longer aligns with the handle; Focus resets both compound controls
+
+Four adjustments at Aaron's direction, all mobile-only, same day as the
+round below. Supersedes that round's `--autosave-gap` pullback fix for the
+same corner-glitch bug, with a different mechanism per his follow-up ask.
+
+### Changed
+- **Unrestricted the handle's bottom slide again** - `getRailBand()`'s
+  bottom reverts to the true, flush `window.innerHeight - navClear` (no
+  longer pulled back by `--autosave-gap`). That property is untouched and
+  still drives `#auto-save-status`'s own position; only its use as a rail-
+  boundary buffer is gone.
+- **The expanded strip no longer clamps into the same band the handle
+  uses.** This is the real fix for the corner-glitch Aaron reported a
+  second time ("still shows a graphics glitch... due to the rail's rounded
+  corner"): the OLD fix (pulling the boundary back) stopped the handle
+  short of true-edge, but the STRIP's own clamp still forced it to match
+  wherever the handle stopped - two differently-radiused corners (the
+  strip's 8/10px, the handle's 12px) landing at the identical Y, which is
+  what actually reads as a glitch regardless of where that Y is. Per
+  Aaron's fix: "the rail cannot bottom or top align with handle... the rail
+  opens under the nav button row... under the header." The strip's position
+  is now purely `handleTop + handleH/2 - railH/2`, uncapped - when a near-
+  edge handle's centering math pushes it past headerH/navTop, it's now
+  allowed to, extending into that territory rather than stopping at it.
+- **`#mobile-nav` and `.fantasy-header` z-index raised to 480** (mobile
+  only; desktop keeps nav's prior stacking and the header's shared `z-50`),
+  above the rail (465) and its handle (470). This is what makes "opens
+  under" literal: the strip's now-unclamped overflow renders BEHIND these
+  two permanent chrome bars, whose own opaque backgrounds and existing
+  borders (nav's top border, header's bottom border) cap the overflow with
+  a single clean straight edge - not the strip's own mismatched rounded
+  corner. Confirmed nothing else reaches into header/nav's territory today
+  (left/right panels, the scrim, open drawers all already self-limit to
+  `bottom: var(--mobile-nav-clear)` or an equivalent max-height), so this
+  only changes behavior for the rail.
+- **The handle's offset within the rail is now a fixed constant**
+  (`(railH - handleH) / 2 - borderTop`), not clamped - a direct
+  simplification that falls out of the strip no longer being independently
+  clamped: since the strip's position always exactly tracks the ideal
+  centered value now, the handle's placement within it never varies,
+  removing the min/max clamp that existed only to cover the old clamped-
+  divergence case.
+- **`#auto-save-status`'s `right` tightened 1.6rem → 1rem.** Aaron: "autosave
+  text line must appear under the handle+rail." Measured that the old value
+  left the text's own right edge 1.6px short of the COLLAPSED handle's left
+  edge (24px wide, flush right) - a near-miss, not a real overlap, in that
+  one state (the expanded handle, sitting further left, already cleared it
+  comfortably). 1rem guarantees ≥8px of real overlap in both states, on any
+  viewport width (the two `right`-from-edge offsets cancel viewport width
+  out of the comparison). Reverified it still clears the editor's own
+  rounded border.
+- **Focus now also collapses the guidance rail and closes the scene-status
+  arm's action bank.** `mobileCloseEverything(null)` (which Focus already
+  called) never touched either - a new `collapseGuidanceRail()` (idempotent,
+  mirrors the existing `resetStatusActionsBank()`) plus a call to that
+  existing function are both now wired into `mobileNav('focus')`, so Focus
+  is genuinely "back to the calmest possible screen" rather than leaving
+  either compound control open.
+
+### Verification notes
+Measured at 440×956 with a seeded scene, real `PointerEvent` sequences:
+- Dragged the handle to both true extremes in the collapsed state - lands
+  exactly flush (36px top, 878px bottom on this viewport), unrestricted.
+- Expanded from each extreme: the strip's own edge now differs from the
+  handle's edge by >100px in both directions (was 0, the glitch condition),
+  while the handle itself stays exactly at the true boundary throughout.
+- `elementFromPoint` at the exact seam in both directions, and again deeper
+  inside each bar's own territory, returns `#mobile-nav`/`.fantasy-header`
+  as topmost in every case - confirmed the strip's overflow is genuinely
+  hidden behind them, not floating on top.
+- Autosave overlap re-checked in both collapse states after the `right`
+  fix: real geometric overlap confirmed in both, `elementFromPoint` at the
+  overlap returns the handle (`mobile-rail-toggle`) as topmost in both,
+  and the text's right edge still sits inside the editor's own right edge
+  (no new collision with the border it was originally pulled in to avoid).
+- Focus tested with both the rail expanded AND the status-arm's action bank
+  open simultaneously - one call correctly collapses/closes both.
+- Re-ran tap-to-open, drag-to-switch, and the unrelated status-arm drag -
+  all still pass after this round's rewrite.
+- Desktop A/B against pristine `HEAD` at 1280×800 (isMobileMode() explicitly
+  reset first - this environment's `navigate` can carry the forced-preview
+  flag across loads): header z-index still 50, header rect unchanged, nav/
+  rail still `display:none`, `#auto-save-status`'s `right` still `auto`
+  (unset) - all mobile-only changes confirmed inert on desktop.
+
+## [2026-08-02] – Handle taller, bottom clamp pulled back, autosave/word-count merged
+
+Six adjustments at Aaron's direction, all mobile-only. Desktop A/B-verified
+against pristine `HEAD` throughout - see verification notes.
+
+### Changed
+- **Handle height 96px → 112px** (`calc(2 * var(--rail-tab-h))`), "as tall
+  as 2 rail-drawer boxes" per Aaron - a rail-tab (the box that opens a
+  drawer) is 3.5rem/56px, so two of them is 112px. This deliberately breaks
+  the 4:1 iOS-PiP-handle ratio matched exactly two rounds ago; Aaron's new
+  explicit number supersedes that fidelity goal. Width (24px) and the 12px
+  corner radius are unchanged - the radius is derived from width, not
+  height, so it's still a true semicircle at the new size.
+- **Rail's bottom drag boundary pulled back from true nav-top.** For one
+  round (earlier the same day) the band was flush at both ends. Aaron
+  flagged a real visual problem at the true bottom: the rail's own rounded
+  corner (10px on the wrapper, 12px on the handle) meets the dead-straight
+  top edge of the bottom nav bar with nothing to round into - a visible
+  notch. Rather than add a dock-state radius override (the fix the
+  scene-status arm uses for its own corner-morph docking), the simpler ask
+  was to stop the handle short of the true edge. New `--autosave-gap` custom
+  property (`0.9rem`) is shared between `#auto-save-status`'s own `bottom`
+  offset and `getRailBand()`'s JS clamp, so the two can't drift apart - the
+  rail's new bottom limit is deliberately the SAME line the autosave text
+  sits on, not an arbitrary buffer.
+- **The handle+rail now overlay the autosave/word-count line** at their new
+  bottom maximum - a direct consequence of the clamp change above (the
+  112px-tall handle spans well past the autosave line's own ~19px height
+  once its bottom edge is pinned to that line), not a separate mechanism.
+  `#auto-save-status` stays z-index 30, well under the rail's 465, so the
+  rail already paints over it wherever they overlap.
+- **Word count folded into the autosave line**: mobile now shows "N words
+  autosaved" instead of "Auto-saved just now", updated by the same
+  `updateWordCount()` that already drove the toolbar counter. Desktop is
+  unaffected - it keeps `#word-count` and `#auto-save-status` as two
+  independent elements exactly as before; the new write is gated on
+  `isMobileMode()`.
+- **Original toolbar word counter removed on mobile.** Hides
+  `#word-count-wrap` (the wrapping div, added this round), not just the
+  `#word-count` span inside it - hiding only the span would leave an
+  empty-but-present flex child still consuming its share of the row's
+  `gap-x-3` spacing on both sides.
+- **Zoom scaler (−/100%/+) capped at 44px total height**, matching its
+  sibling editor-toolbar buttons (B/I/U/Proofreader, all `--tap`/44px) -
+  it had been running ~4px taller than them due to its own border+padding
+  stacking on top of the 44px its child buttons already establish.
+  `box-sizing: border-box` on the new `#editor-zoom-control` id makes the
+  border draw inside the fixed 44px rather than adding to it; the inner
+  buttons' `min-height` is overridden to `auto` so they don't fight the
+  parent's fixed height with their own independent 44px floor - this
+  renders the −/+ buttons a few px under the project's touch-target floor
+  in isolation, a small, deliberate, Aaron-specified exception (same
+  precedent as the 24px-wide handle already documented in
+  `BUTTON_STYLE_GUIDE.md`), not an oversight.
+
+### Fixed (found during this round, not a separate ask)
+- **A real race** in `updateWordCount()`'s new mobile write: `saveDraft()`
+  and `goToProofreaderIssue()` both show a temporary flash message on
+  `#auto-save-status` ("Draft saved!", "Couldn't find that text") and
+  restore a *snapshot* of the prior text after a timeout. Without a guard,
+  typing during that window would both cut the flash short (overwritten by
+  a word count) and leave the eventual restore holding a stale count (the
+  snapshot taken before typing resumed). Fixed with a shared
+  `autoSaveFlashActive` flag, set for the duration of both flash sites and
+  checked before every mobile word-count write.
+
+### Verification notes
+Measured at 440×956 with a seeded scene, `getBoundingClientRect()` /
+`getComputedStyle()`, real `PointerEvent` sequences:
+- Handle height exactly 112px in both collapse states.
+- Zoom control exactly 44px total (was ~48px), `box-sizing: border-box`
+  confirmed via computed style.
+- Dragged to the extreme bottom in both collapsed and expanded states: the
+  handle's/strip's bottom edge lands exactly at the new band boundary (not
+  the old true nav-top), genuinely overlaps `#auto-save-status`'s rect, and
+  provably does NOT reach the true nav-top edge. Top extreme re-confirmed
+  still flush (unaffected - only the bottom changed this round).
+- Flash-guard raced on purpose: triggered `saveDraft()`'s flash, then called
+  `updateWordCount()` mid-flash with different content - flash text survived
+  untouched, and the eventual restore correctly returned to the
+  *pre-flash* count (not the mid-flash one), with the next natural call
+  catching up. Same pattern confirmed for the proofreader flash site.
+- Re-ran tap-to-open, drag-to-switch, and the unrelated scene-status-arm
+  drag after this round's `getRailBand()` rewrite - all still pass.
+- **Desktop parity hit a real testing pitfall worth recording**: this
+  browser environment's `navigate` does not always perform a true hard
+  reload for `file://` URLs (confirmed even with a cache-busting query
+  param) - DOM mutations from an earlier mobile-mode test round persisted
+  across "reloads" in the same tab, which initially looked like a mobile-
+  gate leak on desktop. Resolved with a self-contained test that doesn't
+  depend on reload freshness at all: manually reset the element, ran a
+  desktop pass (untouched), a mobile pass (correctly written), and a
+  desktop pass again (still untouched, not overwriting the mobile value) -
+  all three passed with `isMobileMode()` checked live at each step. Zoom
+  control height (22px) and every other measured desktop value matched
+  pristine `HEAD` exactly once verified this way.
+
+## [2026-08-02] – Rail handle becomes the layout anchor, full drag range
+
+Supersedes the drag-clamp fix earlier the same day (`2bf9b81`). That round
+stopped the handle being dragged somewhere the hidden strip couldn't legally
+expand into — a real fix, but it worked by *restricting where the handle
+could go*. Aaron's follow-up ask inverts the relationship: the handle should
+be draggable across the **entire** header-to-nav band, and the rail should
+build itself around wherever the handle ends up, rather than the handle
+being boxed in by where the rail can fit.
+
+### Changed
+- **The handle is now the single source of truth for the rail's vertical
+  position**, not the rail. `layoutRailAroundHandle(rail, handleTop)`
+  replaces the old `clampTop()` + centered-rail model: it clamps the
+  *handle* into the full header-to-nav band, then positions the strip
+  around that handle position (centering the strip on the handle where
+  there's room, then clamping the **strip** — not the handle — into the
+  band at the edges). Both `toggleGuidanceRailCollapsed()` and the drag
+  handlers (`armDrag` / `onPointerMove`) now go through this one function
+  instead of each keeping their own positioning logic.
+- **Opening/collapsing the rail preserves the handle's Y position and does
+  not re-center it on the strip.** Previously the rail's CSS `top: 50%`
+  plus the handle's own `top: 50%; transform: translateY(-50%)` meant
+  expanding a collapsed (and dragged) handle re-centered everything;
+  now `toggleGuidanceRailCollapsed()` reads the handle's real position
+  first and rebuilds the layout around it, so the six icons appear
+  "immediately behind wherever the handle is parked," per Aaron's wording.
+- **The drag range is now the full band, flush at both ends** — "the top
+  of the nav button to the bottom of the header," per Aaron, with the rail
+  opening entirely within those two boundaries and never over- or
+  under-lapping either one. The previous round's 8px inset at each edge is
+  gone; this round's spec is exact flush contact, not a safety margin.
+
+### Fixed
+- The handle-offset clamp (inside `layoutRailAroundHandle`, for the
+  expanded case) initially bounded the handle to `[0, railH - 2×borderTop -
+  handleH]` on the assumption it should never leave the rail's padding box.
+  That's wrong by exactly one border-width at both extremes, because CSS
+  resolves an absolutely-positioned child's `top` against the parent's
+  **padding** box, not its border box — so reaching the rail's true outer
+  edge legitimately requires an offset of `-borderTop`, one border-width
+  *outside* the padding box. Measured as a systematic 2px shortfall against
+  the band edges (36px requested → 38px rendered, and the same 2px short at
+  the bottom). Fixed by moving both clamp bounds out by one `borderTop`:
+  `[-borderTop, railH - handleH - borderTop]`.
+
+### Verification notes
+Measured at 440×956 with a seeded scene, `getBoundingClientRect()` against
+the live `--mobile-header-h` / `--mobile-nav-clear` band (36–878px this
+round), real `PointerEvent` sequences (`pointerType: 'touch'`):
+- Handle Y preserved exactly across collapse→expand→collapse round trips at
+  a mid-band park point, confirmed genuinely off-center on the resulting
+  strip (not incidentally centered).
+- Both band extremes land flush to the pixel (36/36 top, 878/878 bottom)
+  in both collapse states, with the expanded rail's own top/bottom staying
+  within the band in every case — no over- or under-lap.
+- Direct drag (not via the collapse toggle) verified in both states: drag
+  while expanded moves the whole rail with the handle; drag while collapsed
+  stays collapsed and doesn't pop open.
+- Re-ran the full existing gesture suite to confirm no regression: tap-to-
+  open, drag-to-switch-drawers (rail stays put, switches correctly), the
+  text-selection guard (`body.ui-dragging`) still arms/clears correctly
+  during a handle drag, and the guidance drawer still clears the handle on
+  open (`2bf9b81`'s fix, unaffected by this round's positioning rewrite).
+  The unrelated scene-status circle drag was also re-checked and is
+  unaffected.
+- `resetGuidanceRailPosition()` updated to also clear the handle's own
+  inline offset (it now carries one independently of the rail) — verified
+  it returns to the pure-CSS default (rail centered, handle centered on
+  rail) rather than leaving a stale offset from a prior drag.
+- Desktop A/B against pristine `HEAD` at 1280×800: identical on every
+  value checked (rail/toggle `display:none`, header/wordmark unchanged,
+  `--rail-tab-w` reading unset) — this round only touched JS positioning
+  logic and made no CSS changes, so desktop parity was never at risk, but
+  re-verified per the project's standing rule anyway.
+
+## [2026-08-02] – Suppress text selection while dragging UI elements
+
+### Fixed
+- **Grabbing the scene-status circle or the rail handle started selecting
+  text** (Aaron, on device). Root cause is a gesture collision, not a styling
+  oversight: both drags arm on a **300ms press-and-hold**, which is also iOS
+  Safari's own trigger for select-word and the "Copy | Look Up" callout. The
+  controls look like graphics but are real text as far as the selection
+  engine is concerned — the status circle renders its status code (`UF` /
+  `C` / `R`), and the rail tabs and handle are FontAwesome glyphs, i.e. font
+  characters. So the hold selected them, and the selection then extended as
+  the finger moved.
+  Fixed in two layers:
+  1. `user-select: none` + **`-webkit-touch-callout: none`** on
+     `#scene-status-bar` and `#mobile-guidance-rail` (the latter covers the
+     six tabs *and* the handle, which is a child of it), so a selection can
+     never start on these controls. `-webkit-touch-callout` is a separate
+     property — `user-select` alone does **not** suppress the iOS callout
+     bubble.
+  2. A `body.ui-dragging` guard applied only for the **duration of an armed
+     drag**, since once a drag is running the finger travels over the editor
+     and other page text that could anchor a selection en route. Both drag
+     setups raise and clear it, including on `pointercancel`, which iOS fires
+     when a gesture is interrupted.
+  Deliberately **not** a permanent global `user-select: none`: copying scene
+  text is a real thing Erica does, so the editor and guidance text stay
+  selectable at rest. `clearSelectionRanges()` drops any selection that got
+  established before the guard went up, but explicitly **skips a selection
+  anchored inside `#editor`** — clearing that would fight her caret while
+  she's writing.
+
+### Verification notes
+- At rest: status bar, status circle, rail strip, rail tabs, and rail handle
+  all compute `user-select: none`; `#editor` still computes `auto`; no guard
+  class on `body`.
+- Guard lifecycle asserted across every path: absent before the hold arms,
+  present once armed, absent after release — for the status-arm drag, the
+  rail reposition drag, **and** the drawer-scrub path (which arms with no
+  hold delay). Also cleared correctly on `pointercancel`, and never left
+  stuck by a plain tap that never became a drag.
+- `#editor` computes `none` *during* an armed drag and returns to `auto`
+  after release.
+- **Editor selection survives a drag**: seeded a 48-character selection
+  inside `#editor`, ran a full rail drag, and measured 48 characters still
+  selected throughout — `clearSelectionRanges()`'s editor exemption works.
+- **Limitation, stated rather than glossed:** `-webkit-touch-callout` is
+  WebKit-only, and Chromium drops unsupported properties at parse time, so it
+  is absent from the CSSOM here and **cannot be verified in this
+  environment** — confirmed present in the shipped source (three
+  declarations) instead. Whether the iOS callout is actually gone needs
+  Aaron's device. The `user-select` half is fully verified above.
+
+## [2026-08-02] – Rail drag clamp fix, narrower rail, drawer clears the handle
+
+Third mobile-only round the same day, on top of the handle reshape above.
+Desktop A/B-measured against pristine `HEAD` at 1280×800, identical on every
+value including the three new custom properties (all mobile-scoped, so they
+read as unset on desktop).
+
+### Fixed
+- **The rail's press-and-hold drag could park the collapsed handle somewhere
+  the full 6-icon strip couldn't fit.** `clampTop()`'s bottom/top bounds used
+  `rail.offsetHeight`, which is only the 96px handle while collapsed — far
+  shorter than the ~340px full strip — so the handle could be dragged lower
+  (or higher) than the hidden icons would actually allow, and expanding the
+  rail back out would push it off-screen. Fixed by always clamping against
+  the **expanded** height, computed from the tab count and `--rail-tab-h`
+  rather than measured live, so it works correctly precisely when the real
+  strip isn't there to measure. First attempt undershot by 4px (874px bottom
+  against an 870px legal limit) because it read the rail's own *current*
+  border via `getComputedStyle`, which is `none` while collapsed — switched
+  to reading `--rail-border-w` directly, which reflects what the border will
+  be once expanded regardless of current state. Caught by direct measurement
+  before shipping, not assumed correct from the code.
+
+### Changed
+- **Rail tabs are no longer square.** Aaron asked for the icon's top,
+  bottom, and left margins to match (right stays the 8.8px set earlier the
+  same day — not part of this ask). Height stays 56px, where the common-case
+  20.8px icon already centers to a ~17.6px top/bottom margin; matching left
+  to that only needs a 47.2px-wide box (17.6 + 20.8 + 8.8), instead of the
+  old 56px square with ~26px of unused space on the icon's editor-facing
+  side. **Removing that dead space is also what makes the rail narrower** —
+  the two parts of the ask are the same change, not two separate ones.
+  Padding is now explicit on both sides (`0 0.55rem 0 1.1rem`) rather than
+  left-padding-plus-centering-slack, so the common-case icon's content-box
+  exactly equals its own width and there's no residual slack for
+  `justify-content: center` to redistribute unpredictably.
+- **The scene-context (guidance) drawer opens further left**, clearing the
+  handle instead of overlapping it. Its `right` offset was a flat `3rem`
+  (48px) — enough to clear the old strip-foot toggle, not enough once the
+  handle started protruding further left than the strip itself. Now computed
+  as `--rail-tab-w + --rail-border-w + --rail-handle-w + 8px` (measured 10px
+  final gap) instead of a re-guessed literal.
+
+### Added
+- **Three shared custom properties** — `--rail-tab-w`, `--rail-tab-h`,
+  `--rail-border-w`, `--rail-handle-w` — read by the rail tabs, the rail's
+  own border, the handle, the drawer's offset calc, *and* the JS drag clamp.
+  This is deliberately the fix for a pattern that has now bitten the project
+  twice (`--arm-pad-r`, CHANGELOG 2026-07-27; the folder-tab z-index note,
+  earlier today): a position or size that depends on another element's
+  geometry, expressed as a hardcoded literal, silently drifts the next time
+  that geometry changes. Grep for these four names before resizing the rail,
+  its border, or the handle again.
+
+### Verification notes
+- Margins on the common-case icon measured 17.1 / 18.1 / 17.6 / 8.8px
+  (top/bottom/left/right) — small sub-2px variance from the FA glyph's own
+  baseline metrics, same order of variance already accepted elsewhere in this
+  branch. Rail's outer width 58px → 49.2px. All six tabs still touching
+  (no gap introduced between them).
+- Drawer-vs-handle clearance re-measured after the width change: 10px gap,
+  `drawer.right <= handle.left` holds.
+- Drag clamp re-tested by dragging the collapsed handle *past* both legal
+  edges (to y=2000 and y=-500 on a 956px-tall viewport) and confirming the
+  clamp caught it before expanding, then expanding and re-measuring: bottom
+  landed at exactly 870px (matching the computed legal limit `870`), top at
+  exactly 44px (`--mobile-header-h` + 8). Both directions.
+- Gestures re-run after the resize: tap-to-open, drag-to-switch (switches,
+  rail does not move), and press-and-hold reposition from a rail icon (moves,
+  drawer does not open) — all still pass at the new 47.2px tab width.
+- Touch target re-checked: 47.2×56 still clears the 44px primary-tier floor.
+  Icon contrast unchanged at 6.39:1.
+
+## [2026-08-02] – Wordmark, rail edge/margin, and the rail folder tab
+
+Four more mobile-only adjustments at Aaron's direction, same day as the icon
+sizing round below. Desktop A/B-measured against the pristine pre-change file
+at 1280×800 and identical on every value.
+
+### Changed
+- **"Big Tiff" wordmark sized to the feather glyph** (30px → 15.2px), not to
+  the gold disc it sits in — the disc is 30px but the feather inside it is
+  half that. Both now read from one new `--logo-glyph` custom property rather
+  than repeating the literal, since "the wordmark matches the feather" is
+  exactly the kind of relationship that breaks silently when only one of two
+  rules gets edited (see the `--arm-pad-r` bug, 2026-07-27).
+  **Side effect worth knowing:** the mobile header was wrapping to two rows to
+  fit the 30px wordmark. It now fits on one, so `--mobile-header-h` measures
+  **70px → 36px** and everything anchored to it (the status arm, the sheets)
+  moves up with it. That is a real layout shift, not just a font change — it
+  gives back 34px of writing area.
+- **Rail's outer gold edge 1px → 2px.** Width only; the 0.55 alpha and the
+  1px inter-tab dividers are untouched (the ask was the outer edge).
+- **Rail icons moved closer to the screen edge**, gap halved 17.6px → 8.8px.
+  Done as `padding-left` on the 56px tab rather than right-aligning the
+  glyphs, so the six icons keep a shared centerline — they have different
+  intrinsic widths (mountain-sun 26px vs bullseye 20.8px) and flex-end would
+  have left their left edges ragged. Touch targets stay 56×56.
+- **The rail's collapse control is now a handle on the rail's long left
+  wall**, replacing the 56×30 arrow at the foot of the strip. Vertically
+  centered, protruding into the editor. Collapsed, the six-icon strip
+  disappears and the handle *becomes* the rail — it drops back into normal
+  flow so the rail element sizes to it, which matters because the drag clamp
+  reads `rail.offsetHeight`.
+  Built first at 60×140 (2.5 rail icons tall, twice the old toggle's depth),
+  then **revised the same day to 24×96** after Aaron pointed at iOS's own
+  hidden-PiP-window handle and asked for that size and shape: ~55×217 px in a
+  923px-wide screenshot of a 393pt screen (≈2.35×) → ~24×96 CSS px, 4:1, with
+  a fully rounded outboard edge (12px radius = half the width). Chevron
+  dropped 0.85rem → 0.7rem to sit inside the narrower pill.
+  **24px wide is below the project's 30×30 chrome touch floor** — a
+  deliberate, Aaron-specified exception now recorded in
+  `BUTTON_STYLE_GUIDE.md`, on the reasoning that the control is edge-anchored
+  and 96px tall. Flagged to him rather than silently adjusted.
+
+### Added
+- **`.rail-tab-strip`**, an inner scroller wrapping the six tabs. Required,
+  not cosmetic: the rail must be `overflow: visible` for the folder tab to
+  protrude, and CSS will not allow `overflow-x: visible` alongside
+  `overflow-y: auto` (the visible axis computes to auto). The scroll +
+  max-height behavior that kept tabs reachable at large text scales moved
+  into this wrapper unchanged.
+
+### Fixed
+- **Folder tab was unreachable under an open drawer.** Protruding 60px left
+  put it inside the drawer's footprint, where the old strip-foot toggle never
+  went. Raising the *tab's* z-index to 470 did nothing — the rail is
+  `position: fixed` with a z-index, so it forms a stacking context and no
+  child z-index can escape it. Fixed on the rail itself: **45 → 465**.
+  Deliberately not 470: `#scene-status-bar` is 470 and the rail comes later in
+  the DOM, so an equal value would silently invert Aaron's documented "the
+  status circle wins that overlap" rule. 465 clears the drawer (460) and stays
+  under the arm.
+- `.rail-tab:nth-last-child(2)` → `.rail-tab-strip .rail-tab:last-child`. The
+  old selector meant "the tab above the toggle"; with the toggle out of the
+  flow it would have skipped the real last tab and stranded a divider on the
+  strip's bottom edge.
+
+### Verification notes
+Measured at 440×956 with a seeded scene; gestures as real `PointerEvent`
+sequences (`pointerType: 'touch'`):
+- Wordmark and feather rects both 15.2px tall with matching tops — "same
+  height" true of the measured rect, not just the type size. Branding not
+  clipped, account button still fully on-screen at the new header height.
+- Icon gap 8.8px on all four 20.8px glyphs (exactly half of 17.6px); the two
+  wider glyphs land at 6.2px and 7.5px, the same per-icon variance the
+  centered layout already had. Tabs still 56×56, `box-sizing: border-box`.
+- Handle measured 24×96 (ratio exactly 4.00), vertically centered on the rail
+  to within 0.5px, 2px border on three sides, `12px 0 0 12px` radius, chevron
+  fitting inside with clearance, not clipped. Collapsed: strip `display:none`,
+  handle `position:static`, rail 24×96 flush right, rail border/background
+  cleared so the edge isn't doubled, chevron rotated, `aria-expanded` false.
+  Re-expanding restores every value. (The intermediate 60×140 version was
+  measured the same way before the revision.)
+- Gestures re-run after the DOM restructure: tap-to-open, drag-to-switch
+  (switches, rail does not move, trailing click swallowed), press-and-hold
+  reposition **from a rail icon and from the folder tab itself** (drags
+  without collapsing), tap-to-collapse/expand, and `resetGuidanceRailPosition`.
+- Stacking verified by `elementFromPoint`, not by reading z-index values: the
+  folder tab and the rail icons are the topmost elements at their own centers
+  with a drawer open, and collapse works from under it. The status arm was
+  then parked in a real geometric overlap with the rail and still came out
+  topmost — Aaron's spec holds.
+- Accessibility: rail tabs 56×56, wordmark 15.2px at 5.44:1, rail icons
+  6.39:1. The handle's 24px width is the one known floor exception, above.
+- Desktop A/B at 1280×800 against pristine `HEAD`: header 1280×58, wordmark
+  still 21px/31.5px, feather 16px, gold disc 32×32, STORYFORGE and account
+  button at identical offsets, rail and toggle `display:none`, rail icon still
+  16px with 0 padding, `--logo-glyph` unset. The new `.rail-tab-strip` div
+  exists in the DOM there but renders nothing.
+
+### Flagged, not settled
+- The header is a **shared** element and Aaron has said it likely needs
+  splitting into separate mobile/desktop rules. The wordmark change above is
+  mobile-gated, so nothing desktop moved — but that split is still an open
+  idea he has NOT approved. Don't action it unprompted.
+
+## [2026-08-02] – Icon sizing round: rail +30%, action bank +30%, DL code
+
+Three small mobile-only adjustments at Aaron's direction. Desktop re-verified
+unchanged by direct measurement against the pristine pre-change file, same
+discipline as every prior round.
+
+### Changed
+- **Guidance-rail tab icons +30%** (`1rem` → `1.3rem`, measured 16px →
+  20.8px). Box, padding, and the 1px divider borders all unchanged — this is
+  a glyph-only change, so the 56px touch targets and the strip's connected
+  geometry are untouched. **This settles the "too much margin around the rail
+  icons" item that had been open since 2026-07-27**, using Aaron's own
+  number; the earlier reverted attempt (2.5rem, unasked) overshot badly, and
+  1.3rem lands nowhere near it.
+- **Scene-status action-bank icons +30%** (inherited `0.9375rem` →
+  `1.21875rem`, measured 15px → 19.5px) on Sammy / Draft Log / Save Draft.
+  Aaron's note said "button size"; confirmed with him first that the **glyph**
+  grows and the box does not. Growing the boxes 30% would have taken them to
+  57.2px — wider than the 56px status circle above them — which would widen
+  the whole arm and invert the "narrower buttons centered under the wider
+  circle" relationship that the arm's 8px/14px padding values were derived
+  from. Boxes stay 44px `--tap`; arm width stays 74px.
+- **Draft Log shows the letters `DL` instead of its icon, mobile only.** Uses
+  the existing `.status-trigger-label` / `.status-trigger-code` pattern —
+  both forms in the DOM, CSS picks per layout, no JS branching. Desktop still
+  renders the `fa-layer-group` icon plus the full "Draft Log" text, and the
+  `aria-label` is unchanged either way, so the accessible name is untouched.
+- **Collapsed arm's bottom green trimmed.** `padding-bottom` drops 14px → 0
+  **in the collapsed state only**; the open state keeps its 14px. That 14px
+  was derived from the open state (matching the 14-16px side clearance the
+  centered action buttons get) and made no sense with the buttons hidden — it
+  stacked on top of the chevron toggle's own ~9.4px internal bottom padding,
+  leaving ~25px of green under the glyph against only 8px above the circle.
+  Now the toggle's own padding is the entire bottom gap: measured 9.4px green
+  plus the 2px gold border, which reads symmetric with the top.
+
+### Verification notes
+Measured via `setMobilePreview(true)` at 440×956 with a seeded scene, real
+`getBoundingClientRect()` / `getComputedStyle()` values, not screenshots:
+- Both icon bumps confirmed at exactly ×1.3 (16→20.8px, 15→19.5px) with
+  boxes, padding, and borders byte-identical to before (56×56 rail tabs,
+  44×44 action buttons, arm still 74px wide, circle still 56px).
+- Collapsed/open padding swap asserted in both directions with the state
+  class read explicitly (`actions-open`): collapsed → 0px pad / 96px arm /
+  9.4px green under the glyph; open → 14px pad / 250px arm / 16px under the
+  last button, i.e. the open state is untouched. `#auto-save-status` stays
+  visible in both states (the documented must-not-hide invariant).
+- Gestures re-run as real `PointerEvent` sequences (`pointerType: 'touch'`):
+  status-arm press-and-hold drag → corner-dock left and right (flush, correct
+  border/radius morph per side, `top` still pinned to the header), status menu
+  direction-flip measured at a 10px gap and fully on-screen in **both**
+  directions, rail tap-to-open, rail drag-to-switch (switches, rail does not
+  move, trailing click swallowed), and rail press-and-hold reposition (moved
+  the full 130px, drawer correctly did not open, reset clears the inline
+  style).
+- Accessibility re-checked on everything touched: rail-tab targets still
+  56×56, action buttons still 44×44, rail icon contrast 9.99:1, `DL` contrast
+  5.44:1 at 19.5px — all above the AA floors in `BUTTON_STYLE_GUIDE.md`.
+- **Desktop verified by A/B measurement**, not assertion: the pristine
+  `HEAD` file and the edited file were loaded side by side at 1280×800 and
+  probed identically. Every value matches — status bar `1028×48` at the same
+  offset, same padding/border/radius/z-index, status pill 100×18.55 at
+  10.4px, action buttons 95.2 / 90.86 / 80.67px wide with 12px icons and
+  visible text labels, rail `display:none`, rail icon still 16px there. The
+  new `.btn-code` span computes to `display:none` / 0×0 on desktop, so Draft
+  Log's width is unchanged to the hundredth of a pixel.
+
+### Flagged, not settled
+- The collapsed-arm bottom gap is now 9.4px because that is the chevron
+  toggle's own internal padding, which is the floor without touching the
+  toggle's box (deliberately left alone — it carries a documented "don't
+  re-fix without re-measuring" note about the 30px touch-target floor). If
+  Aaron wants it tighter than 9.4px, that toggle's padding is the next thing
+  to change, and it needs asking first.
+- No real-device confirmation yet for this round specifically.
+
 ## [2026-07-27] – Scene-status arm: drag, corner-morph docking, button polish
 
 Four rounds in one day on the mobile scene-status arm (the circular R/UF/C

@@ -21,19 +21,78 @@ text-scale setting changes:
 | Var | Size | Meaning | Examples |
 |---|---|---|---|
 | `--tap` | 2.75rem / 44px | Anything touched **while actively writing** | Editor toolbar (`.text-tool-btn`), scene-status action bank (Save/Draft Log/Sammy), bottom nav |
-| `--tap-sm` | 1.875rem / 30px | Chrome she **sets once and ignores** | Panel close buttons, drawer-close (`.m-drawer-close`), copy-to-clipboard (`.guidance-copy-btn`), rail-collapse arrow, status-actions arrow tab |
+| `--tap-sm` | 1.875rem / 30px | Chrome she **sets once and ignores** | Panel close buttons, drawer-close (`.m-drawer-close`), copy-to-clipboard (`.guidance-copy-btn`), status-actions arrow tab |
 
 Rule of thumb before adding a new mobile button: is this something Erica
 taps repeatedly mid-writing-session, or a set-once toggle? That answers
 which var to use — don't invent a third size.
 
-Two **named, deliberate exceptions** sit outside this floor on purpose —
+Five **named, deliberate exceptions** sit outside this floor on purpose —
 don't "fix" them without asking Aaron first:
 - The guidance-rail tabs (`.rail-tab`) and the scene-status circle
-  (`.status-dropdown-trigger` in mobile) are **3.5rem/56px**, one size up
-  from `--tap`, so the two edge-mounted control banks read as the same
-  visual weight as each other. This is a deliberate exception to `--tap`,
-  not a bug.
+  (`.status-dropdown-trigger` in mobile) are one size up from `--tap`, so
+  the two edge-mounted control banks read as the same visual weight as each
+  other. The status circle is `3.5rem/56px` square; the rail tabs were too
+  until 2026-08-02, when they became **`2.95rem/47.2px` wide × `3.5rem/56px`
+  tall** (no longer square — see the update below). This is a deliberate
+  exception to `--tap`, not a bug.
+  **2026-08-02 update:** Aaron asked for the icon's top/bottom/left margins
+  to match (right stayed at the 8.8px set the same day, above — not part of
+  this ask). With height fixed at 56px, the common-case 20.8px icon already
+  centers to a ~17.6px top/bottom margin; matching left to that only
+  required a 47.2px-wide box (17.6 + 20.8 + 8.8), instead of the old 56px
+  square with ~26px of dead space on the icon's editor-facing side. Removing
+  that dead space is also what makes the rail narrower — same change, not a
+  separate one. Width now lives in `--rail-tab-w` (a shared custom property,
+  also read by the guidance-drawer offset and the JS drag clamp) rather than
+  a repeated literal.
+- The rail's collapse control (`.rail-collapse-toggle`) is **24×112px** as of
+  2026-08-02 (height revised same day, was 96px) — it left the `--tap-sm`
+  tier entirely when Aaron respecified it as a **handle** on the rail's long
+  left wall rather than a small arrow at the strip's foot. It was briefly
+  60×140 (2.5 rail icons tall) the same day; Aaron then pointed at **iOS's
+  own hidden-PiP-window handle** — the slim translucent pill on a phone
+  screen's right edge — and asked for the same size and shape (~24×96 CSS px,
+  4:1, fully rounded outboard edge, hence the 12px radius = half the width).
+  **Later the same day, height was revised again to 112px** (`calc(2 *
+  var(--rail-tab-h))`, "as tall as 2 rail-drawer boxes") — this deliberately
+  breaks the 4:1 iOS-ratio fidelity the previous revision matched; Aaron's
+  explicit new number is what governs now, not the ratio. Width (24px) and
+  the 12px radius are unchanged (the radius derives from width, not height).
+  **This is the one control in the tool that sits below the 30×30 chrome
+  touch floor in one dimension** (24px wide). It is a deliberate,
+  Aaron-specified exception, made on the reasoning that it is edge-anchored
+  and well over 100px tall, so the hard-to-miss axis is the long one. Don't
+  "fix" the 24px on accessibility grounds without asking him — and don't
+  cite it as precedent for shrinking anything else.
+- The **editor-toolbar zoom scaler** (`#editor-zoom-control`, the −/100%/+
+  pill) is a second, narrower deliberate exception, added 2026-08-02: its
+  total height is capped at exactly `--tap`/44px to match its sibling
+  toolbar buttons, which pushes its own −/+ buttons a few px under 44px
+  when measured in isolation (their `min-height` is overridden to `auto`
+  inside this control specifically, so they don't fight the pill's own
+  fixed height). The pill as a whole still meets the 44px floor; only the
+  two glyphs inside it individually read slightly under it.
+- **`.review-flag-btn`** (the "!" review marker, Library panel only —
+  category-header and per-entry contexts both) is **1.5rem/24px** as of
+  2026-08-03, matching `.count-badge` (the gold entry-count circle) —
+  Aaron: "same size as the entry-count circle," explicitly "ALL of" the
+  marker's occurrences in that panel. Was three different sizes before this
+  (30px generic fallback, 44px at category headers via `--lib-banner-h`,
+  28px per-entry) — none of them matched `.count-badge` and none matched
+  each other. Below the 30×30 chrome floor, same category of exception as
+  the rail handle above. Icon `font-size` inside the circle is untouched in
+  every context — this only changed the box.
+- **`#outline-close-btn` / `#library-close-btn`** (the Outline/Library
+  panels' own close arrows) had their icon `font-size` raised `1.125rem` →
+  `1.5rem` the same day, also to match `.count-badge` — the
+  `fa-arrow-alt-circle-left/right` glyphs are already circular outlines, so
+  matching font-size to 1.5rem lands the rendered icon at very close to
+  24px without adding the background/border `.count-badge` has. The
+  button's own tap target is unaffected — the generic panel-button rule
+  already floors it at `--tap-sm` independent of the icon's size, so this
+  one isn't actually a touch-target exception, just an icon-size note
+  worth keeping next to the others above.
 
 ## 2. Icon (glyph) size is separate from box size — don't conflate them
 
@@ -49,8 +108,8 @@ there's a specific reason to differ (state that reason in a comment):**
 | Class | Box size | Icon `font-size` | Layout |
 |---|---|---|---|
 | `.text-tool-btn` (editor toolbar: Proofreader, B/I/U) | `--tap` (44px) | `1rem` | mobile |
-| `.status-actions-bank > button` (Save/Draft Log/Sammy) | `--tap` (44px) | inherits `.control-bar-item` `0.9375rem` | mobile |
-| `.rail-tab` (guidance drawer triggers) | 3.5rem (56px, exception above) | `1rem` | mobile |
+| `.status-actions-bank > button` (Save/Draft Log/Sammy) | `--tap` (44px) | `1.21875rem` (2026-08-02; was `0.9375rem` inherited from `.control-bar-item`) | mobile |
+| `.rail-tab` (guidance drawer triggers) | 2.95rem × 3.5rem (47.2×56px, exception above; was 56×56 square) | `1.3rem` (2026-08-02; was `1rem`) | mobile |
 | `.m-drawer-close` | `--tap-sm` (30px) | `1.15rem` | mobile |
 | `.guidance-copy-btn` | `--tap-sm` (30px) | `1rem` | mobile |
 | `.control-bar-item` (desktop toolbar/status row) | 30px height | `12px` (`0.75rem`) | desktop |
@@ -63,6 +122,26 @@ different, heavier control family than the editor toolbar and status
 buttons next to them. Reverted to `1rem` per Aaron. If dead space around an
 icon is a real problem again, shrink the box's internal padding first,
 not the glyph.
+
+**2026-08-02 update — the icon-margin item above is now settled, by
+Aaron's own number.** He asked for a flat **+30% glyph** on both the rail
+tabs (`1rem` → `1.3rem`) and the action bank (`0.9375rem` →
+`1.21875rem`), explicitly keeping every margin, padding, and border as-is.
+This is not a re-run of the reverted 2026-07-26 attempt: that one was a
+2.5× guess made in place of asking, this is the requested ratio, and it
+lands well short of the size that read as a different control family.
+Both boxes are untouched (56px rail tab, 44px `--tap` action button), so
+touch targets and the arm's circle-driven column geometry are unchanged —
+confirmed by measurement, not by eye.
+
+Also 2026-08-02: **Draft Log renders the letters `DL` instead of its
+`fa-layer-group` icon on mobile only.** Implemented the same way the
+status circle does its short codes — both forms sit in the DOM
+(`.btn-text` / new `.btn-code`), CSS picks one per layout, no JS
+branching, and the button's `aria-label` still carries "Draft Log" so the
+accessible name never changed. Desktop keeps icon + full text. If you add
+another letter-code button, reuse `.btn-code` rather than inventing a
+parallel class.
 
 ## 3. Accessibility minimums (both layouts)
 
