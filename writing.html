@@ -2193,6 +2193,16 @@
                keyboard, rather than a hardcoded px guess that would drift
                out of sync if either rule's own numbers ever change. */
             bottom: calc(env(safe-area-inset-bottom, 0px) + var(--kb-height, 0px) + 5.25rem + 8px) !important;
+            /* Item (2026-08-05, fifth round, later still, Aaron): "make
+               sure the bottom corners... are rounded as well" - the shared
+               .notepad rule's `16px 16px 0 0` only rounds the top corners,
+               left square for when this sheet sat flush against all three
+               of the left/right/bottom edges. It no longer does (see the
+               side margins and raised bottom above), so a floating card
+               now reads oddly with two sharp bottom corners. Higher
+               specificity (targets the ID, not just the class) wins here
+               without needing !important - this property never had one. */
+            border-radius: 16px;
         }
         /* Dim backdrop - shown only while Notepad/Draft Pad are open (see
            showMobileSheetBackdrop()/hideMobileSheetBackdrop() in the JS).
