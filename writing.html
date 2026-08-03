@@ -10068,6 +10068,40 @@
         }
 
         /**
+         * iOS Safari/WebKit fix (2026-08-05, later round): "Notepad doesn't
+         * toggle closed" turned out to be specific to Notepad among all
+         * #mobile-nav buttons - Aaron confirmed Outline/Library/Stats/Text
+         * all toggle fine. The difference: Notepad is the only one of them
+         * with a focusable text field (#note-title / #note-content). On iOS
+         * WebKit, a tap that lands outside a currently-focused input/
+         * contenteditable element is first consumed by blurring that field
+         * (dismissing the keyboard) - the resulting `click` on whatever was
+         * tapped often does not fire on that same tap, requiring a SECOND,
+         * separate tap to actually register. So: type a note, tap Notepad
+         * once to close it, and (on iOS specifically - not reproducible in
+         * this repo's Chromium-based dev tooling, which has no such quirk)
+         * nothing visibly happens - the tap only dismissed the keyboard.
+         * Fix: proactively blur any focused field on `touchstart` (which
+         * always fires, before the browser's own blur-vs-click resolution
+         * for that same touch), so by the time this tap's `click` is
+         * synthesized there is no longer a focused field to consume it.
+         * Delegated on #mobile-nav (covers all five buttons, not just
+         * Notepad - harmless no-op for the others since they have nothing
+         * to blur) rather than one-off wired to a single button.
+         */
+        (function setupMobileNavBlurFix() {
+            const nav = document.getElementById('mobile-nav');
+            if (!nav) return;
+            nav.addEventListener('touchstart', function() {
+                if (!isMobileMode()) return;
+                const active = document.activeElement;
+                if (active && active !== document.body && typeof active.blur === 'function') {
+                    active.blur();
+                }
+            }, { passive: true });
+        })();
+
+        /**
          * Tap-to-reveal for review-flag "!" markers - hover tooltips don't
          * exist on touch, and the review reason is real editorial info.
          * Desktop is untouched: this returns immediately there, keeping the
