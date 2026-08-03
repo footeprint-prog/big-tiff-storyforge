@@ -2620,7 +2620,7 @@
 
         <!-- LEFT: Outline Panel -->
         <div id="left-panel"
-             class="fixed top-14 left-0 bottom-0 w-80 bg-[#3D2B1F] border-r border-[#D4AF37]/30 overflow-y-auto z-[40] transform transition-transform duration-300">
+             class="fixed top-14 left-0 bottom-0 w-80 bg-[#3D2B1F] border-r-2 border-r-[#D4AF37] overflow-y-auto z-[40] transform transition-transform duration-300">
             
             <div class="p-4">
                 <div class="flex justify-end mb-1 -mr-1">
@@ -3069,7 +3069,7 @@
 
         <!-- RIGHT: Library Panel -->
         <div id="right-panel"
-             class="fixed top-14 right-0 bottom-0 w-80 bg-[#3D2B1F] border-l border-[#D4AF37]/30 overflow-y-auto z-[40] transform transition-transform duration-300 translate-x-full">
+             class="fixed top-14 right-0 bottom-0 w-80 bg-[#3D2B1F] border-l-2 border-l-[#D4AF37] overflow-y-auto z-[40] transform transition-transform duration-300 translate-x-full">
             
             <div class="p-4">
                 <div class="flex justify-start mb-1 -ml-1">
@@ -3445,7 +3445,7 @@
     </div>
 
     <!-- ==================== STATS & PROGRESS ==================== -->
-    <div id="stats-window" class="notepad hidden" style="left: 620px; top: 120px; width: 460px; height: 440px;">
+    <div id="stats-window" class="notepad active hidden" style="left: 620px; top: 120px; width: 460px; height: 440px;">
         <div class="notepad-header" id="stats-header">
             <div class="flex items-center gap-x-2">
                 <i class="fa-solid fa-chart-line text-[#D4AF37]"></i>
@@ -3654,7 +3654,7 @@
     </div>
 
     <!-- Send to Sammy Export Window -->
-    <div id="sammy-export-window" class="notepad hidden" style="left: 580px; top: 80px; width: 520px; height: 480px;">
+    <div id="sammy-export-window" class="notepad active hidden" style="left: 580px; top: 80px; width: 520px; height: 480px;">
 
         <div class="notepad-header" id="sammy-export-header">
             <div class="flex items-center gap-x-2">
@@ -3666,24 +3666,20 @@
             </button>
         </div>
 
-        <div class="px-3 pt-3 pb-2 border-b border-[#D4AF37]/20">
-            <div class="text-xs text-[#D4AF37]/70">
-                Copy this into a Sammy conversation for a contextual editorial pass.
-                Nothing is sent automatically - this tool only prepares the text.
+        <div class="px-3 pt-3 pb-2 border-b border-[#D4AF37]/20 flex items-center justify-between">
+            <div class="text-xs text-[#D4AF37]/70 flex-1">
+                Edit the prompt or copy into a Sammy conversation for editorial feedback.
             </div>
+            <button onclick="copySammyExportText()" id="sammy-export-copy-btn" title="Copy all"
+                    class="flex-shrink-0 w-8 h-8 flex items-center justify-center text-[#D4AF37] hover:text-[#E8C86B] ml-2">
+                <i class="fa-solid fa-copy"></i>
+            </button>
         </div>
 
         <div class="flex-1 overflow-y-auto p-3">
-            <textarea id="sammy-export-text" readonly
+            <textarea id="sammy-export-text"
                       class="w-full h-full bg-[#3D2B1F] border border-[#D4AF37]/40 rounded-2xl p-4 text-sm leading-relaxed resize-none focus:outline-none focus:border-[#D4AF37]"
                       style="white-space: pre-wrap;"></textarea>
-        </div>
-
-        <div class="px-3 pb-3">
-            <button onclick="copySammyExportText()" id="sammy-export-copy-btn"
-                    class="w-full h-9 text-sm font-semibold rounded-xl bg-[#D4AF37] text-[#3D2B1F] hover:brightness-110 transition-all">
-                <i class="fa-solid fa-copy mr-1"></i> Copy All
-            </button>
         </div>
 
         <div id="sammy-export-resize-handle" class="notepad-resize-handle"></div>
@@ -3743,7 +3739,7 @@
              buttons" shape (same pattern as .rail-tab-strip on the guidance
              rail), one hugging each screen edge. -->
         <div class="nav-arm nav-arm-left">
-            <button type="button" data-nav="notepad" onclick="mobileNav('notepad')"><i class="fa-solid fa-book"></i><span>Notepad</span></button>
+            <button type="button" data-nav="notepad" onclick="mobileNav('stats')"><i class="fa-solid fa-book"></i><span>Notepad</span></button>
             <button type="button" data-nav="outline" onclick="mobileNav('outline')"><i class="fa-solid fa-sitemap"></i><span>Outline</span></button>
         </div>
         <button type="button" data-nav="focus" onclick="mobileNav('focus')" aria-label="Focus">
@@ -3754,7 +3750,7 @@
         </button>
         <div class="nav-arm nav-arm-right">
             <button type="button" data-nav="library" onclick="mobileNav('library')"><i class="fa-solid fa-book-open"></i><span>Library</span></button>
-            <button type="button" data-nav="stats" onclick="mobileNav('stats')"><i class="fa-solid fa-award"></i><span>Stats</span></button>
+            <button type="button" data-nav="stats" onclick="mobileNav('notepad')"><i class="fa-solid fa-award"></i><span>Stats</span></button>
         </div>
     </nav>
 
@@ -4272,13 +4268,11 @@
             // driving the Library changelog. Dismissed entries (the user has
             // seen the reason and clicked away) drop the marker.
             const isFlagged = entry.status === 'review' && !!entry.needsReviewReason && !isReviewDismissed(entry.id);
-            // Desktop keeps the hover tooltip; on mobile the icon is a tap
-            // target that reveals Sammy's review reason inline. Per item 6
-            // (2026-07-24) the entry marker sits at the END of the title.
-            const marker = isFlagged
-                ? ` <span class="review-flag-btn" role="button" tabindex="0" aria-label="Why this changed" title="${(entry.needsReviewReason || '').replace(/"/g, '&quot;')}" onclick="toggleReviewReason(this, event)"><i class="fa-solid fa-circle-exclamation"></i></span>`
-                : '';
-            const titleDisplay = `${entry.title}${marker}`;
+            // Show white dot at START for non-flagged, exclamation mark at START for flagged (moved from end)
+            const dotMarker = isFlagged
+                ? `<span class="review-flag-btn" role="button" tabindex="0" aria-label="Why this changed" title="${(entry.needsReviewReason || '').replace(/"/g, '&quot;')}" onclick="toggleReviewReason(this, event)"><i class="fa-solid fa-circle-exclamation"></i></span>`
+                : `<span class="text-[#F4EDE4] mr-1">●</span>`;
+            const titleDisplay = `${dotMarker} ${entry.title}`;
 
             let html = `
                 <div class="flex justify-between items-start gap-2">
