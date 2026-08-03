@@ -2203,6 +2203,16 @@
                specificity (targets the ID, not just the class) wins here
                without needing !important - this property never had one. */
             border-radius: 16px;
+            /* Item (2026-08-05, sixth round, Aaron): "2px gold border" -
+               the shared .notepad rule only puts a border on the TOP side
+               (border-width: 2px 0 0 0, for when this sheet sat flush
+               against the other three edges - it no longer does, see
+               above), and .active's own `border: 4px solid #D4AF37`
+               (desktop-authored) would otherwise win the color/style at
+               equal specificity by source order. Setting the full
+               shorthand explicitly here removes any ambiguity - 2px gold
+               on all four sides regardless of .active state. */
+            border: 2px solid #D4AF37;
         }
         /* Dim backdrop - shown only while Notepad/Draft Pad are open (see
            showMobileSheetBackdrop()/hideMobileSheetBackdrop() in the JS).
@@ -4836,7 +4846,16 @@
             const backdrop = document.getElementById('mobile-sheet-backdrop');
             if (backdrop) backdrop.classList.remove('active');
         }
+        // Same same-tap-duplicate-fire guard as mobileNav()'s notepad case
+        // (see that comment) - defensive here too, though unconfirmed
+        // whether it's the same mechanism behind Aaron's report that
+        // tapping the backdrop clears the dim but leaves Notepad open
+        // (Draft Pad closes correctly the same way).
+        let backdropDismissGuardUntil = 0;
         function dismissMobileSheetBackdrop() {
+            const now = Date.now();
+            if (now < backdropDismissGuardUntil) return;
+            backdropDismissGuardUntil = now + 500;
             const notepad = document.getElementById('notepad-window');
             const draftpad = document.getElementById('draftpad-window');
             if (notepad && notepad.classList.contains('active')) hideNotepad();
@@ -10402,6 +10421,27 @@
         })();
 
         // ---- Bottom navigation ----
+        // Item (2026-08-05, sixth round, Aaron): "create a new note, begin
+        // editing it - the Notepad button brings me back to the note list
+        // (as if reopening)." This is the smoking gun for a fourth-attempt
+        // theory: a real duplicate firing of this exact click handler for
+        // one physical tap (a documented iOS WebKit quirk, most likely
+        // when the tapped element's own class/size changes as a DIRECT
+        // result of its own click handler - exactly what happens here).
+        // First firing: notepad IS open -> wasOpen true -> hideNotepad()
+        // closes it. Second, near-instant firing of the SAME tap: notepad
+        // is NOW closed -> wasOpen false -> the else branch runs
+        // openNotepad(), which unconditionally resets to list view - so
+        // the whole panel appears to "reopen to the list" instead of
+        // closing, matching this report exactly. (Earlier rounds' "nothing
+        // happens" reports are also consistent with this: before the
+        // list/editor split existed, "reopening" just re-showed the same
+        // editor content, indistinguishable from doing nothing.) Guarded
+        // here with a short time-window swallow of any second invocation
+        // for the SAME tap, rather than trying to prevent the duplicate
+        // event itself (browser-internal, not something JS can suppress
+        // reliably at the source).
+        let notepadToggleGuardUntil = 0;
         function mobileNav(what) {
             const left = document.getElementById('left-panel');
             const right = document.getElementById('right-panel');
@@ -10453,6 +10493,9 @@
                     // any other sheet's code at all - and the open path
                     // wraps the other-sheets cleanup in try/catch so a
                     // failure there can't stop Notepad from opening either.
+                    const nowNp = Date.now();
+                    if (nowNp < notepadToggleGuardUntil) break; // swallow a same-tap duplicate fire - see the comment above mobileNav()
+                    notepadToggleGuardUntil = nowNp + 500;
                     const np = document.getElementById('notepad-window');
                     const wasOpen = np.classList.contains('active') && np.style.display !== 'none';
                     if (wasOpen) {

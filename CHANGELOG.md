@@ -2,6 +2,54 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-05 sixth round] – Notepad toggle fix (attempt 5: same-tap duplicate-fire guard), 2px gold border
+
+Mobile-only, at Aaron's direction.
+
+### Changed
+- **Notepad nav-button toggle-close — fifth attempt**, prompted by a new,
+  precise symptom: "create a new note, begin editing it - the Notepad
+  button brings me back to the note list, as if reopening." Traced to a
+  same-tap duplicate firing of `mobileNav('notepad')` (a documented iOS
+  WebKit quirk, most likely triggered because the tapped element's own
+  class/size changes as a direct result of its own click handler - exactly
+  what this case does). First firing correctly closes the panel
+  (`wasOpen` true → `hideNotepad()`); a near-instant second firing for the
+  SAME physical tap then sees `wasOpen` false (just closed) and takes the
+  else branch → `openNotepad()`, which unconditionally resets to list
+  view - so the whole panel appears to snap back open to the list instead
+  of closing. (Earlier "nothing happens" reports are consistent with this
+  too - before the list/editor split existed, "reopening" just re-showed
+  the same editor content.) Fixed with a 500ms swallow-window guard on the
+  case itself, since the duplicate event is browser-internal and can't be
+  suppressed at the source. The same guard was added defensively to
+  `dismissMobileSheetBackdrop()` for Aaron's second report this round
+  (tapping the backdrop clears the dim but leaves Notepad open - Draft Pad
+  closes correctly the same way) - unconfirmed whether it's the same
+  mechanism, flagged as such.
+- **2px gold border** (`#D4AF37`, all four sides) on both Notepad and
+  Draft Pad - the shared `.notepad` rule only bordered the top edge
+  (`border-width: 2px 0 0 0`, left over from when these sheets sat flush
+  against the other three edges, which they no longer do after this
+  round's margin/backdrop work), and desktop's own `.active` rule
+  (`border: 4px solid #D4AF37`) would otherwise have won the color/style
+  at equal specificity by source order. Set explicitly per-panel so
+  there's no ambiguity.
+
+### Verification notes
+Measured at 375×812:
+- Simulated the exact double-fire by calling `mobileNav('notepad')` twice
+  synchronously with zero gap (worst case): panel ended up closed
+  (`display:none`), not reopened to list view - confirmed the guard
+  prevents the reported symptom. Same test against
+  `dismissMobileSheetBackdrop()` (called twice back to back): panel stayed
+  closed.
+- Border computed as `2px solid rgb(212, 175, 55)` on both panels.
+- Desktop (fresh tab): border still computes `4px solid rgb(212, 175, 55)`
+  (its own `.active` rule, untouched by the mobile-scoped override).
+- Not yet confirmed fixed on a real device as of this entry - four prior
+  attempts all shipped clean but did not resolve the underlying report.
+
 ## [2026-08-05 fifth round] – Notepad toggle fix (attempt 4: keyboard-covers-nav), side margins, dim backdrop
 
 Mobile-only, at Aaron's direction.
