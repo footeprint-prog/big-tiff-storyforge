@@ -2,6 +2,60 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-05 third round] – New chapter#.scene# circle + 3-line title header, scene summary repositioned
+
+Four adjustments at Aaron's direction, all mobile-only.
+
+### Changed
+- **Investigated the Notepad nav button's toggle-close behavior** (item 1) -
+  confirmed via both a direct `mobileNav('notepad')` call and a real
+  `.click()` on the button that it already toggles closed correctly on a
+  clean page load; no code change made. (An earlier test in a reused,
+  state-contaminated tab briefly looked broken - see the desktop-border
+  false alarm in the prior round's notes for the same root cause pattern.)
+- **New `#mobile-scene-header`**: a chapter#.scene# circle (56px, mirrors
+  `.status-dropdown-trigger`'s own mobile size/shape) plus a 3-line title
+  block ("Draft" / scene title / optional subtitle), inserted as the first
+  child of `#scene-content`, directly under the app header. It's a plain
+  direct child (not nested inside `#editor-column`), so it inherits
+  `#scene-content`'s own 8px left padding - which lands its circle's left
+  edge exactly on the fixed status arm's own circle (`#scene-status-bar
+  .status-dropdown-trigger`, also 8px-inset), so the new circle sits
+  directly behind/under the arm's by construction, no manual position
+  math needed. Populated in `selectSceneFromCanon()` from `scene.chapter`/
+  `scene.sceneNumber`/`scene.subtitle` (subtitle line hidden when absent).
+  Desktop is untouched - hidden via `display:none` by default, shown only
+  under `body.mobile-layout`, and desktop's own `#scene-label` ("DRAFT •
+  title") keeps rendering exactly as before.
+- **`#scene-label` hidden on mobile** (the original "DRAFT • title" label
+  deep inside `#editor-column`) - its content moved to the new header
+  above, so this avoided showing it twice. Desktop keeps it exactly as
+  before; the JS that populates its text is untouched.
+- **Scene summary now starts below the status arm**: because the new
+  header row is the first flow element and the arm is a fixed overlay
+  pinned at the same top-left spot, `#scene-summary-bar` (next in flow)
+  now naturally starts right at the arm's own bottom edge instead of
+  underneath/behind it as before. Its stale `margin-top: -4px` (previously
+  cancelling the header's own margin-bottom so the bar sat flush against
+  the header) was removed - it no longer sits next to the header, so that
+  cancellation would have pulled it up into the new header row instead.
+
+### Verification notes
+Measured at 375×812 with a seeded scene (`chapter: 3, sceneNumber: 2,
+title: "The Storm Breaks", subtitle: "A turning point"`), then re-checked
+on a fresh tab at 1280×800 (a reused tab was carrying stale forced-mobile
+state from earlier in the session, per the established gotcha):
+- New circle: 56×56, left edge at 8px, matching the status arm's own
+  circle exactly (also 8px); text read "3.2".
+- Title text: left edge at 80px, 6px clear of the arm's own right edge
+  (74px) - a visible margin, not flush against it.
+- `#scene-summary-bar` top: 117px, exactly flush with the status arm's own
+  bottom edge (117px) - starts right below the green area with no gap or
+  overlap.
+- Desktop (fresh tab): `isMobileMode()` false, `#mobile-scene-header`
+  computed `display: none`, `#scene-label` still `display: block` with its
+  original "DRAFT • The Storm Breaks" text - unchanged.
+
 ## [2026-08-05 later round] – Editor toolbar copy/paste removed and fused, nav panel full-width
 
 Six adjustments at Aaron's direction, all mobile-only.

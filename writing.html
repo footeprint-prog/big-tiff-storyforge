@@ -1131,10 +1131,18 @@
            review's 12px instead of the other direction, since 12px is the
            value already explicitly chosen and named (review's), rather
            than assuming review's should drop to match summary's implicit
-           zero. */
+           zero.
+           Item (2026-08-05, later round): the `margin-top: -4px` this rule
+           used to carry cancelled `header`'s own 4px margin-bottom so this
+           bar sat flush against the header above it. #mobile-scene-header
+           is now the first thing in flow instead (see its own rules above),
+           so that cancellation would just pull this bar 4px up into the
+           new header's own bottom padding - removed; this bar's spacing
+           from what's now above it is governed by #mobile-scene-header's
+           own padding-bottom (12px), not by this element reaching upward. */
         body.mobile-layout.scene-open #scene-summary-bar {
             margin-left: -0.5rem; margin-right: -0.5rem;
-            margin-top: -4px; margin-bottom: 0.75rem;
+            margin-bottom: 0.75rem;
             border-top: none; border-left: none; border-right: none;
             border-radius: 0;
         }
@@ -1179,6 +1187,53 @@
            At 440px that repetition costs ~3 wrapped lines above the editor. */
         body.mobile-layout #scene-summary-title,
         body.mobile-layout #scene-summary-title-sep { display: none !important; }
+        /* Item (2026-08-05, later round): the "DRAFT • title" label
+           (#scene-label, deep inside #editor-column) moved up to a new
+           dedicated block right under the header (#mobile-scene-header,
+           see the HTML comment above it and its own rules below) - hide
+           the original here so it doesn't duplicate. Desktop is untouched;
+           #scene-label still renders there exactly as before. */
+        body.mobile-layout #scene-label { display: none; }
+        /* ---- Mobile scene header: chapter#.scene# circle + 3-line title ----
+           Direct child of #scene-content (like #scene-summary-bar/
+           #scene-status-bar), so it inherits that same 8px left padding -
+           the circle's left edge lands at 8px, matching the fixed status
+           arm's own circle (#scene-status-bar .status-dropdown-trigger,
+           also inset 8px from its arm) exactly, so the two circles share
+           one vertical line and this one reads as sitting directly behind/
+           under the arm's, per Aaron's spec. */
+        body.mobile-layout.scene-open #mobile-scene-header {
+            display: flex; align-items: flex-start; gap: 16px;
+            padding: 8px 0 12px;
+        }
+        body.mobile-layout #mobile-scene-number-circle {
+            width: 3.5rem; height: 3.5rem; min-width: 3.5rem; min-height: 3.5rem;
+            border-radius: 50%;
+            border: 1px solid #D4AF37;
+            box-sizing: border-box;
+            background: #3D2B1F;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; font-weight: 700; color: #D4AF37;
+            flex-shrink: 0;
+        }
+        body.mobile-layout #mobile-scene-title-block {
+            display: flex; flex-direction: column; justify-content: center;
+            min-width: 0; padding-top: 4px;
+        }
+        /* Line 1: static "Draft" label. Line 2: the scene's own title.
+           Line 3: an optional subtitle - hidden entirely (via the HTML's
+           own `class="hidden"`) when the scene has none, toggled by
+           selectSceneFromCanon(). */
+        body.mobile-layout #mobile-scene-title-draft {
+            font-size: 0.7rem; font-weight: 700; letter-spacing: 1.5px;
+            text-transform: uppercase; color: #D4AF37; line-height: 1.3;
+        }
+        body.mobile-layout #mobile-scene-title-text {
+            font-size: 1.05rem; font-weight: 600; color: #F4EDE4; line-height: 1.3;
+        }
+        body.mobile-layout #mobile-scene-subtitle-text {
+            font-size: 0.8rem; color: rgba(212, 175, 55, 0.75); line-height: 1.3;
+        }
         /* 1.5px tracking on a 14px uppercase label wraps hard at this width. */
         body.mobile-layout .tracking-\[1\.5px\] { letter-spacing: 0.5px; line-height: 1.3; }
         /* The scene summary and review note are long enough to push the
@@ -2517,6 +2572,23 @@
             
             <!-- Scene Content - Hidden until a scene is selected -->
             <div id="scene-content" class="hidden">
+
+                <!-- MOBILE-ONLY: chapter#.scene# circle + 3-line title ("Draft"
+                     / scene title / subtitle), directly under the app header,
+                     first thing in normal flow - the scene-status arm
+                     (#scene-status-bar, position:fixed on mobile) floats on
+                     top of this exact spot by default, so this circle sits
+                     directly behind/under the arm's own circle (same 8px
+                     left inset - see CSS). Hidden entirely on desktop, which
+                     keeps showing its own #scene-label exactly as before. -->
+                <div id="mobile-scene-header" class="hidden">
+                    <div id="mobile-scene-number-circle" aria-hidden="true"></div>
+                    <div id="mobile-scene-title-block">
+                        <div id="mobile-scene-title-draft">Draft</div>
+                        <div id="mobile-scene-title-text"></div>
+                        <div id="mobile-scene-subtitle-text" class="hidden"></div>
+                    </div>
+                </div>
 
                 <!-- SCENE SUMMARY: full-width cap, pinned to the top while the rest scrolls -->
                 <div id="scene-summary-bar" class="guidance-summary mb-0 bg-[#4A3A2E] border border-[#D4AF37]/50 rounded-t-2xl p-4 sticky top-0 z-30 shadow-lg">
@@ -7028,6 +7100,27 @@
             }
             if (summaryTitleSep) {
                 summaryTitleSep.classList.remove('hidden');
+            }
+
+            // Mobile scene header (#mobile-scene-header) - chapter#.scene#
+            // circle + 3-line title, hidden entirely on desktop via CSS.
+            const mobileNumberCircle = document.getElementById('mobile-scene-number-circle');
+            if (mobileNumberCircle) {
+                mobileNumberCircle.textContent =
+                    (scene.chapter != null && scene.sceneNumber != null)
+                        ? `${scene.chapter}.${scene.sceneNumber}` : '';
+            }
+            const mobileTitleText = document.getElementById('mobile-scene-title-text');
+            if (mobileTitleText) mobileTitleText.textContent = scene.title || scene.id || '';
+            const mobileSubtitleText = document.getElementById('mobile-scene-subtitle-text');
+            if (mobileSubtitleText) {
+                if (scene.subtitle) {
+                    mobileSubtitleText.textContent = scene.subtitle;
+                    mobileSubtitleText.classList.remove('hidden');
+                } else {
+                    mobileSubtitleText.textContent = '';
+                    mobileSubtitleText.classList.add('hidden');
+                }
             }
 
             populateGuidance(scene);
