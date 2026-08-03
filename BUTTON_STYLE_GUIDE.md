@@ -93,6 +93,20 @@ don't "fix" them without asking Aaron first:
   already floors it at `--tap-sm` independent of the icon's size, so this
   one isn't actually a touch-target exception, just an icon-size note
   worth keeping next to the others above.
+- **The editor toolbar itself** (`#editor-toolbar .text-tool-btn` — B/I/U,
+  Proofreader, Copy, Paste, Text Size — and `#editor-zoom-control`, the
+  −/100%/+ pill) left the `--tap` PRIMARY tier entirely on 2026-08-04,
+  shrinking 44px → 22px on an explicit Aaron ask ("reduce size of text
+  editor tool buttons and scaler bar by 50%"). Unlike every other
+  exception in this section, these buttons ARE touched constantly while
+  writing — this is the one deliberate departure from "primary-tier
+  buttons stay at 44px," confirmed directly via AskUserQuestion ("the
+  whole button box," not just the glyph) before being made. **Revised
+  2026-08-05:** Aaron asked to enlarge again, 22px → **36px**, which is
+  where it sits now — still below the 44px floor, but no longer as far
+  below it. Don't restore either the 44px floor or re-shrink toward 22px
+  without asking again; both directions have already been explicitly
+  chosen and then explicitly revised once.
 
 ## 2. Icon (glyph) size is separate from box size — don't conflate them
 
@@ -107,7 +121,7 @@ there's a specific reason to differ (state that reason in a comment):**
 
 | Class | Box size | Icon `font-size` | Layout |
 |---|---|---|---|
-| `.text-tool-btn` (editor toolbar: Proofreader, B/I/U) | `--tap` (44px) | `1rem` | mobile |
+| `#editor-toolbar .text-tool-btn` (B/I/U, Proofreader, Copy, Paste, Text Size) | 36px (exception, see §1 — was `--tap`/44px, revised twice) | `1rem` | mobile |
 | `.status-actions-bank > button` (Save/Draft Log/Sammy) | `--tap` (44px) | `1.21875rem` (2026-08-02; was `0.9375rem` inherited from `.control-bar-item`) | mobile |
 | `.rail-tab` (guidance drawer triggers) | 2.95rem × 3.5rem (47.2×56px, exception above; was 56×56 square) | `1.3rem` (2026-08-02; was `1rem`) | mobile |
 | `.m-drawer-close` | `--tap-sm` (30px) | `1.15rem` | mobile |
