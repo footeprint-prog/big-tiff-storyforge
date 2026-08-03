@@ -2,6 +2,123 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-05 third round] – New chapter#.scene# circle + 3-line title header, scene summary repositioned
+
+Four adjustments at Aaron's direction, all mobile-only.
+
+### Changed
+- **Investigated the Notepad nav button's toggle-close behavior** (item 1) -
+  confirmed via both a direct `mobileNav('notepad')` call and a real
+  `.click()` on the button that it already toggles closed correctly on a
+  clean page load; no code change made. (An earlier test in a reused,
+  state-contaminated tab briefly looked broken - see the desktop-border
+  false alarm in the prior round's notes for the same root cause pattern.)
+- **New `#mobile-scene-header`**: a chapter#.scene# circle (56px, mirrors
+  `.status-dropdown-trigger`'s own mobile size/shape) plus a 3-line title
+  block ("Draft" / scene title / optional subtitle), inserted as the first
+  child of `#scene-content`, directly under the app header. It's a plain
+  direct child (not nested inside `#editor-column`), so it inherits
+  `#scene-content`'s own 8px left padding - which lands its circle's left
+  edge exactly on the fixed status arm's own circle (`#scene-status-bar
+  .status-dropdown-trigger`, also 8px-inset), so the new circle sits
+  directly behind/under the arm's by construction, no manual position
+  math needed. Populated in `selectSceneFromCanon()` from `scene.chapter`/
+  `scene.sceneNumber`/`scene.subtitle` (subtitle line hidden when absent).
+  Desktop is untouched - hidden via `display:none` by default, shown only
+  under `body.mobile-layout`, and desktop's own `#scene-label` ("DRAFT •
+  title") keeps rendering exactly as before.
+- **`#scene-label` hidden on mobile** (the original "DRAFT • title" label
+  deep inside `#editor-column`) - its content moved to the new header
+  above, so this avoided showing it twice. Desktop keeps it exactly as
+  before; the JS that populates its text is untouched.
+- **Scene summary now starts below the status arm**: because the new
+  header row is the first flow element and the arm is a fixed overlay
+  pinned at the same top-left spot, `#scene-summary-bar` (next in flow)
+  now naturally starts right at the arm's own bottom edge instead of
+  underneath/behind it as before. Its stale `margin-top: -4px` (previously
+  cancelling the header's own margin-bottom so the bar sat flush against
+  the header) was removed - it no longer sits next to the header, so that
+  cancellation would have pulled it up into the new header row instead.
+
+### Verification notes
+Measured at 375×812 with a seeded scene (`chapter: 3, sceneNumber: 2,
+title: "The Storm Breaks", subtitle: "A turning point"`), then re-checked
+on a fresh tab at 1280×800 (a reused tab was carrying stale forced-mobile
+state from earlier in the session, per the established gotcha):
+- New circle: 56×56, left edge at 8px, matching the status arm's own
+  circle exactly (also 8px); text read "3.2".
+- Title text: left edge at 80px, 6px clear of the arm's own right edge
+  (74px) - a visible margin, not flush against it.
+- `#scene-summary-bar` top: 117px, exactly flush with the status arm's own
+  bottom edge (117px) - starts right below the green area with no gap or
+  overlap.
+- Desktop (fresh tab): `isMobileMode()` false, `#mobile-scene-header`
+  computed `display: none`, `#scene-label` still `display: block` with its
+  original "DRAFT • The Storm Breaks" text - unchanged.
+
+## [2026-08-05 later round] – Editor toolbar copy/paste removed and fused, nav panel full-width
+
+Six adjustments at Aaron's direction, all mobile-only.
+
+### Changed
+- **Copy/Paste removed from the main editor toolbar** - both buttons and
+  the divider that separated them from Bold/Italic/Underline are deleted
+  from the DOM entirely (not just hidden), along with the now-dead
+  `pasteToEditor()` function and the `.editor-toolbar-sep` rule it used.
+  `copySelection()` is untouched since the Notepad's own toolbar still uses
+  it.
+- **Editor toolbar buttons and the zoom scaler enlarged 36px → 40px**,
+  throughout `#editor-toolbar .text-tool-btn` and `#editor-zoom-control`.
+- **Bold/Italic/Underline fused into a single rectangle**: the wrapper div
+  around them (`#editor-toolbar-format-group`, newly id'd) now carries one
+  shared border with the individual buttons' own borders removed and their
+  gap zeroed; a 1px gold rule between adjacent buttons stands in as the
+  separator. Desktop's copy of this markup is untouched (still three
+  individually-bordered, gapped buttons) since this is a mobile-scoped
+  override.
+- **Bottom nav panel now spans the full window width as one continuous
+  bar**, including the strip behind the Focus circle. The background/border
+  that used to live on each `.nav-arm` (reading as two separate pill-shaped
+  chunks with a gap in the middle) moved up to `#mobile-nav` itself; the
+  arms are now transparent flex containers. The bottom gold border is gone
+  entirely - only a top border remains - and since background paints under
+  padding by default, the dark brown fill now extends through the
+  safe-area-inset padding all the way to the true bottom edge of the
+  viewport.
+- **Notepad/Outline and Library/Stats evenly spaced within their own half**
+  of the bar: each arm is given an explicit width of exactly half the bar
+  minus half the Focus circle's own width, and `justify-content:
+  space-evenly` replaces the old edge-hugging cluster.
+- **Focus bullseye icon enlarged** 3.5rem → 4.5rem/72px (circle unchanged
+  at 84px) to read as filling the circle, and the **"FOCUS" label text
+  doubled** 0.5rem → 1rem per Aaron's "increase by 100%" - its padding
+  bumped proportionally so the pill grows with the now-larger text instead
+  of clipping it.
+
+### Verification notes
+Measured at 375×812 and 1280×800 with a seeded scene, on a clean tab (a
+reused tab retained stale forced-mobile state from earlier in the session
+and produced a bogus 3px-border reading that a fresh load did not
+reproduce - confirmed the anomaly was tab contamination, not a real CSS
+issue, before trusting any other measurement):
+- `#editor-copy-btn`/`#editor-paste-btn` confirmed absent from the DOM on
+  both mobile and desktop.
+- B/I/U buttons: 40×40 each, flush against each other (0px gap), 1px gold
+  border-left on the 2nd/3rd only, single 1px border around the whole
+  group; zoom control and Proofreader/Text buttons all 40×40/40 tall.
+- `#mobile-nav`: background `rgb(42,33,25)` spans the full 0–375px width,
+  `border-bottom-width: 0px`, bottom edge flush to the viewport's own
+  bottom (812px, no gap).
+- Nav arms: 18px gaps on both sides of each of the two buttons in each arm
+  (Notepad/Outline and Library/Stats), confirming even distribution.
+- Focus icon computed `font-size: 72px`; label computed `font-size: 16px`
+  (1rem), text still reads "FOCUS", horizontally centered in the circle.
+- Desktop A/B on a fresh tab at 1280×800: B/I/U buttons back to their
+  original individually-bordered look (1px solid gold, no fusing); Copy/
+  Paste elements absent (were already `display:none` pre-change, so no
+  visible desktop change); nav panel unaffected (desktop never renders
+  `#mobile-nav`).
+
 ## [2026-08-05] – Toolbar rebuilt, scene summary flush with header, Focus centered gold circle
 
 Eight adjustments at Aaron's direction, all mobile-only.

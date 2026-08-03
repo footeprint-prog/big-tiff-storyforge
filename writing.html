@@ -1131,10 +1131,18 @@
            review's 12px instead of the other direction, since 12px is the
            value already explicitly chosen and named (review's), rather
            than assuming review's should drop to match summary's implicit
-           zero. */
+           zero.
+           Item (2026-08-05, later round): the `margin-top: -4px` this rule
+           used to carry cancelled `header`'s own 4px margin-bottom so this
+           bar sat flush against the header above it. #mobile-scene-header
+           is now the first thing in flow instead (see its own rules above),
+           so that cancellation would just pull this bar 4px up into the
+           new header's own bottom padding - removed; this bar's spacing
+           from what's now above it is governed by #mobile-scene-header's
+           own padding-bottom (12px), not by this element reaching upward. */
         body.mobile-layout.scene-open #scene-summary-bar {
             margin-left: -0.5rem; margin-right: -0.5rem;
-            margin-top: -4px; margin-bottom: 0.75rem;
+            margin-bottom: 0.75rem;
             border-top: none; border-left: none; border-right: none;
             border-radius: 0;
         }
@@ -1179,6 +1187,53 @@
            At 440px that repetition costs ~3 wrapped lines above the editor. */
         body.mobile-layout #scene-summary-title,
         body.mobile-layout #scene-summary-title-sep { display: none !important; }
+        /* Item (2026-08-05, later round): the "DRAFT • title" label
+           (#scene-label, deep inside #editor-column) moved up to a new
+           dedicated block right under the header (#mobile-scene-header,
+           see the HTML comment above it and its own rules below) - hide
+           the original here so it doesn't duplicate. Desktop is untouched;
+           #scene-label still renders there exactly as before. */
+        body.mobile-layout #scene-label { display: none; }
+        /* ---- Mobile scene header: chapter#.scene# circle + 3-line title ----
+           Direct child of #scene-content (like #scene-summary-bar/
+           #scene-status-bar), so it inherits that same 8px left padding -
+           the circle's left edge lands at 8px, matching the fixed status
+           arm's own circle (#scene-status-bar .status-dropdown-trigger,
+           also inset 8px from its arm) exactly, so the two circles share
+           one vertical line and this one reads as sitting directly behind/
+           under the arm's, per Aaron's spec. */
+        body.mobile-layout.scene-open #mobile-scene-header {
+            display: flex; align-items: flex-start; gap: 16px;
+            padding: 8px 0 12px;
+        }
+        body.mobile-layout #mobile-scene-number-circle {
+            width: 3.5rem; height: 3.5rem; min-width: 3.5rem; min-height: 3.5rem;
+            border-radius: 50%;
+            border: 1px solid #D4AF37;
+            box-sizing: border-box;
+            background: #3D2B1F;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1rem; font-weight: 700; color: #D4AF37;
+            flex-shrink: 0;
+        }
+        body.mobile-layout #mobile-scene-title-block {
+            display: flex; flex-direction: column; justify-content: center;
+            min-width: 0; padding-top: 4px;
+        }
+        /* Line 1: static "Draft" label. Line 2: the scene's own title.
+           Line 3: an optional subtitle - hidden entirely (via the HTML's
+           own `class="hidden"`) when the scene has none, toggled by
+           selectSceneFromCanon(). */
+        body.mobile-layout #mobile-scene-title-draft {
+            font-size: 0.7rem; font-weight: 700; letter-spacing: 1.5px;
+            text-transform: uppercase; color: #D4AF37; line-height: 1.3;
+        }
+        body.mobile-layout #mobile-scene-title-text {
+            font-size: 1.05rem; font-weight: 600; color: #F4EDE4; line-height: 1.3;
+        }
+        body.mobile-layout #mobile-scene-subtitle-text {
+            font-size: 0.8rem; color: rgba(212, 175, 55, 0.75); line-height: 1.3;
+        }
         /* 1.5px tracking on a 14px uppercase label wraps hard at this width. */
         body.mobile-layout .tracking-\[1\.5px\] { letter-spacing: 0.5px; line-height: 1.3; }
         /* The scene summary and review note are long enough to push the
@@ -1591,15 +1646,31 @@
             overflow-x: auto; overflow-y: hidden;
         }
         body.mobile-layout #editor-toolbar > div { flex-wrap: nowrap; gap: 4px; min-width: 0; flex-shrink: 0; }
-        /* Explicit divider bar between Underline and Copy (the first of the
-           two separators Aaron asked for - see the HTML comment above
-           #editor-toolbar for why only one is rendered explicitly).
-           Matches #header-divider's own treatment (w-px h-6 bg-gold/40). */
-        body.mobile-layout .editor-toolbar-sep {
-            display: inline-block;
-            width: 1px; height: 1.5rem;
-            background: rgba(212, 175, 55, 0.4);
-            flex-shrink: 0;
+        /* Item (2026-08-05 later round, Aaron): "remove copy/paste from the
+           editor toolbar" and "fuse Bold/Italic/Underline into a single
+           rectangle with separators, no margins between them" - the old
+           divider-before-Copy (.editor-toolbar-sep) is gone along with
+           Copy/Paste themselves. #editor-toolbar-format-group is the wrapper
+           already present in the HTML around B/I/U (previously plain
+           `flex items-center gap-x-1`, now given an id so it can carry the
+           fused-rectangle treatment here without touching desktop, which
+           keeps each button's own individual border/gap exactly as before).
+           Selector is #editor-toolbar #editor-toolbar-format-group (two IDs)
+           rather than the group's bare ID - needed to out-specificity the
+           general `#editor-toolbar > div { gap: 4px }` rule above, which
+           otherwise wins the gap tie (id+type beats a lone id). */
+        body.mobile-layout #editor-toolbar #editor-toolbar-format-group {
+            gap: 0;
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            border-radius: 0.75rem;
+            overflow: hidden;
+        }
+        body.mobile-layout #editor-toolbar-format-group .text-tool-btn {
+            border: none;
+            border-radius: 0;
+        }
+        body.mobile-layout #editor-toolbar-format-group .text-tool-btn + .text-tool-btn {
+            border-left: 1px solid rgba(212, 175, 55, 0.4);
         }
         /* Item (2026-08-04, Aaron): "reduce size of text editor tool buttons
            ... by 50%" - confirmed with him directly this means the BOX
@@ -1622,7 +1693,9 @@
            Item (2026-08-05, Aaron): "increase all buttons and scaler to
            36px" - the very floor-departure this comment describes is now
            being partially walked back (still well under --tap/44px, but
-           bigger than the 22px round produced). 22px -> 36px throughout. */
+           bigger than the 22px round produced). 22px -> 36px throughout.
+           Item (2026-08-05 later round, Aaron): "increase to 40px" - 36px ->
+           40px, same throughout. */
         /* Explicit width/height (not min-), box-sizing:border-box, zero
            padding, and flex-centering: `min-height` alone measured taller
            than the target in practice - it's a floor, and the base
@@ -1633,21 +1706,12 @@
            aspirational. box-sizing:border-box keeps the 1px border inside
            the box rather than adding to it. */
         body.mobile-layout #editor-toolbar .text-tool-btn {
-            width: 36px; height: 36px; min-width: 36px; min-height: 36px;
+            width: 40px; height: 40px; min-width: 40px; min-height: 40px;
             box-sizing: border-box;
             padding: 0;
             display: flex; align-items: center; justify-content: center;
             line-height: 1;
         }
-        /* Copy/Paste + the divider before them (2026-08-05): mobile-only,
-           same reasoning as #editor-text-size-btn immediately below - this
-           whole reorder is a mobile-specific ask, and these are new shared-
-           markup elements that would otherwise also render on desktop's
-           existing, unrelated toolbar. */
-        #editor-copy-btn, #editor-paste-btn, #editor-toolbar-sep-1 { display: none; }
-        body.mobile-layout #editor-copy-btn,
-        body.mobile-layout #editor-paste-btn { display: flex; }
-        body.mobile-layout #editor-toolbar-sep-1 { display: inline-block; }
         /* Text Size button (2026-08-04): mobile-only, same as the sheet it
            opens (openTextSize()/#textsize-window never had a desktop entry
            point - mobileCloseEverything(), which it routes through, is a
@@ -1699,9 +1763,11 @@
            Item (2026-08-05, Aaron): "increase all buttons and scaler to
            36px" - 22px -> 36px, matching #editor-toolbar .text-tool-btn's
            own size exactly so this pill still reads as the same height as
-           its neighbors. */
+           its neighbors.
+           Item (2026-08-05 later round, Aaron): "increase to 40px" - 36px ->
+           40px, same reasoning. */
         body.mobile-layout #editor-zoom-control {
-            height: 36px; box-sizing: border-box;
+            height: 40px; box-sizing: border-box;
             padding-top: 0; padding-bottom: 0;
         }
         body.mobile-layout #editor-zoom-control .text-tool-btn { min-height: auto; }
@@ -2095,10 +2161,28 @@
            regardless of the two arms' own (unequal) widths - a flex
            middle-child's centering would only be approximate, DEPENDENT on
            its neighbors' widths, which isn't what "centered in the middle
-           of the bottom edge of the window" asks for. */
+           of the bottom edge of the window" asks for.
+           Item (2026-08-05 later round, Aaron): "the nav panel should run
+           the entire width of the window behind the centered Focus button"
+           and "remove the bottom gold border, make sure the dark brown
+           fills the bottom of the browser UI" - the background/border that
+           used to live on each .nav-arm (so the panel read as two separate
+           pill-shaped chunks with a gap behind Focus) has moved up here, to
+           #mobile-nav itself. Because #mobile-nav is already left:0/right:0,
+           putting the fill here makes it one continuous bar spanning the
+           full width - including the strip behind Focus, which now simply
+           sits ON TOP of that bar (z-index 481) rather than floating over a
+           gap. Only a top border remains (for separation from the content
+           above); the old bottom border is gone entirely, and since
+           background paints under padding by default, the safe-area-inset
+           padding below is filled with the same dark brown all the way to
+           the true bottom edge of the viewport instead of showing
+           whatever's behind it. */
         body.mobile-layout #mobile-nav {
             position: fixed; left: 0; right: 0; bottom: 0; z-index: 480;
             display: flex; justify-content: space-between; align-items: flex-end;
+            background: #2A2119;
+            border-top: 2px solid rgba(212, 175, 55, 0.6);
             padding-bottom: env(safe-area-inset-bottom, 0px);
         }
         body.mobile-layout #mobile-nav button {
@@ -2158,8 +2242,14 @@
         /* "Enlarge the Focus icon to fill the circle" - 2rem -> 3.5rem/56px,
            leaving ~14px clearance to the 84px circle's own edge on each
            side (comfortably inside the 2px border). Color flipped to
-           #3D2B1F brown per the color inversion above. */
-        body.mobile-layout .focus-circle i { font-size: 3.5rem; color: #3D2B1F; }
+           #3D2B1F brown per the color inversion above.
+           Item (2026-08-05 later round, Aaron): "increase the Focus
+           bullseye icon to fill the circle" - 3.5rem -> 4.5rem/72px. The
+           circle's own usable interior is ~80px (84px outer minus the 2px
+           border on each side), so 72px leaves ~4px clearance per side -
+           reads as filling the circle without the glyph touching/clipping
+           against the border. */
+        body.mobile-layout .focus-circle i { font-size: 4.5rem; color: #3D2B1F; }
         /* "Make sure the color of the box behind the word Focus matches the
            color of the circle" - background #3D2B1F -> #D4AF37, matching
            .focus-circle's own new fill exactly. Text color flipped from
@@ -2167,38 +2257,39 @@
            background (a gold-on-gold label would be invisible) - the same
            inversion logic applied to the circle+icon pair above, extended
            to this third piece for consistency rather than left as the one
-           unreadable combination. */
+           unreadable combination.
+           Item (2026-08-05 later round, Aaron): "increase FOCUS text by
+           100%" - literally doubled, 0.5rem -> 1rem. Padding bumped
+           proportionally (1px 5px -> 2px 8px) so the pill grows with its
+           now-doubled text instead of clipping it. */
         body.mobile-layout .focus-label {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: #D4AF37; color: #3D2B1F;
-            font-size: 0.5rem; font-weight: 700; letter-spacing: 0.4px;
-            padding: 1px 5px; white-space: nowrap; line-height: 1.4;
+            font-size: 1rem; font-weight: 700; letter-spacing: 0.4px;
+            padding: 2px 8px; white-space: nowrap; line-height: 1.4;
         }
 
-        /* The two arms: same "shared outer border/background, transparent
-           individual buttons" shape .rail-tab-strip uses (see
-           #mobile-guidance-rail), now MIRRORED - one hugs the screen's left
-           edge (Notepad, Outline), one hugs the right (Library, Stats).
-           Each drops the border on its OUTER touching side (left-arm: no
-           left border; right-arm: no right border) and keeps both bottom
-           corners square (flush with the true window edge, matching
-           "no gap to bottom edge" from last round) - only the single
-           corner that touches neither wall rounds. */
+        /* The two arms: previously each carried its own background/border
+           (a "shared outer border, transparent individual buttons" shape),
+           reading as two separate pill-shaped chunks with a gap behind
+           Focus. That fill/border has moved up to #mobile-nav itself (see
+           its own rule above) so the panel reads as one continuous bar -
+           the arms are now pure flex layout containers, transparent, with
+           no border/background/rounding of their own.
+           Item (2026-08-05 later round, Aaron): "evenly space the
+           Notepad/Outline buttons to the left of Focus, and Library/Stats
+           to the right of Focus" - each arm is given an explicit width of
+           exactly half the bar minus half the Focus circle's own width
+           (2.625rem = 5.25rem/2), so the two arms' widths plus the Focus
+           circle between them add up to exactly 100% - and justify-content:
+           space-evenly distributes its two buttons across that width
+           instead of clustering them at the outer edge. */
         body.mobile-layout .nav-arm {
-            display: flex; align-items: stretch;
+            display: flex; align-items: stretch; justify-content: space-evenly;
             height: 3.5rem;
-            background: #2A2119;
-            border: 2px solid rgba(212, 175, 55, 0.6);
+            width: calc(50% - 2.625rem);
         }
-        body.mobile-layout .nav-arm-left {
-            border-left: none;
-            border-radius: 0 1.1rem 0 0;
-        }
-        body.mobile-layout .nav-arm-right {
-            border-right: none;
-            border-radius: 1.1rem 0 0 0;
-        }
-        body.mobile-layout .nav-arm button { min-width: var(--tap); padding: 0 0.6rem; }
+        body.mobile-layout .nav-arm button { min-width: var(--tap); padding: 0; }
 
         /* Whichever view is open stays visibly raised until it is closed.
            Focus never receives .nav-active (updateNavActiveState() hardcodes
@@ -2482,6 +2573,23 @@
             <!-- Scene Content - Hidden until a scene is selected -->
             <div id="scene-content" class="hidden">
 
+                <!-- MOBILE-ONLY: chapter#.scene# circle + 3-line title ("Draft"
+                     / scene title / subtitle), directly under the app header,
+                     first thing in normal flow - the scene-status arm
+                     (#scene-status-bar, position:fixed on mobile) floats on
+                     top of this exact spot by default, so this circle sits
+                     directly behind/under the arm's own circle (same 8px
+                     left inset - see CSS). Hidden entirely on desktop, which
+                     keeps showing its own #scene-label exactly as before. -->
+                <div id="mobile-scene-header" class="hidden">
+                    <div id="mobile-scene-number-circle" aria-hidden="true"></div>
+                    <div id="mobile-scene-title-block">
+                        <div id="mobile-scene-title-draft">Draft</div>
+                        <div id="mobile-scene-title-text"></div>
+                        <div id="mobile-scene-subtitle-text" class="hidden"></div>
+                    </div>
+                </div>
+
                 <!-- SCENE SUMMARY: full-width cap, pinned to the top while the rest scrolls -->
                 <div id="scene-summary-bar" class="guidance-summary mb-0 bg-[#4A3A2E] border border-[#D4AF37]/50 rounded-t-2xl p-4 sticky top-0 z-30 shadow-lg">
                     <div class="flex gap-x-3">
@@ -2651,28 +2759,10 @@
                                  explicit divider bar is needed (see
                                  .editor-toolbar-sep). -->
                             <div id="editor-toolbar" class="flex items-center justify-between flex-shrink-0">
-                                <div class="flex items-center gap-x-1">
+                                <div id="editor-toolbar-format-group" class="flex items-center gap-x-1">
                                     <button onclick="formatEditorText('bold')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 font-bold">B</button>
                                     <button onclick="formatEditorText('italic')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 italic">I</button>
                                     <button onclick="formatEditorText('underline')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1">U</button>
-                                    <span id="editor-toolbar-sep-1" class="editor-toolbar-sep" aria-hidden="true"></span>
-                                    <!-- Copy/Paste (new, 2026-08-05, mobile-only - same
-                                         reasoning as #editor-text-size-btn below: this
-                                         reorder was a mobile-specific ask, so these two new
-                                         shared-markup buttons must not leak onto desktop's
-                                         existing, unrelated toolbar). copySelection() already
-                                         reads window.getSelection() generically (it was
-                                         written for the Notepad but isn't Notepad-specific),
-                                         so it's reused as-is. Paste needed its own function
-                                         (pasteToEditor()) - the existing pasteFromClipboard()
-                                         is hardcoded to #note-content and does Notepad-specific
-                                         bookkeeping (notepadNotes), not reusable here. -->
-                                    <button id="editor-copy-btn" onclick="copySelection()" aria-label="Copy" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 flex items-center justify-center">
-                                        <i class="fa-solid fa-copy"></i>
-                                    </button>
-                                    <button id="editor-paste-btn" onclick="pasteToEditor()" aria-label="Paste" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 flex items-center justify-center">
-                                        <i class="fa-solid fa-paste"></i>
-                                    </button>
                                 </div>
                                 <div class="flex items-center gap-x-3">
                                     <div id="word-count-wrap" class="text-xs text-[#D4AF37]/70">
@@ -4264,27 +4354,6 @@
                         renderNotesList();
                     }
                 }
-            } catch (err) {
-                alert("Unable to paste. Please use Ctrl+V / Cmd+V manually.");
-            }
-        }
-
-        /**
-         * Paste for the MAIN editor's toolbar (2026-08-05) - a separate
-         * function from pasteFromClipboard() above, which is hardcoded to
-         * #note-content and does Notepad-specific bookkeeping (notepadNotes,
-         * renderNotesList) that doesn't apply here. execCommand('insertText')
-         * fires a real `input` event, so the editor's existing autosave/
-         * word-count listeners pick up the change the same way typing would -
-         * no manual updateWordCount() call needed here.
-         */
-        async function pasteToEditor() {
-            const editor = document.getElementById('editor');
-            if (!editor) return;
-            editor.focus();
-            try {
-                const text = await navigator.clipboard.readText();
-                document.execCommand('insertText', false, text);
             } catch (err) {
                 alert("Unable to paste. Please use Ctrl+V / Cmd+V manually.");
             }
@@ -7031,6 +7100,27 @@
             }
             if (summaryTitleSep) {
                 summaryTitleSep.classList.remove('hidden');
+            }
+
+            // Mobile scene header (#mobile-scene-header) - chapter#.scene#
+            // circle + 3-line title, hidden entirely on desktop via CSS.
+            const mobileNumberCircle = document.getElementById('mobile-scene-number-circle');
+            if (mobileNumberCircle) {
+                mobileNumberCircle.textContent =
+                    (scene.chapter != null && scene.sceneNumber != null)
+                        ? `${scene.chapter}.${scene.sceneNumber}` : '';
+            }
+            const mobileTitleText = document.getElementById('mobile-scene-title-text');
+            if (mobileTitleText) mobileTitleText.textContent = scene.title || scene.id || '';
+            const mobileSubtitleText = document.getElementById('mobile-scene-subtitle-text');
+            if (mobileSubtitleText) {
+                if (scene.subtitle) {
+                    mobileSubtitleText.textContent = scene.subtitle;
+                    mobileSubtitleText.classList.remove('hidden');
+                } else {
+                    mobileSubtitleText.textContent = '';
+                    mobileSubtitleText.classList.add('hidden');
+                }
             }
 
             populateGuidance(scene);
