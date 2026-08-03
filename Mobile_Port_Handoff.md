@@ -63,12 +63,13 @@
 
 1. `AGENTS.md` — hard rules for this repo generally (don't re-derive).
 2. This document, in full.
-3. `CHANGELOG.md` — entries dated 2026-07-24 through 2026-07-26, newest
-   first. Each has a **Verification notes** section stating exactly what
-   was tested and how, and most have a **flagged, not settled** or
-   **intentional exception** callout — read those before assuming
-   something is a bug. The 2026-07-26 entry titled "Achievements & Usage
-   Tracking (data layer)" is a separate subsystem from the mobile
+3. `CHANGELOG.md` — newest first; entries run from 2026-07-24 through
+   2026-08-05 now (a long run of mobile-only rounds, see the Status header
+   above for the summary). Each has a **Verification notes** section
+   stating exactly what was tested and how, and most have a **flagged, not
+   settled** or **intentional exception** callout — read those before
+   assuming something is a bug. The 2026-07-26 entry titled "Achievements &
+   Usage Tracking (data layer)" is a separate subsystem from the mobile
    interaction work this doc covers — see the pointer section near the
    bottom of this doc.
 4. `CHECKLIST.md` — "Mobile version of the tool" is marked done; a
@@ -145,8 +146,8 @@ Two real bugs were caught this way that a naive test would have missed:
 
 | Where | Repo | What's there |
 |---|---|---|
-| Dev repo Pages preview | `big-tiff-storyforge`, branch `claude/mobile-port` (Pages config) | **Current** — has everything through the 2026-08-05 toolbar/nav rebuild round (commit `a4059c4`). Rebuilds ~1 min after any push to that branch. |
-| Dev repo `main` | `big-tiff-storyforge` | **Merged and current as of 2026-08-05** (commit `0740a9d`) — re-synced with `claude/mobile-port` after a long run of mobile-only rounds that had never been merged back (last sync was 2026-07-27's `eab5262`). `main` and `claude/mobile-port` are identical at time of writing; expect `main` to trail again once new commits land on the branch. |
+| Dev repo Pages preview | `big-tiff-storyforge`, branch `claude/mobile-port` (Pages config) | **Current** — `writing.html` content has everything through the 2026-08-05 toolbar/nav rebuild round (commit `a4059c4`); HEAD is now `17b7ae2`, one docs-only commit ahead (`BUTTON_STYLE_GUIDE.md`/this file's own status header) that doesn't touch `writing.html`. Rebuilds ~1 min after any push to that branch. |
+| Dev repo `main` | `big-tiff-storyforge` | **Merged and current as of 2026-08-05** (writing.html content via merge commit `0740a9d`; HEAD now `9fb763f` after the same two docs-only commits above). `main` and `claude/mobile-port` are identical at time of writing; expect `main` to trail again once new commits land on the branch. |
 | **Real live site** | `big_tiff_launchpage`, branch `main`, custom domain `bigtiffsworld.com` via Porkbun DNS (no Cloudflare in the path) | **Promoted 2026-08-05** (commit `d2f01bb`) — has everything through the toolbar/nav rebuild round. Assets/manifest unchanged this round (checksums verified identical against the dev repo), only `app/index.html` needed copying; `start_url` was already `./index.html` from a prior round. Verified byte-identical against `https://bigtiffsworld.com/app/` directly (line-ending-normalized — this Windows checkout's `core.autocrlf` makes local/live diffs look nonzero even when content is identical; don't mistake that for drift). |
 
 ## Complete workflow: edit → verify → push → (optional) promote
