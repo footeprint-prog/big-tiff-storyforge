@@ -2,6 +2,65 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-05 fourth round] – Notepad/Draft Pad redesigned as two full-height views, Notepad toggle fix (attempt 3), action-arm auto-collapse
+
+Mobile-only, at Aaron's direction.
+
+### Changed
+- **Notepad and Draft Pad redesigned on mobile**: replaced the permanently-
+  split sidebar+editor layout (list capped to 34% height, further crushed
+  by two rows of forced-44px buttons - measured at ~47px for 5 notes,
+  "almost completely hidden") with a real two-view mode switch. Tapping the
+  bottom nav or a list entry shows exactly one of {full-height list,
+  full-height editor/preview} at a time (`#notepad-window`/
+  `#draftpad-window.mobile-view-editor`, `showNotepadList()`/
+  `showNotepadEditor()`, `showDraftpadList()`/`showDraftpadEditor()`).
+  Opening either panel always starts on the list. A proposal mockup was
+  reviewed and approved before implementation.
+- **Button tiers reclassified** in both panels: New/Delete/Add-to-Library/
+  Save/Rename/Load-into-editor dropped from the PRIMARY 44px tier to
+  CHROME `--tap-sm`/30px (occasional actions, not "touched constantly
+  while writing"); Notepad's B/I/U fused into one 40px bordered rectangle
+  with separators, matching the main editor's own toolbar treatment from
+  earlier this round; Copy/Paste removed from the mobile toolbar to match.
+- **Display zoom added** to both panels' text surfaces (`#note-content`,
+  `#draftpad-content`) - same mechanism as the main editor's zoom, factored
+  into a shared `adjustZoom()` helper (`adjustEditorZoom`/
+  `adjustNotepadZoom`/`adjustDraftpadZoom` are now thin wrappers over it,
+  one independent percentage per surface).
+- **Sammy/Draft Log now collapse the scene-status action bank** when
+  opened, instead of leaving it open behind the new window
+  (`resetStatusActionsBank()` added to both open functions).
+- **Notepad's nav-button toggle-close bug - third attempt.** Two prior
+  fixes (blur-on-touchstart for the iOS focus/keyboard-consumes-tap theory;
+  reordering `hideNotepad()` so a save/cleanup error can't block the
+  close) shipped and were confirmed live but did not resolve it. This
+  round isolates Notepad's close path entirely from the other six sheets'
+  hide functions - the case now calls `hideNotepad()` directly instead of
+  `mobileCloseEverything(null)`, which also runs
+  `hideDraftPad`/`hideChangelog`/`hideProofreader`/`hideSammyExport`/
+  `hideStatsWindow`/`hideTextSize`; if any of those threw, the exception
+  propagated out of `mobileNav()` uncaught, skipping the rest of the case.
+  Not yet confirmed fixed on a real device as of this entry.
+- Notes list now derives a title from the first 3 words of the note's text
+  (+ "…") when no explicit title was typed, instead of "Untitled Note".
+  `saveCurrentNote()` hardened so the actual persistence runs in its own
+  try/catch before the (cosmetic) list re-render gets a separate one.
+
+### Verification notes
+Measured at 375×812 with 5 seeded notes:
+- List view: `#notes-list` grew from ~47px to 441px (9.4×).
+- Editor view: content editor grew from 151px to 295px; back button,
+  Save, and the relocated Add-to-Library/Delete all measured 30px tall;
+  B/I/U fused rectangle measured 40×42 with zero gap between buttons;
+  zoom pill measured 40px tall; title correctly loaded on tap.
+- Draft Pad: same list-height gain (441px), preview grew to 297px, zoom
+  confirmed live (100%→120%, `font-size` 17px→20.4px).
+- Desktop (fresh tab, no forced-mobile state): both panels' sidebar AND
+  main render side by side exactly as before, all new mobile-only elements
+  (back button, zoom control, relocated actions row) computed `display:
+  none`, Copy/Paste still visible, B/I/U at original desktop size (31×24).
+
 ## [2026-08-05 third round] – New chapter#.scene# circle + 3-line title header, scene summary repositioned
 
 Four adjustments at Aaron's direction, all mobile-only.

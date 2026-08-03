@@ -900,9 +900,55 @@
         body.mobile-layout #account-btn { min-height: 44px; }
         body.mobile-layout #nickname-edit-btn { height: 44px; width: 44px; }
         body.mobile-layout #account-menu button { min-height: 44px; }
-        body.mobile-layout .notepad-sidebar button,
-        body.mobile-layout .notepad-main button { min-height: 44px; }
+        /* Item (2026-08-05, later round, Aaron): "nearly all buttons are
+           too big" - this blanket rule forced EVERY button in the Notepad/
+           Draft Pad (New, Delete, Add-to-Library, Save, Rename, Load-into-
+           editor - all occasional, "set it and move on" actions) to the
+           SAME 44px PRIMARY tier as the actual writing surface, alongside
+           the redesign above. Reclassified per BUTTON_STYLE_GUIDE.md's own
+           two-tier system: B/I/U (touched while actually formatting notes)
+           match the main editor's own 40px; everything else in these two
+           panels drops to --tap-sm (30px), CHROME tier - see the targeted
+           rules below, replacing this one. */
         body.mobile-layout #notes-list > div, body.mobile-layout #draftpad-list > div { min-height: 48px; }
+        body.mobile-layout #notepad-window button,
+        body.mobile-layout #draftpad-window button { min-height: var(--tap-sm); min-width: var(--tap-sm); }
+        /* Fused B/I/U rectangle, same technique as #editor-toolbar-format-
+           group in the main editor (2026-08-05, earlier this round) - one
+           shared border, individual button borders removed, 1px gold
+           separators between them. 40px to match the main editor exactly. */
+        body.mobile-layout #notepad-toolbar-format-group {
+            gap: 0; border: 1px solid rgba(212, 175, 55, 0.4); border-radius: 0.75rem; overflow: hidden;
+        }
+        body.mobile-layout #notepad-toolbar-format-group .text-tool-btn {
+            width: 40px; height: 40px; min-width: 40px; min-height: 40px;
+            box-sizing: border-box; padding: 0; border: none; border-radius: 0;
+            display: flex; align-items: center; justify-content: center; line-height: 1;
+        }
+        body.mobile-layout #notepad-toolbar-format-group .text-tool-btn + .text-tool-btn {
+            border-left: 1px solid rgba(212, 175, 55, 0.4);
+        }
+        /* Copy/Paste + their divider: hidden on mobile entirely, matching
+           the main editor toolbar's own removal this same round. */
+        body.mobile-layout #notepad-toolbar-sep,
+        body.mobile-layout #notepad-copy-btn,
+        body.mobile-layout #notepad-paste-btn { display: none; }
+        /* Zoom pill: 40px to match the main editor's own #editor-zoom-
+           control exactly (same visual weight as the B/I/U group beside
+           it). */
+        body.mobile-layout #notepad-zoom-control,
+        body.mobile-layout #draftpad-zoom-control {
+            display: flex; height: 40px; box-sizing: border-box; padding-top: 0; padding-bottom: 0;
+        }
+        body.mobile-layout #notepad-zoom-control .text-tool-btn,
+        body.mobile-layout #draftpad-zoom-control .text-tool-btn { min-height: auto; }
+        /* Relocated action rows: hide the desktop originals, show the
+           mobile duplicates living in .notepad-main instead (see the HTML
+           comments at each pair). */
+        body.mobile-layout #notepad-sidebar-actions,
+        body.mobile-layout #draftpad-sidebar-actions { display: none; }
+        body.mobile-layout #m-notepad-editor-actions,
+        body.mobile-layout #m-draftpad-editor-actions { display: flex; }
         body.mobile-layout .library-entry { padding-top: 10px; padding-bottom: 10px; }
         /* Item (2026-08-03): new Home button in the Outline panel, mobile
            only - replaces the bottom nav's own Home button (removed from
@@ -2118,7 +2164,37 @@
             overscroll-behavior: contain;
         }
         body.mobile-layout .notepad-body { flex-direction: column; }
-        body.mobile-layout .notepad-sidebar { width: 100%; max-height: 34%; border-right: none; border-bottom: 1px solid #8B6F47; }
+        /* Item (2026-08-05, later round, Aaron): Notepad/Draft Pad
+           redesign - "practically unusable... list of notes almost
+           completely hidden with no ability to view a list in any way."
+           Measured cause: the sidebar was capped to 34% of the sheet's
+           height and PERMANENTLY split against .notepad-main, so with two
+           rows of forced-44px buttons (top: label+New, bottom: Delete+Add-
+           to-Library) eating ~96px of that already-small budget, the
+           actual #notes-list got squeezed to ~47px on a 536px sheet - five
+           notes crammed into a sliver. Fix is a real mode switch, not a
+           resize: only ONE of {sidebar, main} is shown at a time, each at
+           FULL sheet height - #notepad-window/#draftpad-window toggle a
+           `mobile-view-editor` class (showNotepadList()/
+           showNotepadEditor(), showDraftpadList()/showDraftpadEditor()).
+           Desktop never applies any of this - it keeps showing both
+           side by side, completely unaffected by the class's presence. */
+        body.mobile-layout #notepad-window .notepad-sidebar,
+        body.mobile-layout #draftpad-window .notepad-sidebar {
+            display: flex; flex: 1 1 auto; width: 100%; max-height: none;
+            border-right: none; border-bottom: none;
+        }
+        body.mobile-layout #notepad-window .notepad-main,
+        body.mobile-layout #draftpad-window .notepad-main { display: none; }
+        body.mobile-layout #notepad-window.mobile-view-editor .notepad-sidebar,
+        body.mobile-layout #draftpad-window.mobile-view-editor .notepad-sidebar { display: none; }
+        body.mobile-layout #notepad-window.mobile-view-editor .notepad-main,
+        body.mobile-layout #draftpad-window.mobile-view-editor .notepad-main { display: flex; flex: 1 1 auto; }
+        body.mobile-layout #m-notepad-back,
+        body.mobile-layout #m-draftpad-back { display: flex; flex-shrink: 0; background: none; border: none; padding: 0; font-size: 0.85rem; }
+        /* List rows already meet --tap-sm at 48px (#notes-list > div rule
+           elsewhere) - no change needed now that they actually have room
+           to breathe instead of being crushed. */
         body.mobile-layout .notepad-header { padding: 4px 8px; }
         body.mobile-layout .notepad-header h3 { font-size: 0.95rem; }
 
@@ -3029,8 +3105,13 @@
         </div>
 
         <div class="notepad-body">
-            
-            <!-- Sidebar -->
+
+            <!-- Sidebar - mobile redesign (2026-08-05, later round): this
+                 is now the FULL-HEIGHT notes list on mobile (see
+                 #notepad-window.mobile-view-editor in the CSS), not a
+                 permanently-cramped 34%-max-height strip. Desktop's own
+                 layout (both this and .notepad-main visible side by side)
+                 is untouched. -->
             <div class="notepad-sidebar p-2 text-sm flex flex-col">
                 <div class="flex justify-between items-center mb-2 px-1">
                     <span class="m-hide text-xs font-medium text-[#D4AF37]/80">Your Notes</span>
@@ -3038,10 +3119,14 @@
                         <i class="fa-solid fa-plus"></i><span class="btn-text"> New</span>
                     </button>
                 </div>
-                
+
                 <div id="notes-list" class="space-y-0.5 flex-1 overflow-y-auto text-xs pr-1"></div>
 
-                <div class="flex justify-between items-center pt-2 mt-auto">
+                <!-- Mobile: hidden - Delete/Add to Library moved into the
+                     editor view's own bottom row (#m-notepad-editor-actions
+                     below), contextual to the note actually open there.
+                     Desktop keeps this exactly as before. -->
+                <div id="notepad-sidebar-actions" class="flex justify-between items-center pt-2 mt-auto">
                     <button onclick="requestDeleteNote()" aria-label="Delete note" class="primary-only text-red-400 hover:text-red-300 px-2 py-1">
                         <i class="fa-solid fa-trash fa-lg"></i>
                     </button>
@@ -3055,37 +3140,70 @@
                 </div>
             </div>
 
-            <!-- Main Editor Area -->
+            <!-- Main Editor Area - mobile redesign: the full-height note
+                 editor, shown instead of the list once a note is tapped
+                 (#notepad-window.mobile-view-editor). -->
             <div class="notepad-main flex flex-col">
-                
+
+                <!-- Mobile only: back to the full notes list. -->
+                <button id="m-notepad-back" onclick="showNotepadList()" class="hidden items-center gap-x-1 mb-2 text-[#D4AF37]">
+                    <i class="fa-solid fa-chevron-left"></i><span>All Notes</span>
+                </button>
+
                 <!-- Text Tools -->
-                <div class="flex items-center gap-x-1 mb-2 px-1 flex-wrap">
-                    <button onclick="formatText('bold')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-2.5 py-0.5 font-bold">B</button>
-                    <button onclick="formatText('italic')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-2.5 py-0.5 italic">I</button>
-                    <button onclick="formatText('underline')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-2 py-0.5">U</button>
-                    
-                    <div class="w-px h-4 bg-[#D4AF37]/30 mx-1"></div>
-                    
-                    <button onclick="copySelection()" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-2 py-0.5" title="Copy">
+                <div class="flex items-center justify-between gap-x-1 mb-2 px-1 flex-wrap">
+                    <div id="notepad-toolbar-format-group" class="flex items-center gap-x-1">
+                        <button onclick="formatText('bold')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-2.5 py-0.5 font-bold">B</button>
+                        <button onclick="formatText('italic')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-2.5 py-0.5 italic">I</button>
+                        <button onclick="formatText('underline')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-2 py-0.5">U</button>
+                    </div>
+
+                    <!-- Mobile-only divider + Copy/Paste hidden entirely
+                         (2026-08-05, later round) - matches the main
+                         editor's own toolbar, which dropped Copy/Paste the
+                         same round. Desktop keeps them exactly as before. -->
+                    <div id="notepad-toolbar-sep" class="w-px h-4 bg-[#D4AF37]/30 mx-1"></div>
+
+                    <button id="notepad-copy-btn" onclick="copySelection()" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-2 py-0.5" title="Copy">
                         <i class="fa-solid fa-copy"></i>
                     </button>
-                    <button onclick="pasteFromClipboard()" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-2 py-0.5" title="Paste">
+                    <button id="notepad-paste-btn" onclick="pasteFromClipboard()" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-2 py-0.5" title="Paste">
                         <i class="fa-solid fa-paste"></i>
                     </button>
+
+                    <!-- Mobile-only display zoom for #note-content, same
+                         mechanism/markup as the main editor's own
+                         #editor-zoom-control (adjustNotepadZoom()). -->
+                    <div id="notepad-zoom-control" class="hidden items-center gap-x-1 border border-[#D4AF37]/40 rounded-xl px-1.5 py-0.5" title="Display size only — does not affect saved note">
+                        <button onclick="adjustNotepadZoom(-1)" class="text-tool-btn px-1.5 leading-none">−</button>
+                        <span id="notepad-zoom-label" class="text-[10px] text-[#D4AF37]/70 w-8 text-center select-none">100%</span>
+                        <button onclick="adjustNotepadZoom(1)" class="text-tool-btn px-1.5 leading-none">+</button>
+                    </div>
                 </div>
 
-                <input id="note-title" type="text" placeholder="Note title..." 
+                <input id="note-title" type="text" placeholder="Note title..."
                        class="bg-[#4A3A2E] border border-[#D4AF37]/40 rounded-xl px-3 py-1.5 text-sm font-medium mb-2 focus:outline-none focus:border-[#D4AF37]">
-                
+
                 <!-- Rich Text Editor -->
-                <div id="note-content" contenteditable="true" 
+                <div id="note-content" contenteditable="true"
                      class="flex-1 bg-[#4A3A2E] border border-[#D4AF37]/40 rounded-xl p-3 text-sm focus:outline-none focus:border-[#D4AF37] overflow-y-auto"></div>
-                
-                <div class="flex justify-start mt-2">
+
+                <div class="flex justify-between items-center mt-2">
                     <button onclick="saveCurrentNote()" aria-label="Save note"
                             class="primary-only px-5 py-1.5 text-xs bg-[#D4AF37] text-[#3D2B1F] font-bold rounded-2xl">
                         <i class="fa-solid fa-floppy-disk"></i><span class="btn-text"> Save</span>
                     </button>
+                    <!-- Mobile only: Delete/Add to Library relocated here,
+                         contextual to the note open in this view - see the
+                         matching hide of #notepad-sidebar-actions above. -->
+                    <div id="m-notepad-editor-actions" class="hidden items-center gap-x-1">
+                        <button onclick="addCurrentNoteToLibrary()" aria-label="Add to Library" class="text-[#D4AF37] hover:text-[#E8C86B] px-2 py-1">
+                            <i class="fa-solid fa-book-open"></i>
+                        </button>
+                        <button onclick="requestDeleteNote()" aria-label="Delete note" class="text-red-400 hover:text-red-300 px-2 py-1">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -3128,7 +3246,10 @@
 
         <div class="notepad-body">
 
-            <!-- Sidebar: Current Draft (live) + list of saved snapshots -->
+            <!-- Sidebar: Current Draft (live) + list of saved snapshots.
+                 Mobile redesign (2026-08-05, later round): full-height list
+                 on mobile, same pattern as the Notepad's own redesign - see
+                 #draftpad-window.mobile-view-editor in the CSS. -->
             <div class="notepad-sidebar p-2 text-sm flex flex-col">
                 <div class="flex justify-between items-center mb-2 px-1">
                     <span class="m-hide text-xs font-medium text-[#D4AF37]/80">Drafts</span>
@@ -3139,7 +3260,10 @@
 
                 <div id="draftpad-list" class="space-y-0.5 flex-1 overflow-y-auto text-xs pr-1"></div>
 
-                <div class="flex justify-between items-center pt-2 mt-auto">
+                <!-- Mobile: hidden - Delete/Load-into-editor moved into the
+                     preview view's own bottom row below, contextual to
+                     whichever entry is actually open there. -->
+                <div id="draftpad-sidebar-actions" class="flex justify-between items-center pt-2 mt-auto">
                     <button onclick="requestDeleteDraftSnapshot()" aria-label="Delete snapshot" class="text-red-400 hover:text-red-300 px-2 py-1">
                         <i class="fa-solid fa-trash fa-lg"></i>
                     </button>
@@ -3153,22 +3277,50 @@
                 </div>
             </div>
 
-            <!-- Main Area: read-only preview of the selected draft -->
+            <!-- Main Area: read-only preview of the selected draft. Mobile
+                 redesign: full-height preview, shown instead of the list
+                 once an entry is tapped. -->
             <div class="notepad-main flex flex-col">
 
-                <div id="draftpad-meta" class="text-xs text-[#D4AF37]/70 mb-2 px-1">Current Draft (live)</div>
+                <!-- Mobile only: back to the full drafts list. -->
+                <button id="m-draftpad-back" onclick="showDraftpadList()" class="hidden items-center gap-x-1 mb-2 text-[#D4AF37]">
+                    <i class="fa-solid fa-chevron-left"></i><span>All Drafts</span>
+                </button>
+
+                <div style="display:flex;align-items:center;justify-content:space-between;" class="mb-2 px-1">
+                    <div id="draftpad-meta" class="text-xs text-[#D4AF37]/70">Current Draft (live)</div>
+                    <!-- Mobile-only display zoom for #draftpad-content -
+                         read-only preview, so no formatting toolbar is
+                         needed here, only the zoom (adjustDraftpadZoom()). -->
+                    <div id="draftpad-zoom-control" class="hidden items-center gap-x-1 border border-[#D4AF37]/40 rounded-xl px-1.5 py-0.5" title="Display size only">
+                        <button onclick="adjustDraftpadZoom(-1)" class="text-tool-btn px-1.5 leading-none">−</button>
+                        <span id="draftpad-zoom-label" class="text-[10px] text-[#D4AF37]/70 w-8 text-center select-none">100%</span>
+                        <button onclick="adjustDraftpadZoom(1)" class="text-tool-btn px-1.5 leading-none">+</button>
+                    </div>
+                </div>
 
                 <input id="draftpad-title" type="text" placeholder="Snapshot name..."
                        class="bg-[#4A3A2E] border border-[#D4AF37]/40 rounded-xl px-3 py-1.5 text-sm font-medium mb-2 focus:outline-none focus:border-[#D4AF37]">
 
-                <div id="draftpad-content" 
+                <div id="draftpad-content"
                      class="flex-1 bg-[#4A3A2E] border border-[#D4AF37]/40 rounded-xl p-3 text-sm overflow-y-auto opacity-90"></div>
 
-                <div class="flex justify-start mt-2">
+                <div class="flex justify-between items-center mt-2">
                     <button onclick="saveDraftSnapshotName()" aria-label="Rename snapshot"
                             class="px-5 py-1.5 text-xs bg-[#D4AF37] text-[#3D2B1F] font-bold rounded-2xl">
                         <i class="fa-solid fa-pen"></i><span class="btn-text"> Rename</span>
                     </button>
+                    <!-- Mobile only: Delete/Load-into-editor relocated here -
+                         see the matching hide of #draftpad-sidebar-actions
+                         above. -->
+                    <div id="m-draftpad-editor-actions" class="hidden items-center gap-x-1">
+                        <button onclick="restoreDraftSnapshotToEditor()" aria-label="Load into editor" class="text-[#D4AF37] hover:text-[#E8C86B] px-2 py-1">
+                            <i class="fa-solid fa-arrow-rotate-left"></i>
+                        </button>
+                        <button onclick="requestDeleteDraftSnapshot()" aria-label="Delete snapshot" class="text-red-400 hover:text-red-300 px-2 py-1">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -4228,15 +4380,26 @@
                     </div>
                 `;
 
+                // Item (2026-08-05, later round): mobile's redesigned list
+                // is the ONLY thing visible at a time (see
+                // showNotepadEditor()/showNotepadList()), so "already
+                // selected" has no meaning there - the inline-rename
+                // affordance (tapping the title of an already-open note)
+                // only makes sense on desktop, where the editor is visible
+                // alongside the list so you can see what you're renaming.
+                // Mobile always just opens the note into the editor view.
                 div.onclick = (e) => {
-                    if (!e.target.classList.contains('note-title-display')) loadNote(note.id);
+                    if (e.target.classList.contains('note-title-display')) return;
+                    loadNote(note.id);
+                    if (isMobileMode()) showNotepadEditor();
                 };
 
                 const titleEl = div.querySelector('.note-title-display');
                 titleEl.onclick = (e) => {
                     e.stopImmediatePropagation();
-                    if (isSelected) makeTitleEditable(div, note);
-                    else loadNote(note.id);
+                    if (isSelected && !isMobileMode()) { makeTitleEditable(div, note); return; }
+                    loadNote(note.id);
+                    if (isMobileMode()) showNotepadEditor();
                 };
 
                 container.appendChild(div);
@@ -4281,6 +4444,7 @@
             currentNoteId = newNote.id;
             renderNotesList();
             loadNote(newNote.id);
+            if (isMobileMode()) showNotepadEditor();
             setTimeout(() => {
                 const t = document.getElementById('note-title');
                 if (t) { t.focus(); t.select(); }
@@ -4573,6 +4737,12 @@
             notepad.classList.remove('hidden');
             notepad.style.display = 'flex';
             notepad.classList.add('active');
+            // Item (2026-08-05, later round): mobile redesign - always open
+            // to the full-height notes list first (see showNotepadList()/
+            // showNotepadEditor()), never straight into whatever note was
+            // last open. No-op off mobile - the class only does anything
+            // under body.mobile-layout.
+            notepad.classList.remove('mobile-view-editor');
 
             resetAllFloatingGuidanceCards();
 
@@ -4581,13 +4751,32 @@
             if (notepadNotes.length > 0 && !currentNoteId) {
                 currentNoteId = notepadNotes[0].id;
             }
-            
+
             renderNotesList();
             renderEricaEntriesInLibrary();
-            
+
             if (currentNoteId) {
                 loadNote(currentNoteId);
             }
+        }
+
+        /**
+         * Item (2026-08-05, later round, Aaron): Notepad redesign - mobile
+         * only shows one of {notes list, note editor} at a time, each at
+         * full sheet height, instead of a permanently-split view where the
+         * list had almost no room. #notepad-window.mobile-view-editor
+         * toggles which of .notepad-sidebar/.notepad-main is visible (see
+         * the CSS). Desktop never applies this class's CSS at all - it
+         * keeps its existing always-both-visible two-column layout
+         * regardless of whether this class happens to be present.
+         */
+        function showNotepadEditor() {
+            const notepad = document.getElementById('notepad-window');
+            if (notepad) notepad.classList.add('mobile-view-editor');
+        }
+        function showNotepadList() {
+            const notepad = document.getElementById('notepad-window');
+            if (notepad) notepad.classList.remove('mobile-view-editor');
         }
 
         /**
@@ -4661,7 +4850,14 @@
                     <div class="text-[10px] text-[#D4AF37]/50">Live · autosaving</div>
                 </div>
             `;
-            currentDiv.onclick = () => selectDraftPadEntry(null);
+            // Item (2026-08-05, later round): mobile redesign - a tap in
+            // the list also navigates to the full-height preview view (see
+            // showDraftpadEditor()). Deliberately NOT inside
+            // selectDraftPadEntry() itself, which is also called by
+            // background/internal refreshes (refreshDraftPadIfOpen(),
+            // createNewDraftSnapshot(), etc.) that must not force a view
+            // switch on their own.
+            currentDiv.onclick = () => { selectDraftPadEntry(null); if (isMobileMode()) showDraftpadEditor(); };
             container.appendChild(currentDiv);
 
             const snapshots = loadDraftSnapshots(currentScene.id);
@@ -4680,7 +4876,7 @@
                         <div class="text-[10px] text-[#D4AF37]/50">${time}</div>
                     </div>
                 `;
-                div.onclick = () => selectDraftPadEntry(snap.id);
+                div.onclick = () => { selectDraftPadEntry(snap.id); if (isMobileMode()) showDraftpadEditor(); };
                 container.appendChild(div);
             });
         }
@@ -4735,6 +4931,7 @@
             saveDraftSnapshots(currentScene.id, snapshots);
 
             selectDraftPadEntry(newSnapshot.id);
+            if (isMobileMode()) showDraftpadEditor();
             setTimeout(() => {
                 const t = document.getElementById('draftpad-title');
                 if (t) { t.focus(); t.select(); }
@@ -4837,6 +5034,9 @@
             draftpad.classList.remove('hidden');
             draftpad.style.display = 'flex';
             draftpad.classList.add('active');
+            // Same redesign as Notepad's - always open to the full-height
+            // list first. See showDraftpadList()/showDraftpadEditor().
+            draftpad.classList.remove('mobile-view-editor');
 
             resetAllFloatingGuidanceCards();
 
@@ -4848,6 +5048,17 @@
             draftPadSelectedId = null;
             renderDraftPadList();
             selectDraftPadEntry(null);
+        }
+
+        // Same mobile view-toggle pattern as showNotepadEditor()/
+        // showNotepadList() - see those functions' own comment.
+        function showDraftpadEditor() {
+            const draftpad = document.getElementById('draftpad-window');
+            if (draftpad) draftpad.classList.add('mobile-view-editor');
+        }
+        function showDraftpadList() {
+            const draftpad = document.getElementById('draftpad-window');
+            if (draftpad) draftpad.classList.remove('mobile-view-editor');
         }
 
         function hideDraftPad() {
@@ -5245,28 +5456,36 @@
         }
 
         /**
-         * Display-only zoom for the main editor. Adjusts a CSS font-size
-         * multiplier applied via inline style on #editor — never touches
-         * editor.innerHTML, so saveDraft() / exports are completely
-         * unaffected by this. Purely a reading/writing comfort preference.
+         * Display-only zoom, generic across every text surface that has one
+         * (2026-08-05, later round: extracted from the main-editor-only
+         * adjustEditorZoom() below so the Notepad/Draft Pad redesign could
+         * reuse the exact same behavior for #note-content/#draftpad-content
+         * without copy-pasting the min/max/base logic three times). Adjusts
+         * a CSS font-size multiplier applied via inline style on the target
+         * element - never touches its innerHTML, so saves/exports are
+         * completely unaffected. Purely a reading/writing comfort
+         * preference, one independent percent per surface (zoomStates key).
          */
-        let editorZoomPercent = 100;
-        function adjustEditorZoom(direction) {
+        const zoomStates = { editor: 100, notepad: 100, draftpad: 100 };
+        function adjustZoom(key, targetId, labelId, direction) {
             const step = 10;
             // Mobile: 17px base at 100%, and never below 100% - a shrunken
-            // editor is useless for low vision; ceiling raised to 200%.
+            // surface is useless for low vision; ceiling raised to 200%.
             // Desktop range/base unchanged.
             const mobile = isMobileMode();
             const min = mobile ? 100 : 70;
             const max = mobile ? 200 : 160;
             const base = mobile ? 1.0625 : 0.875; // rem at 100%
-            editorZoomPercent = Math.min(max, Math.max(min, editorZoomPercent + direction * step));
+            zoomStates[key] = Math.min(max, Math.max(min, zoomStates[key] + direction * step));
 
-            const editor = document.getElementById('editor');
-            const label = document.getElementById('editor-zoom-label');
-            if (editor) editor.style.fontSize = (editorZoomPercent / 100 * base) + 'rem';
-            if (label) label.textContent = editorZoomPercent + '%';
+            const target = document.getElementById(targetId);
+            const label = document.getElementById(labelId);
+            if (target) target.style.fontSize = (zoomStates[key] / 100 * base) + 'rem';
+            if (label) label.textContent = zoomStates[key] + '%';
         }
+        function adjustEditorZoom(direction) { adjustZoom('editor', 'editor', 'editor-zoom-label', direction); }
+        function adjustNotepadZoom(direction) { adjustZoom('notepad', 'note-content', 'notepad-zoom-label', direction); }
+        function adjustDraftpadZoom(direction) { adjustZoom('draftpad', 'draftpad-content', 'draftpad-zoom-label', direction); }
 
         /**
          * Keeps the Scene Status Control Bar's sticky offset in sync with
