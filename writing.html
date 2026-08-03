@@ -1035,6 +1035,11 @@
         /* Prevent iOS Safari viewport auto-zoom on input focus (>=16px font-size) */
         body.mobile-layout #note-title { font-size: 1rem; }
         body.mobile-layout #note-content { font-size: 1rem; }
+        /* Prevent excess viewport scroll when focusing note content - use
+           scrollIntoView with block:'nearest' via JS to avoid blank space
+           above keyboard. Note-title (input) and note-content (contenteditable)
+           scroll differently; contenteditable particularly aggressive. */
+        body.mobile-layout #note-content:focus { scroll-behavior: auto; }
 
         /* ---- Header: slim down; Notepad + Focus move to the bottom nav ---- */
         /* z-index (2026-08-02, later same day): raised from the shared
@@ -4865,8 +4870,12 @@
             backdropDismissGuardUntil = now + 500;
             const notepad = document.getElementById('notepad-window');
             const draftpad = document.getElementById('draftpad-window');
+            const stats = document.getElementById('stats-window');
+            const sammy = document.getElementById('sammy-export-window');
             if (notepad && notepad.classList.contains('active')) hideNotepad();
             if (draftpad && draftpad.classList.contains('active')) hideDraftPad();
+            if (stats && stats.classList.contains('active')) hideStatsWindow();
+            if (sammy && sammy.classList.contains('active')) hideSammyExport();
             hideMobileSheetBackdrop();
         }
 
@@ -4947,6 +4956,31 @@
                 document.getElementById('delete-confirm-modal').classList.add('hidden');
             } catch (e) { console.error('[Notepad] delete-confirm-modal reset failed on close', e); }
         }
+
+        // Prevent excessive viewport scroll when note-content receives focus.
+        // iOS Safari scrolls focused elements into view aggressively, revealing
+        // white space above the keyboard. This listener corrects that.
+        (function initNotepadScrollControl() {
+            const noteContent = document.getElementById('note-content');
+            if (!noteContent) return;
+
+            let scrollTimeout = null;
+            noteContent.addEventListener('focus', (e) => {
+                // Clear any pending scroll correction
+                if (scrollTimeout) clearTimeout(scrollTimeout);
+
+                // Defer the scroll correction to allow iOS to finish its own scroll
+                scrollTimeout = setTimeout(() => {
+                    const container = noteContent.parentElement;
+                    if (container) {
+                        // Scroll the container to show the top of note-content without
+                        // excessive top padding, preventing white space above keyboard
+                        noteContent.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+                    }
+                    scrollTimeout = null;
+                }, 50);
+            });
+        })();
 
         // ==================== DRAFT PAD ====================
         // Per-scene draft management. Two kinds of "draft":
@@ -10509,14 +10543,22 @@
                     // when typing, viewport zooms/focuses on text field,
                     // remains zoomed after typing. Added font-size:1rem to
                     // note inputs to prevent iOS auto-zoom (16px threshold).
+                    // Added scroll control to prevent excessive viewport scroll
+                    // and scrollIntoView correction for note-content focus.
                     const nowNp = Date.now();
-                    if (nowNp < notepadToggleGuardUntil) break; // swallow a same-tap duplicate fire - see the comment above mobileNav()
+                    if (nowNp < notepadToggleGuardUntil) {
+                        console.log('[Notepad] toggle swallowed by guard, wait', notepadToggleGuardUntil - nowNp, 'ms');
+                        break;
+                    }
                     notepadToggleGuardUntil = nowNp + 500;
                     const np = document.getElementById('notepad-window');
                     const wasOpen = np.classList.contains('active') && np.style.display !== 'none';
+                    console.log('[Notepad] toggle attempt: wasOpen=', wasOpen, 'active=', np.classList.contains('active'), 'display=', np.style.display);
                     if (wasOpen) {
+                        console.log('[Notepad] closing...');
                         hideNotepad();
                     } else {
+                        console.log('[Notepad] opening...');
                         try { mobileCloseEverything('notepad-window'); } catch (e) { console.error('[Notepad] closing other sheets failed', e); }
                         openNotepad();
                     }
