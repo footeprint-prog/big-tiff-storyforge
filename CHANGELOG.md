@@ -2,6 +2,69 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-05 later round] – Editor toolbar copy/paste removed and fused, nav panel full-width
+
+Six adjustments at Aaron's direction, all mobile-only.
+
+### Changed
+- **Copy/Paste removed from the main editor toolbar** - both buttons and
+  the divider that separated them from Bold/Italic/Underline are deleted
+  from the DOM entirely (not just hidden), along with the now-dead
+  `pasteToEditor()` function and the `.editor-toolbar-sep` rule it used.
+  `copySelection()` is untouched since the Notepad's own toolbar still uses
+  it.
+- **Editor toolbar buttons and the zoom scaler enlarged 36px → 40px**,
+  throughout `#editor-toolbar .text-tool-btn` and `#editor-zoom-control`.
+- **Bold/Italic/Underline fused into a single rectangle**: the wrapper div
+  around them (`#editor-toolbar-format-group`, newly id'd) now carries one
+  shared border with the individual buttons' own borders removed and their
+  gap zeroed; a 1px gold rule between adjacent buttons stands in as the
+  separator. Desktop's copy of this markup is untouched (still three
+  individually-bordered, gapped buttons) since this is a mobile-scoped
+  override.
+- **Bottom nav panel now spans the full window width as one continuous
+  bar**, including the strip behind the Focus circle. The background/border
+  that used to live on each `.nav-arm` (reading as two separate pill-shaped
+  chunks with a gap in the middle) moved up to `#mobile-nav` itself; the
+  arms are now transparent flex containers. The bottom gold border is gone
+  entirely - only a top border remains - and since background paints under
+  padding by default, the dark brown fill now extends through the
+  safe-area-inset padding all the way to the true bottom edge of the
+  viewport.
+- **Notepad/Outline and Library/Stats evenly spaced within their own half**
+  of the bar: each arm is given an explicit width of exactly half the bar
+  minus half the Focus circle's own width, and `justify-content:
+  space-evenly` replaces the old edge-hugging cluster.
+- **Focus bullseye icon enlarged** 3.5rem → 4.5rem/72px (circle unchanged
+  at 84px) to read as filling the circle, and the **"FOCUS" label text
+  doubled** 0.5rem → 1rem per Aaron's "increase by 100%" - its padding
+  bumped proportionally so the pill grows with the now-larger text instead
+  of clipping it.
+
+### Verification notes
+Measured at 375×812 and 1280×800 with a seeded scene, on a clean tab (a
+reused tab retained stale forced-mobile state from earlier in the session
+and produced a bogus 3px-border reading that a fresh load did not
+reproduce - confirmed the anomaly was tab contamination, not a real CSS
+issue, before trusting any other measurement):
+- `#editor-copy-btn`/`#editor-paste-btn` confirmed absent from the DOM on
+  both mobile and desktop.
+- B/I/U buttons: 40×40 each, flush against each other (0px gap), 1px gold
+  border-left on the 2nd/3rd only, single 1px border around the whole
+  group; zoom control and Proofreader/Text buttons all 40×40/40 tall.
+- `#mobile-nav`: background `rgb(42,33,25)` spans the full 0–375px width,
+  `border-bottom-width: 0px`, bottom edge flush to the viewport's own
+  bottom (812px, no gap).
+- Nav arms: 18px gaps on both sides of each of the two buttons in each arm
+  (Notepad/Outline and Library/Stats), confirming even distribution.
+- Focus icon computed `font-size: 72px`; label computed `font-size: 16px`
+  (1rem), text still reads "FOCUS", horizontally centered in the circle.
+- Desktop A/B on a fresh tab at 1280×800: B/I/U buttons back to their
+  original individually-bordered look (1px solid gold, no fusing); Copy/
+  Paste elements absent (were already `display:none` pre-change, so no
+  visible desktop change); nav panel unaffected (desktop never renders
+  `#mobile-nav`).
+
 ## [2026-08-05] – Toolbar rebuilt, scene summary flush with header, Focus centered gold circle
 
 Eight adjustments at Aaron's direction, all mobile-only.

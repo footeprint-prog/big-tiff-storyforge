@@ -102,11 +102,18 @@ don't "fix" them without asking Aaron first:
   writing — this is the one deliberate departure from "primary-tier
   buttons stay at 44px," confirmed directly via AskUserQuestion ("the
   whole button box," not just the glyph) before being made. **Revised
-  2026-08-05:** Aaron asked to enlarge again, 22px → **36px**, which is
-  where it sits now — still below the 44px floor, but no longer as far
-  below it. Don't restore either the 44px floor or re-shrink toward 22px
-  without asking again; both directions have already been explicitly
-  chosen and then explicitly revised once.
+  2026-08-05:** Aaron asked to enlarge again, 22px → 36px. **Revised again
+  2026-08-05 (later round):** 36px → **40px**, which is where it sits now
+  — still below the 44px floor, but the closest it's been to it since
+  leaving the tier. Don't restore either the 44px floor or re-shrink
+  toward 22px without asking again; these sizes have already been
+  explicitly chosen and revised multiple times.
+  Copy/Paste were **removed entirely** from this toolbar the same later
+  round (not just hidden — the buttons, their divider, and the now-dead
+  `pasteToEditor()` function are gone from the DOM/code). Bold/Italic/
+  Underline were also fused into a single bordered rectangle with 1px gold
+  separators between them, replacing their previous individually-bordered,
+  gapped look — mobile-only; desktop's copy of this toolbar is untouched.
 
 ## 2. Icon (glyph) size is separate from box size — don't conflate them
 
@@ -121,7 +128,7 @@ there's a specific reason to differ (state that reason in a comment):**
 
 | Class | Box size | Icon `font-size` | Layout |
 |---|---|---|---|
-| `#editor-toolbar .text-tool-btn` (B/I/U, Proofreader, Copy, Paste, Text Size) | 36px (exception, see §1 — was `--tap`/44px, revised twice) | `1rem` | mobile |
+| `#editor-toolbar .text-tool-btn` (B/I/U, Proofreader, Text Size) | 40px (exception, see §1 — was `--tap`/44px, revised three times; Copy/Paste removed 2026-08-05 later round) | `1rem` | mobile |
 | `.status-actions-bank > button` (Save/Draft Log/Sammy) | `--tap` (44px) | `1.21875rem` (2026-08-02; was `0.9375rem` inherited from `.control-bar-item`) | mobile |
 | `.rail-tab` (guidance drawer triggers) | 2.95rem × 3.5rem (47.2×56px, exception above; was 56×56 square) | `1.3rem` (2026-08-02; was `1rem`) | mobile |
 | `.m-drawer-close` | `--tap-sm` (30px) | `1.15rem` | mobile |
