@@ -1032,6 +1032,9 @@
         body.mobile-layout #draft-conflict-banner button { min-height: 44px; }
         body.mobile-layout #login-modal button, body.mobile-layout #token-setup-modal button { min-height: 44px; }
         body.mobile-layout #login-modal input, body.mobile-layout #token-setup-modal input { min-height: 44px; }
+        /* Prevent iOS Safari viewport auto-zoom on input focus (>=16px font-size) */
+        body.mobile-layout #note-title { font-size: 1rem; }
+        body.mobile-layout #note-content { font-size: 1rem; }
 
         /* ---- Header: slim down; Notepad + Focus move to the bottom nav ---- */
         /* z-index (2026-08-02, later same day): raised from the shared
@@ -2771,7 +2774,7 @@
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="uppercase text-[10px] tracking-[1.5px] text-[#D4AF37]/70 mb-1">
-                                <span id="scene-summary-title"></span><span id="scene-summary-title-sep" class="hidden"> &mdash; </span>SCENE SUMMARY
+                                <span id="scene-summary-title" class="ml-3"></span><span id="scene-summary-title-sep" class="hidden"> &mdash; </span>SCENE SUMMARY
                             </div>
                             <div id="guidance-summary-text" class="text-sm leading-relaxed text-[#F4EDE4]"></div>
                             <button type="button" id="summary-expand-btn" class="m-expand" onclick="toggleMobileClamp('guidance-summary-text', this)"></button>
@@ -2907,7 +2910,7 @@
                                     <i class="fa-solid fa-triangle-exclamation text-[#D4AF37] text-lg"></i>
                                 </div>
                                 <div class="flex-1 min-w-0">
-                                    <div class="uppercase text-[10px] tracking-[1.5px] text-[#D4AF37] font-semibold mb-1">Review Note — What Changed</div>
+                                    <div class="uppercase text-[10px] tracking-[1.5px] text-[#D4AF37] font-semibold mb-1"><i class="fa-solid fa-circle-exclamation mr-1"></i>Review Note — What Changed</div>
                                     <div id="review-note-text" class="text-sm leading-relaxed text-[#F4EDE4]"></div>
                                     <button type="button" id="review-expand-btn" class="m-expand" onclick="toggleMobileClamp('review-note-text', this)"></button>
                                 </div>
@@ -3676,14 +3679,13 @@
             </button>
         </div>
 
-        <div class="px-3 pt-3 pb-2 border-b border-[#D4AF37]/20 flex items-start gap-x-2">
+        <div class="px-3 pt-3 pb-2 border-b border-[#D4AF37]/20 flex items-start gap-x-3">
             <button onclick="copySammyExportText()" id="sammy-export-copy-btn" title="Copy all"
-                    class="flex-shrink-0 w-10 h-10 flex items-center justify-center text-[#D4AF37] hover:text-[#E8C86B]">
-                <i class="fa-solid fa-copy text-lg"></i>
+                    class="flex-shrink-0 w-12 h-12 flex items-center justify-center text-[#D4AF37] hover:text-[#E8C86B]">
+                <i class="fa-solid fa-copy text-xl"></i>
             </button>
-            <div class="text-xs text-[#D4AF37]/70 pt-1 flex-1">
-                Copy this into a Sammy conversation for a contextual editorial pass.
-                Nothing is sent automatically - this tool only prepares the text.
+            <div class="text-xs text-[#D4AF37]/70 flex-1">
+                <strong class="text-[#D4AF37]">Grok:</strong> Sammy convo draft text and prompt preparation window. Copy/paste this into a new Grok convo for a contextual editorial pass. Only you are ever allowed to make any edits.
             </div>
         </div>
 
@@ -10500,6 +10502,13 @@
                     // any other sheet's code at all - and the open path
                     // wraps the other-sheets cleanup in try/catch so a
                     // failure there can't stop Notepad from opening either.
+                    // TEST FINDINGS (2026-08-06): swapped button handlers to
+                    // test if issue was button-specific or window-specific.
+                    // Result: behavior consistent regardless of which window
+                    // opened. Viewport zoom on text input focus observed:
+                    // when typing, viewport zooms/focuses on text field,
+                    // remains zoomed after typing. Added font-size:1rem to
+                    // note inputs to prevent iOS auto-zoom (16px threshold).
                     const nowNp = Date.now();
                     if (nowNp < notepadToggleGuardUntil) break; // swallow a same-tap duplicate fire - see the comment above mobileNav()
                     notepadToggleGuardUntil = nowNp + 500;
