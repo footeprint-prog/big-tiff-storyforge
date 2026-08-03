@@ -290,6 +290,19 @@ if no longer wanted.
       They do not currently exist in `writing.html`. Likely a holdover from
       a Grok-sandbox-specific issue that may not apply to Erica's actual
       browser environment — needs a decision, not urgent.
+- [ ] **Bring desktop's Notepad up to date with mobile's new behavior.**
+      Mobile-only fixes/changes landed 2026-08-05 (later round) that desktop
+      never received, by design (mobile-port work is scoped mobile-only
+      unless Aaron says otherwise): `hideNotepad()`'s save-before-close
+      reordering (a save/cleanup error can no longer block the panel from
+      closing), the derived note-list title (first 3 words + "…" instead of
+      the literal "Untitled Note" when a note has no explicit title), and
+      whatever the eventual fix turns out to be for the nav-button
+      toggle-close bug (still being chased as of this entry — see
+      CHANGELOG). Desktop's Notepad shares the same underlying functions for
+      some of this (`saveCurrentNote`, `renderNotesList`) so it likely
+      already inherits parts of it for free; needs a deliberate check once
+      the mobile side is fully settled, not before.
 
 ## Questions Needing Erica's Input (Not Yet Reviewed)
 

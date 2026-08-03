@@ -114,6 +114,20 @@ don't "fix" them without asking Aaron first:
   Underline were also fused into a single bordered rectangle with 1px gold
   separators between them, replacing their previous individually-bordered,
   gapped look — mobile-only; desktop's copy of this toolbar is untouched.
+- **Notepad and Draft Pad (mobile) reclassified 2026-08-05 (fourth round),
+  as part of a full redesign** (see CHANGELOG for the "practically
+  unusable" measurements that drove it). Every button in both panels had
+  been blanket-forced to 44px/PRIMARY, regardless of how often it's
+  actually tapped. Now: `#notepad-toolbar-format-group .text-tool-btn`
+  (B/I/U) is **40px**, fused-rectangle style, matching the main editor
+  toolbar's own treatment above; the zoom pills
+  (`#notepad-zoom-control`/`#draftpad-zoom-control`) are also **40px** to
+  match; everything else in either panel (New, Delete, Add-to-Library,
+  Save, Rename, Load-into-editor, the back-to-list button) dropped to
+  **`--tap-sm`/30px, CHROME tier** — all of them are "set it and move on"
+  actions, not controls touched constantly while writing. Copy/Paste
+  removed from both panels' mobile toolbars, same as the main editor.
+  Desktop's side-by-side layout and button sizes are untouched.
 
 ## 2. Icon (glyph) size is separate from box size — don't conflate them
 
