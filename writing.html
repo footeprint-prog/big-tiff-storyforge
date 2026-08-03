@@ -4184,6 +4184,25 @@
             deactivate();
         }
 
+        /**
+         * Item (2026-08-05, later round, Aaron): "default Untitled Note
+         * title instead be the first 3 words of the text with an
+         * ellipses" - only kicks in when the note has no explicit title
+         * (the title input was left blank, the common case - nothing
+         * elsewhere sets note.title automatically). Falls back to the
+         * literal "Untitled Note" only when there's no content either (a
+         * brand-new note, nothing yet to derive from). Strips HTML tags
+         * from the rich-text content first so markup never leaks into the
+         * derived words.
+         */
+        function deriveNoteTitle(note) {
+            if (note.title) return note.title;
+            const text = (note.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+            if (!text) return 'Untitled Note';
+            const words = text.split(' ').slice(0, 3).join(' ');
+            return words + '…';
+        }
+
         function renderNotesList() {
             const container = document.getElementById('notes-list');
             container.innerHTML = '';
@@ -4204,7 +4223,7 @@
                 
                 div.innerHTML = `
                     <div class="flex-1 min-w-0 pr-2">
-                        <div class="note-title-display font-medium truncate">${note.title || 'Untitled Note'}</div>
+                        <div class="note-title-display font-medium truncate">${deriveNoteTitle(note)}</div>
                         <div class="text-[10px] text-[#D4AF37]/50">Edited ${time}</div>
                     </div>
                 `;
@@ -4280,16 +4299,37 @@
             renderNotesList();
         }
 
+        /**
+         * Item (2026-08-05, later round): hardened per Aaron's follow-up on
+         * the hideNotepad() fix - the actual persistence (the object update
+         * + saveToStorage()) now happens fully, in its own try/catch,
+         * BEFORE renderNotesList() (a cosmetic list refresh) gets its own
+         * separate attempt. Previously a single unguarded call meant a
+         * throw ANYWHERE in this function - including inside
+         * renderNotesList(), which touches the DOM - would look identical
+         * to a throw during the write itself from the caller's perspective.
+         * Now a render-only failure can never be mistaken for (or cause) a
+         * lost save: the data is already safely in notepadNotes/storage by
+         * the time renderNotesList() even runs.
+         */
         function saveCurrentNote() {
             if (!currentNoteId) return;
             const idx = notepadNotes.findIndex(n => n.id === currentNoteId);
             if (idx === -1) return;
-            
-            notepadNotes[idx].title = document.getElementById('note-title').value.trim();
-            notepadNotes[idx].content = document.getElementById('note-content').innerHTML;
-            notepadNotes[idx].updated = new Date().toISOString();
-            saveToStorage();
-            renderNotesList();
+
+            try {
+                const titleEl = document.getElementById('note-title');
+                const contentEl = document.getElementById('note-content');
+                notepadNotes[idx].title = titleEl ? titleEl.value.trim() : notepadNotes[idx].title;
+                notepadNotes[idx].content = contentEl ? contentEl.innerHTML : notepadNotes[idx].content;
+                notepadNotes[idx].updated = new Date().toISOString();
+                saveToStorage();
+            } catch (e) {
+                console.error('[Notepad] note save failed', e);
+                return;
+            }
+
+            try { renderNotesList(); } catch (e) { console.error('[Notepad] renderNotesList failed after save', e); }
         }
 
         function sanitizeHTML(html) {
@@ -4789,7 +4829,10 @@
                 return;
             }
             trackEvent('draftpadOpen', { sceneId: currentScene.id });
-            if (isMobileMode()) mobileCloseEverything('draftpad-window');
+            // Item (2026-08-05, later round, Aaron): see the matching
+            // comment in sendSceneToSammy() - opening from the action bank
+            // should collapse it, not leave it open behind the new window.
+            if (isMobileMode()) { mobileCloseEverything('draftpad-window'); resetStatusActionsBank(); }
             const draftpad = document.getElementById('draftpad-window');
             draftpad.classList.remove('hidden');
             draftpad.style.display = 'flex';
@@ -5813,7 +5856,11 @@
             }
             trackEvent('sendSammy', { sceneId: currentScene.id });
 
-            if (isMobileMode()) mobileCloseEverything('sammy-export-window');
+            // Item (2026-08-05, later round, Aaron): opening Sammy/Draft Log
+            // from the scene-status arm's action bank should collapse that
+            // bank back closed, not leave it open behind the new window -
+            // see the matching call in openDraftPad().
+            if (isMobileMode()) { mobileCloseEverything('sammy-export-window'); resetStatusActionsBank(); }
 
             const textarea = document.getElementById('sammy-export-text');
             textarea.value = buildSammyExportText();
@@ -10054,10 +10101,31 @@
                     break;
                 }
                 case 'notepad': {
+                    // Item (2026-08-05, later round): still not toggling
+                    // closed on real iOS Safari/Chrome after two targeted
+                    // fixes inside hideNotepad() itself - isolating this
+                    // case from mobileCloseEverything(null) entirely as a
+                    // third attempt, since that call also runs
+                    // hideDraftPad/hideChangelog/hideProofreader/
+                    // hideSammyExport/hideStatsWindow/hideTextSize, none of
+                    // which have had the same scrutiny hideNotepad() has -
+                    // if any of THOSE throws, the exception propagates out
+                    // of mobileCloseEverything() uncaught, past this case,
+                    // and out of mobileNav() itself, skipping this case's
+                    // own remaining lines AND the updateNavActiveState()
+                    // call at the very end of mobileNav(). The close path
+                    // now calls hideNotepad() directly - no dependency on
+                    // any other sheet's code at all - and the open path
+                    // wraps the other-sheets cleanup in try/catch so a
+                    // failure there can't stop Notepad from opening either.
                     const np = document.getElementById('notepad-window');
                     const wasOpen = np.classList.contains('active') && np.style.display !== 'none';
-                    mobileCloseEverything(null);
-                    if (!wasOpen) openNotepad();
+                    if (wasOpen) {
+                        hideNotepad();
+                    } else {
+                        try { mobileCloseEverything('notepad-window'); } catch (e) { console.error('[Notepad] closing other sheets failed', e); }
+                        openNotepad();
+                    }
                     break;
                 }
                 case 'text': {
