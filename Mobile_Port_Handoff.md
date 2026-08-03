@@ -4,8 +4,13 @@
 ## From: Claude sessions, 2026-07-24 – 2026-08-05, at Aaron's direction
 ## Status: **fully caught up as of 2026-08-05 — dev repo `main`,
 ##         `claude/mobile-port`, and the live site all match again**
-##         (`main` commit `0740a9d`, `claude/mobile-port` commit `a4059c4`,
-##         same tree). Between 2026-07-27 and this update, `claude/mobile-port`
+##         (`main` commit `12bc7c2`, `claude/mobile-port` commit `59ea2b5` —
+##         these two are one docs-only commit ahead of the `writing.html`
+##         content itself, a `BUTTON_STYLE_GUIDE.md` fix documenting the
+##         36px toolbar-button exception that the guide hadn't caught up to
+##         yet; `writing.html` is unchanged since `a4059c4`/`0740a9d`, so the
+##         live site below is still current). Between 2026-07-27 and this
+##         update, `claude/mobile-port`
 ##         picked up a long run of mobile-only rounds without a main sync:
 ##         the guidance-rail handle overhaul (unrestricted drag range, the
 ##         edge-alignment corner glitch fixed by letting the strip extend
@@ -48,7 +53,7 @@
 ##             still the working branch for ongoing mobile UI iteration
 ##             (its GitHub Pages config is what gives the ~1min preview
 ##             rebuild). Merged to `main` periodically, not abandoned.
-## Dev repo main: https://github.com/footeprint-prog/big-tiff-storyforge — **matches `claude/mobile-port` exactly** (merge commit `0740a9d`, 2026-08-05). Expect `main` to trail again once new commits land on the branch - that's normal, re-sync before the next promotion.
+## Dev repo main: https://github.com/footeprint-prog/big-tiff-storyforge — **matches `claude/mobile-port` exactly** (merge commit `12bc7c2`, 2026-08-05). Expect `main` to trail again once new commits land on the branch - that's normal, re-sync before the next promotion.
 ## Live preview (dev repo Pages): https://footeprint-prog.github.io/big-tiff-storyforge/writing.html (tracks `claude/mobile-port`)
 ## **Real live site: https://bigtiffsworld.com/app/ — matches `main`/`claude/mobile-port` as of 2026-08-05, verified against the live domain directly.**
 
