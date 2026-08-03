@@ -2,6 +2,82 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-05] – Toolbar rebuilt, scene summary flush with header, Focus centered gold circle
+
+Eight adjustments at Aaron's direction, all mobile-only.
+
+### Changed
+- **Editor toolbar "container" removed** - dropped its background fill,
+  bottom border, and margin/padding, so the buttons sit immediately above
+  the editor field with zero gap, rather than inside a visually bounded bar.
+- **All toolbar buttons and the zoom scaler enlarged 22px → 36px** (this
+  project's most recent PRIMARY-tier touch-target trade-off, from
+  2026-08-04, partially walked back).
+- **Toolbar reordered**: Bold/Italic/Underline, a divider, Copy/Paste (both
+  new - Copy reuses the existing generic `copySelection()`; Paste is a new
+  `pasteToEditor()`, since the existing `pasteFromClipboard()` is hardcoded
+  to the Notepad's own editor and bookkeeping) - then Proofreader, the zoom
+  scaler, and Text, pushed to the row's right edge via `justify-content:
+  space-between` (restored from a mobile override that had forced
+  `flex-start`). That gap between the two clusters doubles as the second
+  separator Aaron asked for; only one explicit divider bar is rendered.
+- **Scene summary and review-note bottom margins equalized** at 12px (was
+  0 / 12px) - matched to review's existing value rather than the reverse.
+- **Scene summary now spans wall-to-wall and sits flush under the header**,
+  with only its bottom border (5px gold, unchanged) remaining - top/left/
+  right borders and the top corner rounding are dropped, and negative
+  margins cancel both `#scene-content`'s side padding and the header's own
+  4px breathing-room margin.
+- **"Big Tiff" wordmark resized** to 1.4rem/22.4px - strictly between its
+  immediately-previous size (0.95rem/15.2px, matched to the feather icon)
+  and the size before that (30px, matched to the gold disc). Deliberately
+  decoupled from `--logo-glyph` (which still sizes only the feather,
+  unchanged) rather than bumping that shared property, since the two are
+  now intentionally different sizes, not accidentally-drifted ones.
+- **Focus rebuilt as a centered gold circle.** Enlarged 56px → 84px (+50%),
+  independently `position:fixed`-centered at the true horizontal middle of
+  the window (not a flex child's approximate centering, which would depend
+  on its neighbors' widths), bottom-flush with the window like everything
+  else in this nav. Colors inverted - gold fill (`#D4AF37`) with a brown
+  bullseye icon (`#3D2B1F`, was gold on dark `#2A2119`) - and the "FOCUS"
+  label banner's own background now matches the circle's gold exactly, with
+  its text flipped to brown to stay legible (gold-on-gold would have been
+  invisible). Icon enlarged 2rem → 3.5rem to fill the bigger circle.
+- **Bottom nav reordered to Notepad, Outline, Focus, Library, Stats.** The
+  single arm from 2026-08-04 (growing right from the circle) is gone -
+  replaced by two independent arms, one per screen edge (`.nav-arm-left`:
+  Notepad, Outline; `.nav-arm-right`: Library, Stats), each mirroring the
+  other's border/radius treatment, with Focus floating independently
+  between them.
+
+### Verification notes
+Measured at 440×956 and 1280×800 with a seeded scene:
+- Toolbar: transparent background, 0px border, 0px gap to the editor;
+  every button and the zoom pill measured exactly 36px; order confirmed
+  B/I/U/sep/Copy/Paste/Proofreader/−/+/Text with a 13px gap between the two
+  clusters.
+- Scene summary: both margins 12px; rect flush to both walls and to the
+  header's own bottom edge; only the 5px bottom border remains, 0 radius.
+- Wordmark measured 22.4px; the feather icon confirmed unchanged at 15.2px
+  (decoupling verified, not just asserted).
+- Focus circle: 84×84, horizontally centered and bottom-flush to sub-pixel
+  precision, gold background, brown icon at 56px, label background
+  byte-equal to the circle's background, 6.39:1 contrast on both the icon
+  and the label text.
+- Nav order confirmed `[notepad, outline, focus, library, stats]`; both
+  arms flush to their respective screen edges with no overlap against the
+  84px circle (48px+ clearance on the tighter side).
+- Functional pass: all four arm buttons open their views and the relocated
+  Text button opens the text-size sheet; Focus closes an open panel; Copy
+  ran without throwing on a real selection; Paste's `execCommand
+  ('insertText')` path confirmed to fire a real `input` event that the
+  editor's existing autosave/word-count listener already picks up, with no
+  manual `updateWordCount()` call needed.
+- Desktop A/B against pristine `HEAD` at 1280×800: toolbar button rect
+  (34.67×28, byte-identical), scene summary rect, wordmark font-size, nav
+  display, and the new Copy/Paste/separator elements (all `display:none`)
+  all matched pristine exactly on a clean re-check.
+
 ## [2026-08-04] – Whole-arm status drag, Focus circle, bottom nav rebuilt as an arm
 
 Six adjustments at Aaron's direction, all mobile-only.
