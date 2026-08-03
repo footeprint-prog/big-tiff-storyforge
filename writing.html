@@ -2179,6 +2179,20 @@
             left: var(--rail-handle-w) !important;
             right: var(--rail-handle-w) !important;
             z-index: 490;
+            /* Item (2026-08-05, fifth round, later same day, Aaron): "raise
+               the bottom edge above the top of the Focus button" - the
+               shared .notepad rule's `bottom: var(--mobile-nav-clear)`
+               only clears the plain nav bar's own height, but the Focus
+               circle (independently position:fixed, see that rule) is
+               taller than the bar and pokes up above it. Its own top edge
+               is exactly `bottom + height` from its own rule
+               (env(safe-area-inset-bottom) + --kb-height + 5.25rem) -
+               reusing that same formula here, plus a small 8px visible
+               gap, guarantees this panel's bottom edge always clears the
+               circle's top regardless of safe-area inset or an open
+               keyboard, rather than a hardcoded px guess that would drift
+               out of sync if either rule's own numbers ever change. */
+            bottom: calc(env(safe-area-inset-bottom, 0px) + var(--kb-height, 0px) + 5.25rem + 8px) !important;
         }
         /* Dim backdrop - shown only while Notepad/Draft Pad are open (see
            showMobileSheetBackdrop()/hideMobileSheetBackdrop() in the JS).
