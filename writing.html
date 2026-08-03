@@ -2214,6 +2214,16 @@
                on all four sides regardless of .active state. */
             border: 2px solid #D4AF37;
         }
+        /* Apply same mobile sheet styling to Sammy and Stats windows */
+        body.mobile-layout #sammy-export-window,
+        body.mobile-layout #stats-window {
+            left: var(--rail-handle-w) !important;
+            right: var(--rail-handle-w) !important;
+            z-index: 490;
+            bottom: calc(env(safe-area-inset-bottom, 0px) + var(--kb-height, 0px) + 5.25rem + 8px) !important;
+            border-radius: 16px;
+            border: 2px solid #D4AF37;
+        }
         /* Dim backdrop - shown only while Notepad/Draft Pad are open (see
            showMobileSheetBackdrop()/hideMobileSheetBackdrop() in the JS).
            Sits above the guidance rail/status arm (dims them too, not just
@@ -3666,14 +3676,15 @@
             </button>
         </div>
 
-        <div class="px-3 pt-3 pb-2 border-b border-[#D4AF37]/20 flex items-center justify-between">
-            <div class="text-xs text-[#D4AF37]/70 flex-1">
-                Edit the prompt or copy into a Sammy conversation for editorial feedback.
-            </div>
+        <div class="px-3 pt-3 pb-2 border-b border-[#D4AF37]/20 flex items-start gap-x-2">
             <button onclick="copySammyExportText()" id="sammy-export-copy-btn" title="Copy all"
-                    class="flex-shrink-0 w-8 h-8 flex items-center justify-center text-[#D4AF37] hover:text-[#E8C86B] ml-2">
-                <i class="fa-solid fa-copy"></i>
+                    class="flex-shrink-0 w-10 h-10 flex items-center justify-center text-[#D4AF37] hover:text-[#E8C86B]">
+                <i class="fa-solid fa-copy text-lg"></i>
             </button>
+            <div class="text-xs text-[#D4AF37]/70 pt-1 flex-1">
+                Copy this into a Sammy conversation for a contextual editorial pass.
+                Nothing is sent automatically - this tool only prepares the text.
+            </div>
         </div>
 
         <div class="flex-1 overflow-y-auto p-3">
@@ -3739,7 +3750,7 @@
              buttons" shape (same pattern as .rail-tab-strip on the guidance
              rail), one hugging each screen edge. -->
         <div class="nav-arm nav-arm-left">
-            <button type="button" data-nav="notepad" onclick="mobileNav('stats')"><i class="fa-solid fa-book"></i><span>Notepad</span></button>
+            <button type="button" data-nav="notepad" onclick="mobileNav('notepad')"><i class="fa-solid fa-book"></i><span>Notepad</span></button>
             <button type="button" data-nav="outline" onclick="mobileNav('outline')"><i class="fa-solid fa-sitemap"></i><span>Outline</span></button>
         </div>
         <button type="button" data-nav="focus" onclick="mobileNav('focus')" aria-label="Focus">
@@ -3750,7 +3761,7 @@
         </button>
         <div class="nav-arm nav-arm-right">
             <button type="button" data-nav="library" onclick="mobileNav('library')"><i class="fa-solid fa-book-open"></i><span>Library</span></button>
-            <button type="button" data-nav="stats" onclick="mobileNav('notepad')"><i class="fa-solid fa-award"></i><span>Stats</span></button>
+            <button type="button" data-nav="stats" onclick="mobileNav('stats')"><i class="fa-solid fa-award"></i><span>Stats</span></button>
         </div>
     </nav>
 
@@ -6208,7 +6219,7 @@
             // from the scene-status arm's action bank should collapse that
             // bank back closed, not leave it open behind the new window -
             // see the matching call in openDraftPad().
-            if (isMobileMode()) { mobileCloseEverything('sammy-export-window'); resetStatusActionsBank(); }
+            if (isMobileMode()) { mobileCloseEverything('sammy-export-window'); resetStatusActionsBank(); showMobileSheetBackdrop(); }
 
             const textarea = document.getElementById('sammy-export-text');
             textarea.value = buildSammyExportText();
@@ -6225,6 +6236,7 @@
             saveSammyExportState();
             win.style.display = 'none';
             win.classList.remove('active');
+            if (isMobileMode()) hideMobileSheetBackdrop();
         }
 
         function copySammyExportText() {
@@ -7763,7 +7775,7 @@
         // ---- Stats window (mirrors Draft Pad's window pattern) ----
         function showStoryStats() {
             trackEvent('statsOpen');
-            if (isMobileMode()) mobileCloseEverything('stats-window');
+            if (isMobileMode()) { mobileCloseEverything('stats-window'); showMobileSheetBackdrop(); }
             const win = document.getElementById('stats-window');
             win.classList.remove('hidden');
             win.style.display = 'flex';
@@ -7777,6 +7789,7 @@
             saveStatsWindowState();
             win.style.display = 'none';
             win.classList.remove('active');
+            if (isMobileMode()) hideMobileSheetBackdrop();
         }
         function renderStatsWindow() {
             const s = getStatsData();
