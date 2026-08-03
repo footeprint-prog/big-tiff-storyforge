@@ -2,6 +2,62 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-05 fifth round] – Notepad toggle fix (attempt 4: keyboard-covers-nav), side margins, dim backdrop
+
+Mobile-only, at Aaron's direction.
+
+### Changed
+- **Notepad nav-button toggle-close — fourth attempt, this one evidence-
+  backed rather than another guess.** `--kb-height` already existed in
+  this file (set via the `visualViewport` API in `init()`) specifically to
+  track how much of the layout viewport the on-screen keyboard covers, but
+  was only ever consumed by `#center-scroll-area`'s padding - `#mobile-nav`
+  itself (`position:fixed; bottom:0`) was never adjusted for it. A
+  `position:fixed` element's `bottom:0` anchors to the LAYOUT viewport,
+  which does not shrink when the keyboard opens, so on iOS the nav bar
+  stayed glued to the true screen bottom - now covered by the keyboard -
+  instead of rising above it. Notepad is the only `#mobile-nav`-toggled
+  panel with a focusable text field (`#note-title`/`#note-content`); type
+  a note, tap "Notepad" once to close, and the tap lands in the
+  keyboard-covered region, never reaching the nav at all - which is
+  exactly why none of the three prior fixes (all inside
+  `mobileNav()`/`hideNotepad()`, code that only runs once a click actually
+  fires) could have helped. `#mobile-nav` and the independently-fixed
+  Focus button both now add `var(--kb-height, 0px)` to their `bottom`, so
+  the whole bar rises to sit above the keyboard instead of behind it.
+- **Notepad and Draft Pad get side margins** equal to the guidance rail's
+  own handle width (`var(--rail-handle-w)`, 24px) on both left and right,
+  and a raised z-index (490, above the rail's 465 and the scene-status
+  arm's 470) - Aaron: the guidance rail was covering the panel's own close
+  X in the corner where they overlapped edge-to-edge.
+- **Dim backdrop** (`#mobile-sheet-backdrop`, 55% black, shared by both
+  panels since only one sheet is ever open at a time) shows behind
+  whichever of Notepad/Draft Pad is open, and doubles as a tap-anywhere-
+  outside dismiss - a second, larger way to close either panel besides the
+  small corner X, calling `hideNotepad()`/`hideDraftPad()` directly rather
+  than the multi-sheet `mobileCloseEverything(null)` path (same isolation
+  reasoning as the toggle fix above).
+
+### Verification notes
+Measured at 375×812:
+- Notepad/Draft Pad rect: `left:24, right:351` on a 375px viewport (24px
+  margin both sides, matching `--rail-handle-w` exactly); z-index 490 vs
+  backdrop's 475 vs rail's 465.
+- Backdrop: `active` class present on open, background
+  `rgba(0,0,0,0.55)`; tapping it closed the panel and cleared `active`.
+- Keyboard fix: with `--kb-height` set to a simulated 300px, `#mobile-nav`
+  and the Focus button both rose from `bottom:812` (flush) to `bottom:512`
+  (exactly 300px higher); resetting the variable returned both to flush
+  against the screen bottom.
+- Desktop (fresh tab): `isMobileMode()` false, Notepad still opens at its
+  original floating-window position (`left:80`), backdrop stays
+  `display:none`, `#mobile-nav` stays `display:none` (desktop never
+  renders it).
+- Not yet confirmed fixed on a real device as of this entry - three prior
+  attempts (blur-on-touchstart, `hideNotepad()` reordering, isolating from
+  sibling sheets) all shipped and were confirmed live but did not resolve
+  it.
+
 ## [2026-08-05 fourth round] – Notepad/Draft Pad redesigned as two full-height views, Notepad toggle fix (attempt 3), action-arm auto-collapse
 
 Mobile-only, at Aaron's direction.

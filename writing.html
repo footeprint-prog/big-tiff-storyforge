@@ -2163,6 +2163,34 @@
             box-shadow: 0 -8px 24px rgba(0,0,0,0.45);
             overscroll-behavior: contain;
         }
+        /* Item (2026-08-05, fifth round, Aaron): side margins on Notepad/
+           Draft Pad only (not the other .notepad-shell panels), "as wide
+           as the rail handle" (var(--rail-handle-w), the guidance rail's
+           own named handle control - 24px) on both sides. Overrides the
+           shared .notepad rule's left:0/right:0 above - higher specificity
+           wins here since these target the ID, not just the class, so no
+           !important fight needed despite the base rule using one.
+           z-index raised well above the guidance rail (465) and
+           scene-status arm (470) so this panel visually wins any overlap
+           in its own corners instead of being covered by rail icons -
+           the specific complaint that made the close X hard to reach. */
+        body.mobile-layout #notepad-window,
+        body.mobile-layout #draftpad-window {
+            left: var(--rail-handle-w) !important;
+            right: var(--rail-handle-w) !important;
+            z-index: 490;
+        }
+        /* Dim backdrop - shown only while Notepad/Draft Pad are open (see
+           showMobileSheetBackdrop()/hideMobileSheetBackdrop() in the JS).
+           Sits above the guidance rail/status arm (dims them too, not just
+           the plain editor content) and below the panel itself. */
+        #mobile-sheet-backdrop { display: none; }
+        body.mobile-layout #mobile-sheet-backdrop.active {
+            display: block;
+            position: fixed; inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 475;
+        }
         body.mobile-layout .notepad-body { flex-direction: column; }
         /* Item (2026-08-05, later round, Aaron): Notepad/Draft Pad
            redesign - "practically unusable... list of notes almost
@@ -2254,8 +2282,29 @@
            padding below is filled with the same dark brown all the way to
            the true bottom edge of the viewport instead of showing
            whatever's behind it. */
+        /* Item (2026-08-05, fifth round, Aaron): "Notepad button still
+           doesn't toggle close" - fourth attempt, and this time a concrete,
+           evidence-backed one rather than another guess. `--kb-height` (set
+           in init(), via the visualViewport API - see that code's own
+           comment) already exists specifically to track how much of the
+           layout viewport the on-screen keyboard covers, but was only ever
+           consumed by #center-scroll-area's padding. #mobile-nav itself
+           (position:fixed, bottom:0) was NOT adjusted for it - `bottom:0`
+           on a fixed element is anchored to the LAYOUT viewport, which
+           does not shrink when the keyboard opens, so on iOS the nav bar
+           stays glued to the true screen bottom, now COVERED by the
+           keyboard, rather than rising to sit above it. Notepad is the
+           ONLY #mobile-nav-toggled panel with a focusable text field
+           (#note-title/#note-content) - Outline/Library/Stats/Text have
+           none, which is exactly why only Notepad ever exhibited this:
+           type a note (keyboard opens, nav bar slides behind it) - tap
+           "Notepad" once to close - the tap lands in the region now
+           covered by the keyboard, never reaching the nav at all, so
+           nothing in mobileNav()/hideNotepad() (all three prior fixes)
+           could possibly have run. bottom now tracks --kb-height so the
+           whole bar rises to sit just above the keyboard instead. */
         body.mobile-layout #mobile-nav {
-            position: fixed; left: 0; right: 0; bottom: 0; z-index: 480;
+            position: fixed; left: 0; right: 0; bottom: var(--kb-height, 0px); z-index: 480;
             display: flex; justify-content: space-between; align-items: flex-end;
             background: #2A2119;
             border-top: 2px solid rgba(212, 175, 55, 0.6);
@@ -2291,7 +2340,11 @@
         body.mobile-layout #mobile-nav button[data-nav="focus"] {
             position: fixed;
             left: 50%; transform: translateX(-50%);
-            bottom: env(safe-area-inset-bottom, 0px);
+            /* Independently position:fixed (out of #mobile-nav's own flex
+               flow - see the comment on that rule), so it needs the same
+               --kb-height rise added directly, not inherited from the nav
+               bar's own bottom. */
+            bottom: calc(env(safe-area-inset-bottom, 0px) + var(--kb-height, 0px));
             width: 5.25rem; height: 5.25rem;
             padding: 0;
             z-index: 481;
@@ -3089,6 +3142,16 @@
         <div class="guidance-float-body" data-float-body></div>
         <div class="guidance-float-resize-handle" data-resize-handle></div>
     </div>
+
+    <!-- Item (2026-08-05, fifth round, Aaron): "dim the background... when
+         the notepad window is open," Notepad and Draft Pad only (not
+         Stats/Changelog/Proofreader/Sammy, which also share the .notepad
+         shell) - mobile-only. Also doubles as an easier way to dismiss
+         either panel (tap outside it) than the small close X, which
+         Aaron's flagged is often covered by the guidance rail. A single
+         shared element since only one sheet is ever open at a time
+         (mobileCloseEverything() discipline). -->
+    <div id="mobile-sheet-backdrop" class="hidden" onclick="dismissMobileSheetBackdrop()"></div>
 
     <!-- Floating Notepad -->
     <div id="notepad-window" class="notepad hidden" style="left: 80px; top: 420px; width: 480px; height: 380px;">
@@ -4730,9 +4793,36 @@
             }
         }
 
+        /**
+         * Item (2026-08-05, fifth round): dim backdrop shared by Notepad
+         * and Draft Pad only - mobile-only (no-op off mobile, matching
+         * every other mobileMode-gated helper in this file). Tapping it
+         * closes whichever of the two is actually open, calling
+         * hideNotepad()/hideDraftPad() directly rather than
+         * mobileCloseEverything(null) - same reasoning as the isolated
+         * Notepad nav-toggle fix earlier this round, so a failure in some
+         * unrelated sheet's hide function can't block this dismiss either.
+         */
+        function showMobileSheetBackdrop() {
+            if (!isMobileMode()) return;
+            const backdrop = document.getElementById('mobile-sheet-backdrop');
+            if (backdrop) backdrop.classList.add('active');
+        }
+        function hideMobileSheetBackdrop() {
+            const backdrop = document.getElementById('mobile-sheet-backdrop');
+            if (backdrop) backdrop.classList.remove('active');
+        }
+        function dismissMobileSheetBackdrop() {
+            const notepad = document.getElementById('notepad-window');
+            const draftpad = document.getElementById('draftpad-window');
+            if (notepad && notepad.classList.contains('active')) hideNotepad();
+            if (draftpad && draftpad.classList.contains('active')) hideDraftPad();
+            hideMobileSheetBackdrop();
+        }
+
         function openNotepad() {
             trackEvent('notepadOpen');
-            if (isMobileMode()) mobileCloseEverything('notepad-window');
+            if (isMobileMode()) { mobileCloseEverything('notepad-window'); showMobileSheetBackdrop(); }
             const notepad = document.getElementById('notepad-window');
             notepad.classList.remove('hidden');
             notepad.style.display = 'flex';
@@ -4798,6 +4888,7 @@
             notepad.style.display = 'none';
             notepad.classList.remove('active');
             if (typeof updateNavActiveState === 'function') updateNavActiveState();
+            hideMobileSheetBackdrop();
 
             try { if (currentNoteId) saveCurrentNote(); } catch (e) { console.error('[Notepad] saveCurrentNote failed on close', e); }
             try { saveNotepadState(); } catch (e) { console.error('[Notepad] saveNotepadState failed on close', e); }
@@ -5029,7 +5120,7 @@
             // Item (2026-08-05, later round, Aaron): see the matching
             // comment in sendSceneToSammy() - opening from the action bank
             // should collapse it, not leave it open behind the new window.
-            if (isMobileMode()) { mobileCloseEverything('draftpad-window'); resetStatusActionsBank(); }
+            if (isMobileMode()) { mobileCloseEverything('draftpad-window'); resetStatusActionsBank(); showMobileSheetBackdrop(); }
             const draftpad = document.getElementById('draftpad-window');
             draftpad.classList.remove('hidden');
             draftpad.style.display = 'flex';
@@ -5066,6 +5157,7 @@
             saveDraftPadState();
             draftpad.style.display = 'none';
             draftpad.classList.remove('active');
+            hideMobileSheetBackdrop();
 
             document.getElementById('draftpad-delete-confirm-modal').classList.remove('flex');
             document.getElementById('draftpad-delete-confirm-modal').classList.add('hidden');
