@@ -1,25 +1,29 @@
 # Big Tiff StoryForge — Mobile Port Handoff
 
 ## For: whoever picks up mobile work next (agent or human)
-## From: Claude sessions, 2026-07-24 – 2026-07-27, at Aaron's direction
-## Status: **fully caught up as of 2026-07-27 evening — dev repo `main`,
+## From: Claude sessions, 2026-07-24 – 2026-08-05, at Aaron's direction
+## Status: **fully caught up as of 2026-08-05 — dev repo `main`,
 ##         `claude/mobile-port`, and the live site all match again**
-##         (`main` commit `0faaf33`, `claude/mobile-port` commit `ce16f62`,
-##         same tree). Sequence that day, for context if this drifts again:
-##         the button-polish/arm-drag/corner-morph rounds were merged to
-##         `main` while Aaron was away, at his explicit request; the
-##         corner-morph round shipped real problems (a positioning bug, an
-##         icon-size overreach — see CHANGELOG's 2026-07-27 entry) that he
-##         caught on review after returning; a same-day fix-up round
-##         (`23b7e7b`) corrected them on `claude/mobile-port` only at
-##         first; Aaron then explicitly asked to push everything live, at
-##         which point `main` was re-synced to pick up the fix-up commit
-##         **before** promoting (promoting stale/buggy `main` content would
-##         have shipped the bug to the live site) - re-verify `main` has
-##         what you expect before ever promoting, don't just trust a status
-##         line in this doc without checking.
-## Live site (`bigtiffsworld.com`) status: **promoted 2026-07-27** (commit
-##         `eb5b5c4` in `big_tiff_launchpage`), verified **byte-identical**
+##         (`main` commit `0740a9d`, `claude/mobile-port` commit `a4059c4`,
+##         same tree). Between 2026-07-27 and this update, `claude/mobile-port`
+##         picked up a long run of mobile-only rounds without a main sync:
+##         the guidance-rail handle overhaul (unrestricted drag range, the
+##         edge-alignment corner glitch fixed by letting the strip extend
+##         under the header/nav bars instead of stopping short), the
+##         autosave/word-count text moved off a viewport-fixed overlay and
+##         embedded as a non-editable sibling inside the editor field, panel
+##         icon sizes unified to match `.count-badge`, Home and Stats swapped
+##         between the header and the nav, and — the biggest single round —
+##         the bottom nav and editor toolbar both rebuilt: Focus is now an
+##         independently `position:fixed`-centered 84px gold circle (not a
+##         flex child, so its centering doesn't depend on its neighbors'
+##         widths) flanked by two small icon arms (Notepad+Outline left,
+##         Library+Stats right), and the editor toolbar dropped its
+##         container styling, grew to 36px buttons, gained Copy/Paste, and
+##         reordered. See CHANGELOG's 2026-08-02 through 2026-08-05 entries
+##         for the full round-by-round detail - not repeated here.
+## Live site (`bigtiffsworld.com`) status: **promoted 2026-08-05** (commit
+##         `d2f01bb` in `big_tiff_launchpage`), verified **byte-identical**
 ##         against the actual live domain response (not just the Pages
 ##         build API, which can report "built" before a CDN edge actually
 ##         serves the new bytes - fetched `https://bigtiffsworld.com/app/`
@@ -31,24 +35,22 @@
 ##         Assets/manifest unchanged this round (checksums verified
 ##         identical); manifest's `start_url` was already correctly
 ##         `./index.html` from a prior promotion, nothing to fix this time.
-## Real-device testing: **CORRECTED 2026-07-27** — every mobile UI round is
-##         in fact tested on a real device. Aaron confirmed directly he
-##         checks all changes on a real iPhone 15 Pro, iOS Safari, as a
-##         normal part of his workflow ("that is exactly what I test
-##         everything on"). The "What is NOT verified" section below had
-##         been carried forward with the wrong framing (implying NO real
-##         hardware had ever touched this) across several sessions — that
-##         framing is retired. What's still genuinely open: Aaron's own test
-##         device (15 Pro) differs from Erica's phone (16 Pro Max per her
-##         user profile) — a device-specific bug on her exact model isn't
-##         ruled out just because Aaron's 15 Pro checks look fine.
+## Real-device testing: every mobile UI round continues to get checked by
+##         Aaron on a real iPhone 15 Pro, iOS Safari, as a normal part of his
+##         workflow. What's still genuinely open: his test device (15 Pro)
+##         differs from Erica's phone (16 Pro Max per her user profile) — a
+##         device-specific bug on her exact model isn't ruled out just
+##         because his 15 Pro checks look fine. The 2026-08-05 round's new
+##         gestures (Focus's independent centering, the rebuilt toolbar's
+##         Copy/Paste) haven't had a dedicated real-device pass called out
+##         specifically yet - worth asking about if related bugs come in.
 ## Dev branch: `claude/mobile-port` — long-lived, kept around, not deleted,
 ##             still the working branch for ongoing mobile UI iteration
 ##             (its GitHub Pages config is what gives the ~1min preview
 ##             rebuild). Merged to `main` periodically, not abandoned.
-## Dev repo main: https://github.com/footeprint-prog/big-tiff-storyforge — **matches `claude/mobile-port` exactly** (merge commit `0faaf33`, 2026-07-27). Expect `main` to trail again once new commits land on the branch - that's normal, re-sync (and re-verify main actually has the fix-up commits) before the next promotion.
+## Dev repo main: https://github.com/footeprint-prog/big-tiff-storyforge — **matches `claude/mobile-port` exactly** (merge commit `0740a9d`, 2026-08-05). Expect `main` to trail again once new commits land on the branch - that's normal, re-sync before the next promotion.
 ## Live preview (dev repo Pages): https://footeprint-prog.github.io/big-tiff-storyforge/writing.html (tracks `claude/mobile-port`)
-## **Real live site: https://bigtiffsworld.com/app/ — matches `main`/`claude/mobile-port` as of 2026-07-27, verified against the live domain directly.**
+## **Real live site: https://bigtiffsworld.com/app/ — matches `main`/`claude/mobile-port` as of 2026-08-05, verified against the live domain directly.**
 
 ---
 
@@ -138,9 +140,9 @@ Two real bugs were caught this way that a naive test would have missed:
 
 | Where | Repo | What's there |
 |---|---|---|
-| Dev repo Pages preview | `big-tiff-storyforge`, branch `claude/mobile-port` (Pages config) | **Current** — has everything through the 2026-07-27 fix-up round (commit `ce16f62`: arm drag, corner-morph docking, the `--arm-pad-r` positioning fix, rail-icon revert, plus CHANGELOG/handoff docs). Rebuilds ~1 min after any push to that branch. |
-| Dev repo `main` | `big-tiff-storyforge` | **Merged and current as of 2026-07-27 evening** (commit `0faaf33`) — re-synced with `claude/mobile-port` specifically so the fix-up round (not just the buggy corner-morph round) would be what got promoted live. `main` and `claude/mobile-port` are identical at time of writing; expect `main` to trail again once new commits land on the branch. |
-| **Real live site** | `big_tiff_launchpage`, branch `main`, custom domain `bigtiffsworld.com` via Porkbun DNS (no Cloudflare in the path) | **Promoted 2026-07-27** (commit `eb5b5c4`) — has everything through the fix-up round, i.e. the corrected (not buggy) version. Assets/manifest unchanged this round (checksums verified identical), only `app/index.html` needed copying; `start_url` was already `./index.html` from a prior round. Verified byte-identical against `https://bigtiffsworld.com/app/` directly (line-ending-normalized — this Windows checkout's `core.autocrlf` makes local/live diffs look nonzero even when content is identical; don't mistake that for drift). |
+| Dev repo Pages preview | `big-tiff-storyforge`, branch `claude/mobile-port` (Pages config) | **Current** — has everything through the 2026-08-05 toolbar/nav rebuild round (commit `a4059c4`). Rebuilds ~1 min after any push to that branch. |
+| Dev repo `main` | `big-tiff-storyforge` | **Merged and current as of 2026-08-05** (commit `0740a9d`) — re-synced with `claude/mobile-port` after a long run of mobile-only rounds that had never been merged back (last sync was 2026-07-27's `eab5262`). `main` and `claude/mobile-port` are identical at time of writing; expect `main` to trail again once new commits land on the branch. |
+| **Real live site** | `big_tiff_launchpage`, branch `main`, custom domain `bigtiffsworld.com` via Porkbun DNS (no Cloudflare in the path) | **Promoted 2026-08-05** (commit `d2f01bb`) — has everything through the toolbar/nav rebuild round. Assets/manifest unchanged this round (checksums verified identical against the dev repo), only `app/index.html` needed copying; `start_url` was already `./index.html` from a prior round. Verified byte-identical against `https://bigtiffsworld.com/app/` directly (line-ending-normalized — this Windows checkout's `core.autocrlf` makes local/live diffs look nonzero even when content is identical; don't mistake that for drift). |
 
 ## Complete workflow: edit → verify → push → (optional) promote
 
