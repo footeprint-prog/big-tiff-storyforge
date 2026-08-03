@@ -4550,16 +4550,32 @@
             }
         }
 
+        /**
+         * Item (2026-08-05, later round): "Notepad doesn't toggle closed"
+         * traced to this function specifically - unlike every other
+         * #mobile-nav sheet's hide function (e.g. hideStatsWindow(), a
+         * plain display:none + class removal, nothing else), this one used
+         * to run saveCurrentNote()/saveNotepadState()/the delete-modal
+         * reset BEFORE the actual close (display:none, .active removal).
+         * If any of those threw on a real device for any reason, the close
+         * itself never ran - the notepad would stay visibly open with no
+         * console Aaron could see. The close now happens FIRST and
+         * unconditionally; the save/cleanup side effects run after, each
+         * wrapped so one failing can't block the others OR the close.
+         */
         function hideNotepad() {
             const notepad = document.getElementById('notepad-window');
-            if (currentNoteId) saveCurrentNote();
-            saveNotepadState();
+            if (!notepad) return;
             notepad.style.display = 'none';
             notepad.classList.remove('active');
-            
-            document.getElementById('delete-confirm-modal').classList.remove('flex');
-            document.getElementById('delete-confirm-modal').classList.add('hidden');
             if (typeof updateNavActiveState === 'function') updateNavActiveState();
+
+            try { if (currentNoteId) saveCurrentNote(); } catch (e) { console.error('[Notepad] saveCurrentNote failed on close', e); }
+            try { saveNotepadState(); } catch (e) { console.error('[Notepad] saveNotepadState failed on close', e); }
+            try {
+                document.getElementById('delete-confirm-modal').classList.remove('flex');
+                document.getElementById('delete-confirm-modal').classList.add('hidden');
+            } catch (e) { console.error('[Notepad] delete-confirm-modal reset failed on close', e); }
         }
 
         // ==================== DRAFT PAD ====================
