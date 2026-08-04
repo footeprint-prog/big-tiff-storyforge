@@ -103,7 +103,9 @@
 
         .scene-review {
             background-color: #D4AF37;
-            color: #8B1E1E;
+            /* Same contrast fix as .status-pill-review above - was #8B1E1E
+               (4.34:1, fails AA), now #3D2B1F (6.39:1). */
+            color: #3D2B1F;
             border-color: #D4AF37;
             font-weight: 500;
         }
@@ -193,13 +195,20 @@
         /* Color treatments matching the outline badges exactly */
         .status-pill-complete { background-color: #2A5F4E; color: #A3E6C9; }
         .status-pill-unfinished { background-color: #5C4033; color: #E8C86B; }
-        .status-pill-review { background-color: #D4AF37; color: #8B1E1E; }
+        /* Was #8B1E1E (dark red), which measured 4.34:1 on the #D4AF37 gold
+           background - just under WCAG AA's 4.5:1 floor for normal text.
+           #3D2B1F is an existing palette pairing (what the primary gold
+           buttons already use) and measures 6.39:1. Originally fixed mobile-
+           only; applied to the shared base rule now that it's confirmed a
+           real contrast failure, not a style preference - desktop had been
+           left on the failing color since before the mobile port started. */
+        .status-pill-review { background-color: #D4AF37; color: #3D2B1F; }
 
         /* The default arrow icon is gold (#D4AF37), invisible against the
-           Review state's own gold background. Override with a dark-red arrow
-           (matching Review's text color) so it's actually visible there. */
+           Review state's own gold background. Override with a dark arrow
+           (matching Review's text color above) so it's actually visible there. */
         .status-dropdown-trigger.status-pill-review {
-            background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2012%2012%27%3E%3Cpath%20fill%3D%27%238B1E1E%27%20d%3D%27M2%204l4%204%204-4z%27/%3E%3C/svg%3E");
+            background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A//www.w3.org/2000/svg%27%20viewBox%3D%270%200%2012%2012%27%3E%3Cpath%20fill%3D%27%233D2B1F%27%20d%3D%27M2%204l4%204%204-4z%27/%3E%3C/svg%3E");
         }
 
         .changelog-filter-tab {
@@ -861,15 +870,6 @@
            force full opacity on mobile (same palette colors, no new hues). */
         body.mobile-layout [class*="text-[#D4AF37]/"] { color: #D4AF37 !important; }
         body.mobile-layout [class*="text-[#F4EDE4]/"] { color: #F4EDE4 !important; }
-
-        /* The Review pill's dark red on gold measures 4.34:1 - just under
-           AA's 4.5:1 for normal text. #3D2B1F on #D4AF37 is an existing
-           palette pairing (it's what the primary gold buttons already use)
-           and measures 6.39:1. Mobile only; desktop keeps the red. The gold
-           background plus the literal word "Review" still carry the state,
-           so no meaning rides on the text colour alone. */
-        body.mobile-layout .scene-review,
-        body.mobile-layout .status-pill-review { color: #3D2B1F; }
 
         /* ---- Control sizing, two tiers ----
            CHROME tier: set-once controls - header, panel headers, close
@@ -1758,12 +1758,25 @@
             display: flex; align-items: center; justify-content: center;
             line-height: 1;
         }
-        /* Text Size button (2026-08-04): mobile-only, same as the sheet it
-           opens (openTextSize()/#textsize-window never had a desktop entry
-           point - mobileCloseEverything(), which it routes through, is a
-           no-op off mobile). */
-        #editor-text-size-btn { display: none; }
-        body.mobile-layout #editor-text-size-btn { display: flex; }
+        /* Text Size button: was mobile-only (2026-08-04); given a desktop
+           entry point too (2026-08-03 desktop-parity round) since this is
+           an accessibility feature, not mobile chrome - #textsize-window
+           already renders fine as a floating .notepad-style window on
+           desktop (given explicit left/top/width/height), and
+           openTextSize()/hideTextSize() already gate their mobile-only
+           side effects behind isMobileMode() internally, so no JS changes
+           were needed - just showing this same button on both layouts. */
+        #editor-text-size-btn { display: flex; }
+        /* Copy/Paste + their divider (2026-08-03): desktop-only, restored
+           after an earlier mobile-only round deleted them from this shared
+           toolbar's DOM entirely instead of hiding them on mobile - mobile
+           stays exactly as it already was (without them). !important
+           needed: body.mobile-layout #editor-toolbar .text-tool-btn below
+           has higher specificity (2 classes + 1 id vs. this rule's 1 class
+           + 1 id) and would otherwise force these back to display:flex. */
+        body.mobile-layout #editor-toolbar-sep,
+        body.mobile-layout #editor-copy-btn,
+        body.mobile-layout #editor-paste-btn { display: none !important; }
         /* Item (2026-08-02): the standalone toolbar word counter is hidden
            on mobile - its count now lives folded into #auto-save-status
            ("N words autosaved", see updateWordCount()). Hide the WRAPPER
@@ -2936,6 +2949,18 @@
                                     <button onclick="formatEditorText('bold')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 font-bold">B</button>
                                     <button onclick="formatEditorText('italic')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 italic">I</button>
                                     <button onclick="formatEditorText('underline')" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1">U</button>
+                                    <!-- Desktop-only (2026-08-03): restores Copy/Paste, removed
+                                         from this toolbar in an earlier mobile-only round that
+                                         accidentally deleted them from the shared DOM instead of
+                                         just hiding them on mobile. Hidden again under
+                                         body.mobile-layout so mobile stays as it is today. -->
+                                    <span id="editor-toolbar-sep" class="border-l border-[#D4AF37]/40 h-5 mx-1.5"></span>
+                                    <button id="editor-copy-btn" onclick="copySelection()" aria-label="Copy" title="Copy" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1">
+                                        <i class="fa-solid fa-copy"></i>
+                                    </button>
+                                    <button id="editor-paste-btn" onclick="pasteToEditor()" aria-label="Paste" title="Paste" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1">
+                                        <i class="fa-solid fa-paste"></i>
+                                    </button>
                                 </div>
                                 <div class="flex items-center gap-x-3">
                                     <div id="word-count-wrap" class="text-xs text-[#D4AF37]/70">
@@ -2956,8 +2981,9 @@
                                          close-everything/toggle behavior is unchanged, just
                                          triggered from a different button. Desktop never
                                          shows this (mobile-only rail below). -->
-                                    <button id="editor-text-size-btn" onclick="mobileNav('text')" aria-label="Text Size" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 flex items-center justify-center">
+                                    <button id="editor-text-size-btn" onclick="mobileNav('text')" aria-label="Text Size" class="text-tool-btn border border-[#D4AF37]/40 hover:bg-[#4A3A2E] px-3 py-1 flex items-center justify-center gap-x-1.5">
                                         <i class="fa-solid fa-font"></i>
+                                        <span class="btn-text">Text Size</span>
                                     </button>
                                 </div>
                             </div>
@@ -3769,7 +3795,7 @@
          zoom control. Scales the root font size, so every rem-based size in
          the tool grows together instead of only the draft text. Stored per
          device (a phone and a laptop want different sizes) and never synced. -->
-    <div id="textsize-window" class="notepad active hidden">
+    <div id="textsize-window" class="notepad active hidden" style="left: 580px; top: 80px; width: 420px; height: 420px;">
         <div class="notepad-header">
             <div class="flex items-center gap-x-2">
                 <i class="fa-solid fa-font text-[#D4AF37]"></i>
@@ -5555,6 +5581,25 @@
             editor.focus();
             document.execCommand(command, false, null);
             updateWordCount();
+        }
+
+        // Desktop-only Paste button (2026-08-03) - inserts clipboard text at
+        // the caret in the main editor. The existing pasteFromClipboard() is
+        // hardcoded to the Notepad's own #note-content element/bookkeeping,
+        // so this is a separate, thin function for #editor instead. Autosave
+        // isn't called explicitly here - execCommand('insertText') fires a
+        // real 'input' event, which the editor's own input listener already
+        // saves/tracks from.
+        async function pasteToEditor() {
+            const editor = document.getElementById('editor');
+            editor.focus();
+            try {
+                const text = await navigator.clipboard.readText();
+                document.execCommand('insertText', false, text);
+                updateWordCount();
+            } catch (err) {
+                alert("Unable to paste. Please use Ctrl+V / Cmd+V manually.");
+            }
         }
 
         function currentDraftStorageKey(sceneId) {
@@ -10509,7 +10554,14 @@
                     break;
                 case 'stats': {
                     const sw = document.getElementById('stats-window');
-                    const wasOpen = sw.classList.contains('active') && sw.style.display !== 'none';
+                    // getComputedStyle, not classList.contains('active') -
+                    // 'active' is now permanently present on this window's
+                    // markup (for its desktop border styling) rather than a
+                    // true open/closed toggle, so checking it here silently
+                    // ate the very first tap each session (bug found
+                    // 2026-08-03 while wiring desktop's Text Size entry
+                    // point, which shares this exact case shape below).
+                    const wasOpen = getComputedStyle(sw).display !== 'none';
                     mobileCloseEverything(null);
                     if (!wasOpen) showStoryStats();
                     break;
@@ -10550,7 +10602,8 @@
                 }
                 case 'text': {
                     const ts = document.getElementById('textsize-window');
-                    const wasOpen = ts.classList.contains('active') && ts.style.display !== 'none';
+                    // See the 'stats' case above - same bug, same fix.
+                    const wasOpen = getComputedStyle(ts).display !== 'none';
                     mobileCloseEverything(null);
                     if (!wasOpen) openTextSize();
                     break;
@@ -10606,15 +10659,16 @@
         })();
 
         /**
-         * Tap-to-reveal for review-flag "!" markers - hover tooltips don't
-         * exist on touch, and the review reason is real editorial info.
-         * Desktop is untouched: this returns immediately there, keeping the
-         * original hover-tooltip behavior (and category-header click-through)
-         * exactly as before.
+         * Tap/click-to-reveal for review-flag "!" markers - originally
+         * mobile-only (hover tooltips don't exist on touch), extended to
+         * desktop too (2026-08-03 desktop-parity round) so clicking a
+         * marker there also reveals the reason and lets it be dismissed for
+         * good, on top of the existing hover tooltip (the marker's own
+         * `title` attribute, untouched) - a click doesn't replace hover,
+         * it's an additional way to get the same info and act on it.
          */
         function toggleReviewReason(el, ev) {
             progSafe(() => { if (!PROG.f.loreFlagged) { PROG.f.loreFlagged = new Date().toISOString(); saveProgressSoon(); markProgressDirtyMetrics(['flag.loreFlagged']); } });
-            if (!isMobileMode()) return;
             ev.stopPropagation();
             ev.preventDefault();
             const host = el.closest('.library-entry, .library-category');
