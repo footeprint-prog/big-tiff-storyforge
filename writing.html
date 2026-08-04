@@ -1135,7 +1135,7 @@
 
         /* ---- Single vertical column ---- */
         body.mobile-layout #center-column { margin-left: 0 !important; margin-right: 0 !important; }
-        body.mobile-layout #center-scroll-area { padding-bottom: calc(var(--mobile-nav-clear) + var(--kb-height, 0px) + 12px); overscroll-behavior: contain; }
+        body.mobile-layout #center-scroll-area { padding-bottom: calc(var(--mobile-nav-clear) + 12px); overscroll-behavior: contain; }
 
         /* The landing now uses one shared cluster on desktop and mobile
            (see the "Landing navigation cluster" block above), so no
@@ -2192,7 +2192,7 @@
                circle's top regardless of safe-area inset or an open
                keyboard, rather than a hardcoded px guess that would drift
                out of sync if either rule's own numbers ever change. */
-            bottom: calc(env(safe-area-inset-bottom, 0px) + var(--kb-height, 0px) + 5.25rem + 8px) !important;
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 5.25rem + 8px) !important;
             /* Item (2026-08-05, fifth round, later still, Aaron): "make
                sure the bottom corners... are rounded as well" - the shared
                .notepad rule's `16px 16px 0 0` only rounds the top corners,
@@ -2220,7 +2220,7 @@
             left: var(--rail-handle-w) !important;
             right: var(--rail-handle-w) !important;
             z-index: 490;
-            bottom: calc(env(safe-area-inset-bottom, 0px) + var(--kb-height, 0px) + 5.25rem + 8px) !important;
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 5.25rem + 8px) !important;
             border-radius: 16px;
             border: 2px solid #D4AF37;
         }
@@ -2348,7 +2348,7 @@
            could possibly have run. bottom now tracks --kb-height so the
            whole bar rises to sit just above the keyboard instead. */
         body.mobile-layout #mobile-nav {
-            position: fixed; left: 0; right: 0; bottom: var(--kb-height, 0px); z-index: 480;
+            position: fixed; left: 0; right: 0; bottom: 0; z-index: 480;
             display: flex; justify-content: space-between; align-items: flex-end;
             background: #2A2119;
             border-top: 2px solid rgba(212, 175, 55, 0.6);
@@ -2388,7 +2388,7 @@
                flow - see the comment on that rule), so it needs the same
                --kb-height rise added directly, not inherited from the nav
                bar's own bottom. */
-            bottom: calc(env(safe-area-inset-bottom, 0px) + var(--kb-height, 0px));
+            bottom: env(safe-area-inset-bottom, 0px);
             width: 5.25rem; height: 5.25rem;
             padding: 0;
             z-index: 481;
@@ -10806,19 +10806,6 @@
                 if (document.visibilityState === 'hidden') mobileImmediateSave();
             });
             window.addEventListener('pagehide', mobileImmediateSave);
-            // Keep typed text above the on-screen keyboard: track how much of
-            // the layout viewport the keyboard covers and pad the scroll area
-            // by that amount (see --kb-height use in the mobile CSS).
-            if (window.visualViewport) {
-                const vv = window.visualViewport;
-                const onVV = () => {
-                    if (!isMobileMode()) return;
-                    const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-                    document.documentElement.style.setProperty('--kb-height', kb + 'px');
-                };
-                vv.addEventListener('resize', onVV);
-                vv.addEventListener('scroll', onVV);
-            }
         }
 
         window.onload = init;
