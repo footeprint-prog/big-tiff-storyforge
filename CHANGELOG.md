@@ -2,6 +2,92 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-03] – Keyboard behavior revert, Notepad toggle delay removed, Proofreader/Text Size sheet treatment, Library review-marker fixes, Focus button resize; promoted to live site
+
+Mobile-only, at Erica's/Aaron's direction. Promoted to `bigtiffsworld.com`
+this round (see Deployed section below).
+
+### Changed
+- **All iOS keyboard-height tracking/adjustment removed.** The
+  `visualViewport`-driven `--kb-height` custom property (added across
+  several prior rounds to lift `#mobile-nav`, the Focus button, and open
+  sheets above the on-screen keyboard) and the scroll-position-correction
+  listener were both removed entirely, along with the `note-title`/
+  `note-content` `font-size: 1rem` override that had been added to
+  suppress iOS Safari's auto-zoom on focus. Reverts to Safari's default
+  keyboard behavior across the board, per direct request - the targeted
+  fixes from prior rounds were adding more problems than they solved.
+- **Notepad nav-button toggle — 500ms duplicate-fire guard removed.**
+  `notepadToggleGuardUntil` (added several rounds back to swallow a
+  suspected same-tap double-fire) was blocking legitimate rapid taps on
+  the Notepad nav button. Removed; the original double-fire root cause
+  this guard was defending against was later found and fixed directly
+  (see the 2026-08-06-dated entry above, `setupNotepadBorderBehavior()`
+  not being gated to desktop) - the guard was defensive leftover, not
+  load-bearing.
+- **Proofreader and Text Size windows given the same mobile sheet
+  treatment as Notepad/Draft Pad/Sammy/Stats** - `active` class added so
+  they participate in backdrop-dismiss and nav-active-state tracking the
+  same way; their `hide...()` functions now call
+  `hideMobileSheetBackdrop()`/`updateNavActiveState()` on mobile.
+- **Library review markers** - see `Mobile_Port_Handoff.md`'s "Library
+  review markers" section for the full investigation; net changes:
+  - Fixed a real bug: tapping a review marker armed a document-wide
+    listener where the *next click anywhere in the app* silently and
+    permanently dismissed that entry's flag - this is what looked like
+    "markers disappearing every time I refresh to test the next step."
+    Kept the same tap-to-view/tap-away-to-dismiss interaction (explicitly
+    requested), fixed the dismiss action to replace the cleared marker
+    with the same default white dot every unflagged entry shows, instead
+    of leaving a gap.
+  - Category-level markers made non-interactive/display-only (`aria-
+    hidden`, no `onclick`/`role`/`tabindex`) - only entry-level markers
+    are tap-to-view/tap-away-to-clear; tapping a category marker now just
+    falls through to the header's own expand/collapse.
+  - A suspected Safari-specific bug (markers not populating in one
+    regular Safari tab, but fine in Chrome and the Home Screen icon) was
+    chased for a full round, including a temporary revert of the white-
+    dot/marker-front treatment - confirmed **not** a code bug at all: a
+    fresh private-browsing tab on the same device rendered correctly
+    immediately, meaning the failing tab had stale `localStorage`
+    (probably accumulated dismissed-review/fallback-cache state from
+    earlier test rounds). White dot/marker-front treatment re-added once
+    confirmed.
+- **Focus button scaled down 20%** - circle 5.25rem → 4.2rem, icon
+  4.5rem → 3.6rem, label text 1rem → 0.8rem (padding scaled to match).
+  The clearance calc reserving space above Focus for Notepad/Draft Pad/
+  Sammy/Stats, and the nav-arm width split (`calc(50% - half-Focus-
+  width)`), were both recalculated to the new 4.2rem figure so nothing
+  drifted out of sync with the smaller button.
+
+### Verification notes
+- Keyboard/toggle-delay/sheet-treatment changes verified via direct
+  function calls and DOM state assertions against the live dev preview
+  (`footeprint-prog.github.io/big-tiff-storyforge/writing.html`), mobile
+  mode forced via `setMobilePreview(true)`.
+- Library review-marker fixes verified end-to-end against the live dev
+  preview with real sync (`fetchLatestFromCanon()` → real GitHub raw
+  fetch) and real DOM `.click()` dispatch (not just calling internal
+  functions): confirmed markers render on fresh sync, survive an
+  unrelated click after viewing a reason, and dismiss correctly on the
+  intended tap-away; confirmed category markers are inert to taps while
+  the header's own expand/collapse still works.
+- Real-device confirmation: markers confirmed working on Chrome, the
+  Home Screen icon, and (after clearing stale site data) expected to work
+  in the previously-affected regular Safari tab - Erica's own real-device
+  testing surfaced both the original bug and the Safari false alarm.
+- Desktop unaffected: none of this round's changes touch code paths
+  outside `body.mobile-layout`-gated CSS/JS or `isMobileMode()`-gated
+  branches.
+
+### Deployed
+- `claude/mobile-port` commit `a47c749` merged to dev repo `main` at
+  `a5c2241`, then promoted to `bigtiffsworld.com` via `big_tiff_launchpage`
+  commit `a8b593e`. Verified byte-identical against
+  `https://bigtiffsworld.com/app/` directly (not just the Pages build
+  API). Manifest/assets unchanged this round (checksummed against the dev
+  repo, no diffs).
+
 ## [2026-08-05 sixth round] – Notepad toggle fix (attempt 5: same-tap duplicate-fire guard), 2px gold border
 
 Mobile-only, at Aaron's direction.

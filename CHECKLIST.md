@@ -130,6 +130,22 @@ they aren't lost now that the old document is marked historical.
       — `claude/mobile-port`, `main`, and the live site — match as of this
       update. See `Mobile_Port_Handoff.md`'s Status header for the
       current state if this has since drifted.
+      **UPDATE 2026-08-03:** another full round + live promotion — removed
+      all iOS keyboard-height tracking/adjustment (reverted to default
+      Safari behavior), removed a 500ms Notepad-toggle guard that was
+      blocking legitimate rapid taps, gave Proofreader/Text Size the same
+      mobile sheet treatment as Notepad/Draft Pad, fixed a real Library
+      review-marker bug (a global click listener was silently and
+      permanently dismissing markers on the next unrelated tap after
+      viewing one), made category-level review markers non-interactive,
+      and scaled the Focus button down 20%. A suspected Safari-specific
+      bug during this round turned out to be stale `localStorage` in one
+      test tab, not a code issue — see `Mobile_Port_Handoff.md`'s "Library
+      review markers" section for the full story, worth reading before
+      touching this code again. Promoted to bigtiffsworld.com (commit
+      `a8b593e`), verified byte-identical against the live domain
+      directly. All three — `claude/mobile-port`, `main`, and the live
+      site — match as of this update.
 - [x] **Achievements & usage-tracking data layer.** DONE 2026-07-26 — 188
       achievements embedded with machine-readable rules (cross-checked
       against the source JSON, 0 mismatches), an AES-encrypted
@@ -295,14 +311,18 @@ if no longer wanted.
       never received, by design (mobile-port work is scoped mobile-only
       unless Aaron says otherwise): `hideNotepad()`'s save-before-close
       reordering (a save/cleanup error can no longer block the panel from
-      closing), the derived note-list title (first 3 words + "…" instead of
-      the literal "Untitled Note" when a note has no explicit title), and
-      whatever the eventual fix turns out to be for the nav-button
-      toggle-close bug (still being chased as of this entry — see
-      CHANGELOG). Desktop's Notepad shares the same underlying functions for
-      some of this (`saveCurrentNote`, `renderNotesList`) so it likely
-      already inherits parts of it for free; needs a deliberate check once
-      the mobile side is fully settled, not before.
+      closing), and the derived note-list title (first 3 words + "…"
+      instead of the literal "Untitled Note" when a note has no explicit
+      title). The nav-button toggle-close bug mentioned in earlier versions
+      of this entry **is resolved** (root cause found: `setupNotepadBorderBehavior()`,
+      a desktop-only "gold border on focus" feature, had a document-wide
+      `mousedown` listener that was never gated to desktop, so on mobile it
+      stripped the `.active` class before the toggle's own click handler
+      could read it — fixed by gating that whole function to desktop).
+      Desktop's Notepad shares the same underlying functions for some of
+      this (`saveCurrentNote`, `renderNotesList`) so it likely already
+      inherits parts of it for free; needs a deliberate check once the
+      mobile side is fully settled, not before.
 
 ## Questions Needing Erica's Input (Not Yet Reviewed)
 
@@ -314,4 +334,4 @@ rather than assuming the whole list is still live.
 
 ---
 
-*Last Updated: 2026-07-27*
+*Last Updated: 2026-08-03*
