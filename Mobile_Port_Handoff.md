@@ -1,39 +1,35 @@
 # Big Tiff StoryForge — Mobile Port Handoff
 
 ## For: whoever picks up mobile work next (agent or human)
-## From: Claude sessions, 2026-07-24 – 2026-08-05, at Aaron's direction
-## Status: **fully caught up as of 2026-08-05 — dev repo `main`,
+## From: Claude sessions, 2026-07-24 – 2026-08-03, at Aaron's/Erica's direction
+## Status: **fully caught up as of 2026-08-03 — dev repo `main`,
 ##         `claude/mobile-port`, and the live site all match again**
-##         (`main` commit `12bc7c2`, `claude/mobile-port` commit `59ea2b5` —
-##         these two are one docs-only commit ahead of the `writing.html`
-##         content itself, a `BUTTON_STYLE_GUIDE.md` fix documenting the
-##         36px toolbar-button exception that the guide hadn't caught up to
-##         yet; `writing.html` is unchanged since `a4059c4`/`0740a9d`, so the
-##         live site below is still current). Between 2026-07-27 and this
-##         update, `claude/mobile-port`
-##         picked up a long run of mobile-only rounds without a main sync:
-##         the guidance-rail handle overhaul (unrestricted drag range, the
-##         edge-alignment corner glitch fixed by letting the strip extend
-##         under the header/nav bars instead of stopping short), the
-##         autosave/word-count text moved off a viewport-fixed overlay and
-##         embedded as a non-editable sibling inside the editor field, panel
-##         icon sizes unified to match `.count-badge`, Home and Stats swapped
-##         between the header and the nav, and — the biggest single round —
-##         the bottom nav and editor toolbar both rebuilt: Focus is now an
-##         independently `position:fixed`-centered 84px gold circle (not a
-##         flex child, so its centering doesn't depend on its neighbors'
-##         widths) flanked by two small icon arms (Notepad+Outline left,
-##         Library+Stats right), and the editor toolbar dropped its
-##         container styling, grew to 36px buttons, gained Copy/Paste, and
-##         reordered. See CHANGELOG's 2026-08-02 through 2026-08-05 entries
-##         for the full round-by-round detail - not repeated here.
-## Live site (`bigtiffsworld.com`) status: **promoted 2026-08-05** (commit
-##         `d2f01bb` in `big_tiff_launchpage`), verified **byte-identical**
-##         against the actual live domain response (not just the Pages
-##         build API, which can report "built" before a CDN edge actually
-##         serves the new bytes - fetched `https://bigtiffsworld.com/app/`
-##         directly and diffed against the pushed file after normalizing
-##         line endings, since this Windows checkout's `core.autocrlf`
+##         (`claude/mobile-port` commit `a47c749`, `main` commit `a5c2241`
+##         via merge, `big_tiff_launchpage` `main` commit `a8b593e`).
+##         This round (2026-08-03) covered: removed all iOS keyboard-height
+##         tracking/adjustment (reverted to default Safari behavior after
+##         several targeted fixes made things worse), removed a 500ms
+##         Notepad-toggle guard that was blocking rapid taps, gave
+##         Proofreader/Text Size the same mobile sheet treatment as
+##         Notepad/Draft Pad, and a long back-and-forth on Library review
+##         markers - see "Library review markers" section below for the
+##         full story, it has real lessons for whoever touches this next.
+##         Focus button also scaled down 20% (84px circle -> 67.2px /
+##         5.25rem -> 4.2rem, icon and label scaled to match, plus the
+##         clearance math above it for Notepad/Draft Pad/Sammy/Stats and
+##         the nav-arm width split recalculated to stay in sync). Prior
+##         rounds (through 2026-08-05 per that round's own dating - the
+##         guidance-rail handle overhaul, the bottom-nav/editor-toolbar
+##         rebuild, etc.) are unchanged and still summarized below. See
+##         CHANGELOG for the full round-by-round detail - not repeated here.
+## Live site (`bigtiffsworld.com`) status: **promoted 2026-08-03** (commit
+##         `a8b593e` in `big_tiff_launchpage`, copied from dev repo commit
+##         `a47c749`), verified **byte-identical** against the actual live
+##         domain response (not just the Pages build API, which can report
+##         "built" before a CDN edge actually serves the new bytes -
+##         fetched `https://bigtiffsworld.com/app/` directly and diffed
+##         against `git show HEAD:app/index.html` after stripping `\r`
+##         from both sides, since this Windows checkout's `core.autocrlf`
 ##         makes the local working-tree copy differ byte-for-byte from the
 ##         LF-only git blob/live response even when the content is
 ##         identical - don't mistake that for a real diff next time).
@@ -45,17 +41,60 @@
 ##         workflow. What's still genuinely open: his test device (15 Pro)
 ##         differs from Erica's phone (16 Pro Max per her user profile) — a
 ##         device-specific bug on her exact model isn't ruled out just
-##         because his 15 Pro checks look fine. The 2026-08-05 round's new
-##         gestures (Focus's independent centering, the rebuilt toolbar's
-##         Copy/Paste) haven't had a dedicated real-device pass called out
-##         specifically yet - worth asking about if related bugs come in.
+##         because his 15 Pro checks look fine. This round's Library
+##         review-marker bug was specifically device/browser-context
+##         dependent (see below) - a reminder that "works on my test device"
+##         doesn't rule out a different real-world context still failing.
 ## Dev branch: `claude/mobile-port` — long-lived, kept around, not deleted,
 ##             still the working branch for ongoing mobile UI iteration
 ##             (its GitHub Pages config is what gives the ~1min preview
 ##             rebuild). Merged to `main` periodically, not abandoned.
-## Dev repo main: https://github.com/footeprint-prog/big-tiff-storyforge — **matches `claude/mobile-port` exactly** (merge commit `12bc7c2`, 2026-08-05). Expect `main` to trail again once new commits land on the branch - that's normal, re-sync before the next promotion.
+## Dev repo main: https://github.com/footeprint-prog/big-tiff-storyforge — **matches `claude/mobile-port` exactly** (merge commit `a5c2241`, 2026-08-03). Expect `main` to trail again once new commits land on the branch - that's normal, re-sync before the next promotion.
 ## Live preview (dev repo Pages): https://footeprint-prog.github.io/big-tiff-storyforge/writing.html (tracks `claude/mobile-port`)
-## **Real live site: https://bigtiffsworld.com/app/ — matches `main`/`claude/mobile-port` as of 2026-08-05, verified against the live domain directly.**
+## **Real live site: https://bigtiffsworld.com/app/ — matches `main`/`claude/mobile-port` as of 2026-08-03, verified against the live domain directly.**
+
+## Library review markers — a debugging story worth reading before touching this code
+This round involved a long, winding investigation into Library review
+markers (the exclamation-circle icon on entries/categories Sammy has
+flagged) that's worth the full story rather than just the final diff,
+because the actual root causes were **not** where they first appeared to be:
+1. **Real bug found and fixed**: `armReviewClear()` attached a document-wide
+   capture-phase click listener the instant a review marker was tapped to
+   view its reason - the *next click anywhere in the app*, unrelated to
+   that entry, silently and permanently dismissed the flag. This is what
+   looked like "markers disappearing every time I refresh to test the next
+   step" - continuing to use the tool after ever tapping a marker erased
+   it. Fixed by reinstating the same tap-to-view/tap-away-to-dismiss
+   design (Erica explicitly wanted this exact interaction kept, not a
+   button-based alternative) - the fix was ensuring the dismiss action
+   replaces the marker with the default white dot instead of leaving a gap,
+   not changing the interaction model itself.
+2. **A second real (smaller) bug**: category-level markers were also
+   individually tappable/dismissible, which wasn't intended - only
+   entry-level markers should be tap-to-view/tap-away-to-clear. Fixed by
+   making category markers a plain, non-interactive visual indicator
+   (`aria-hidden`, no `onclick`/`role`/`tabindex`) - tapping one now just
+   falls through to the category header's normal expand/collapse.
+3. **A false alarm that ate significant time**: markers appeared to work
+   in Chrome and via the Home Screen icon but not in a specific regular
+   Safari tab, even after a full sync reported success and even after
+   closing/reopening that tab. This looked exactly like a Safari-specific
+   code bug (and was treated as one for a round - the white-dot/marker-
+   front treatment was reverted as a suspected cause, then confirmed
+   NOT the cause and re-added). **The actual cause: stale `localStorage`
+   in that one specific regular Safari tab** (almost certainly accumulated
+   dismissed-review entries or an old cached library fallback from earlier
+   test rounds) - a fresh **private-browsing** tab on the same device, same
+   code, rendered correctly immediately. Lesson for next time a report
+   says "works in Chrome/one browser context but not Safari specifically,
+   even after reload": test a private/incognito tab on the failing browser
+   *before* suspecting the code - it isolates "stale local storage on this
+   one tab" from "actually broken in this browser" in about ten seconds,
+   far faster than the code-level investigation this round went through
+   first. The regular Safari tab's stale storage was left for the user to
+   clear herself (Settings > Safari > Advanced > Website Data > remove the
+   site entry) rather than fixed from this end - there's no code-side fix
+   for one browser tab's accumulated local state.
 
 ---
 
@@ -146,9 +185,9 @@ Two real bugs were caught this way that a naive test would have missed:
 
 | Where | Repo | What's there |
 |---|---|---|
-| Dev repo Pages preview | `big-tiff-storyforge`, branch `claude/mobile-port` (Pages config) | **Current** — `writing.html` content has everything through the 2026-08-05 toolbar/nav rebuild round (commit `a4059c4`); HEAD is now `17b7ae2`, one docs-only commit ahead (`BUTTON_STYLE_GUIDE.md`/this file's own status header) that doesn't touch `writing.html`. Rebuilds ~1 min after any push to that branch. |
-| Dev repo `main` | `big-tiff-storyforge` | **Merged and current as of 2026-08-05** (writing.html content via merge commit `0740a9d`; HEAD now `9fb763f` after the same two docs-only commits above). `main` and `claude/mobile-port` are identical at time of writing; expect `main` to trail again once new commits land on the branch. |
-| **Real live site** | `big_tiff_launchpage`, branch `main`, custom domain `bigtiffsworld.com` via Porkbun DNS (no Cloudflare in the path) | **Promoted 2026-08-05** (commit `d2f01bb`) — has everything through the toolbar/nav rebuild round. Assets/manifest unchanged this round (checksums verified identical against the dev repo), only `app/index.html` needed copying; `start_url` was already `./index.html` from a prior round. Verified byte-identical against `https://bigtiffsworld.com/app/` directly (line-ending-normalized — this Windows checkout's `core.autocrlf` makes local/live diffs look nonzero even when content is identical; don't mistake that for drift). |
+| Dev repo Pages preview | `big-tiff-storyforge`, branch `claude/mobile-port` (Pages config) | **Current** — `writing.html` content has everything through the 2026-08-03 Library-review-marker/Focus-resize/keyboard-revert round, commit `a47c749`. Rebuilds ~1 min after any push to that branch. |
+| Dev repo `main` | `big-tiff-storyforge` | **Merged and current as of 2026-08-03** (merge commit `a5c2241`). `main` and `claude/mobile-port` are identical at time of writing; expect `main` to trail again once new commits land on the branch. |
+| **Real live site** | `big_tiff_launchpage`, branch `main`, custom domain `bigtiffsworld.com` via Porkbun DNS (no Cloudflare in the path) | **Promoted 2026-08-03** (commit `a8b593e`, copied from dev repo commit `a47c749`). Assets/manifest unchanged this round (checksums verified identical against the dev repo), only `app/index.html` needed copying; `start_url` was already `./index.html` from a prior round. Verified byte-identical against `https://bigtiffsworld.com/app/` directly (line-ending-normalized — this Windows checkout's `core.autocrlf` makes local/live diffs look nonzero even when content is identical; don't mistake that for drift). |
 
 ## Complete workflow: edit → verify → push → (optional) promote
 
