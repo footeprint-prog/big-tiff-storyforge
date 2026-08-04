@@ -4289,7 +4289,7 @@
                     <div class="flex-1 min-w-0">
                         <div class="font-medium">${titleDisplay}</div>
                         ${entry.content ? `<div class="text-[#E8D9C0] mt-0.5 text-xs break-words">${entry.content}</div>` : ''}
-                        ${isFlagged ? `<div class="review-reason-inline hidden text-sm text-[#D4AF37] mt-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i>${entry.needsReviewReason || ''}</div>` : ''}
+                        ${isFlagged ? `<div class="review-reason-inline hidden text-sm text-[#D4AF37] mt-1 flex items-start gap-2"><span class="flex-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i>${entry.needsReviewReason || ''}</span><button type="button" class="review-dismiss-btn flex-shrink-0 text-xs underline" onclick="dismissReviewMarker(this, '${entry.id}', event)">Got it</button></div>` : ''}
                     </div>
             `;
 
@@ -10628,37 +10628,33 @@
             if (!host) return;
             const reason = host.querySelector('.review-reason-inline');
             if (reason) reason.classList.toggle('hidden');
-
-            // Item 6: for an ENTRY marker, once the reason is showing, the next
-            // click anywhere else clears the marker from that entry for good.
-            const entryId = host.classList.contains('library-entry') ? host.dataset.entryId : null;
-            if (entryId && reason && !reason.classList.contains('hidden')) {
-                armReviewClear(host, entryId, el);
-            }
+            // Dismissal is an explicit action now (the "Got it" button inside
+            // the reason panel calls dismissReviewMarker directly) - it used
+            // to auto-arm on ANY subsequent click anywhere in the app, which
+            // meant simply continuing to use the tool after ever tapping a
+            // marker silently erased that entry's review flag for good. That
+            // was the actual cause of markers "disappearing after every
+            // refresh" - not a sync/data bug.
         }
 
-        function armReviewClear(entryEl, entryId, markerEl) {
-            const handler = (e) => {
-                // Re-tapping the marker or its reason toggles, doesn't clear.
-                if (markerEl.contains(e.target)) return;
-                const reason = entryEl.querySelector('.review-reason-inline');
-                if (reason && reason.contains(e.target)) return;
-                document.removeEventListener('click', handler, true);
-                dismissReview(entryId);
-                const m = entryEl.querySelector('.review-flag-btn');
-                if (m) m.remove();
-                if (reason) reason.remove();
-                // If the category has no flagged entries left, drop its marker too.
-                const section = entryEl.closest('.library-category');
-                if (section && section.querySelectorAll('.library-category-content .review-flag-btn').length === 0) {
-                    const catMarker = section.querySelector('button .review-flag-btn');
-                    if (catMarker) catMarker.remove();
-                    const catReason = section.querySelector(':scope > .review-reason-inline');
-                    if (catReason) catReason.remove();
-                }
-            };
-            // Defer so THIS click (the one that opened the reason) doesn't fire it.
-            setTimeout(() => document.addEventListener('click', handler, true), 0);
+        function dismissReviewMarker(el, entryId, ev) {
+            ev.stopPropagation();
+            ev.preventDefault();
+            const entryEl = el.closest('.library-entry');
+            if (!entryEl) return;
+            dismissReview(entryId);
+            const marker = entryEl.querySelector('.review-flag-btn');
+            if (marker) marker.remove();
+            const reason = entryEl.querySelector('.review-reason-inline');
+            if (reason) reason.remove();
+            // If the category has no flagged entries left, drop its marker too.
+            const section = entryEl.closest('.library-category');
+            if (section && section.querySelectorAll('.library-category-content .review-flag-btn').length === 0) {
+                const catMarker = section.querySelector('button .review-flag-btn');
+                if (catMarker) catMarker.remove();
+                const catReason = section.querySelector(':scope > .review-reason-inline');
+                if (catReason) catReason.remove();
+            }
         }
 
         // ---- Global UI text size (mobile) ----
