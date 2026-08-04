@@ -1135,7 +1135,7 @@
 
         /* ---- Single vertical column ---- */
         body.mobile-layout #center-column { margin-left: 0 !important; margin-right: 0 !important; }
-        body.mobile-layout #center-scroll-area { padding-bottom: calc(var(--mobile-nav-clear) + var(--kb-height, 0px) + 12px); overscroll-behavior: contain; }
+        body.mobile-layout #center-scroll-area { padding-bottom: calc(var(--mobile-nav-clear) + 12px); overscroll-behavior: contain; }
 
         /* The landing now uses one shared cluster on desktop and mobile
            (see the "Landing navigation cluster" block above), so no
@@ -2163,6 +2163,78 @@
             box-shadow: 0 -8px 24px rgba(0,0,0,0.45);
             overscroll-behavior: contain;
         }
+        /* Item (2026-08-05, fifth round, Aaron): side margins on Notepad/
+           Draft Pad only (not the other .notepad-shell panels), "as wide
+           as the rail handle" (var(--rail-handle-w), the guidance rail's
+           own named handle control - 24px) on both sides. Overrides the
+           shared .notepad rule's left:0/right:0 above - higher specificity
+           wins here since these target the ID, not just the class, so no
+           !important fight needed despite the base rule using one.
+           z-index raised well above the guidance rail (465) and
+           scene-status arm (470) so this panel visually wins any overlap
+           in its own corners instead of being covered by rail icons -
+           the specific complaint that made the close X hard to reach. */
+        body.mobile-layout #notepad-window,
+        body.mobile-layout #draftpad-window {
+            left: var(--rail-handle-w) !important;
+            right: var(--rail-handle-w) !important;
+            z-index: 490;
+            /* Item (2026-08-05, fifth round, later same day, Aaron): "raise
+               the bottom edge above the top of the Focus button" - the
+               shared .notepad rule's `bottom: var(--mobile-nav-clear)`
+               only clears the plain nav bar's own height, but the Focus
+               circle (independently position:fixed, see that rule) is
+               taller than the bar and pokes up above it. Its own top edge
+               is exactly `bottom + height` from its own rule
+               (env(safe-area-inset-bottom) + --kb-height + 5.25rem) -
+               reusing that same formula here, plus a small 8px visible
+               gap, guarantees this panel's bottom edge always clears the
+               circle's top regardless of safe-area inset or an open
+               keyboard, rather than a hardcoded px guess that would drift
+               out of sync if either rule's own numbers ever change. */
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 4.2rem + 8px) !important;
+            /* Item (2026-08-05, fifth round, later still, Aaron): "make
+               sure the bottom corners... are rounded as well" - the shared
+               .notepad rule's `16px 16px 0 0` only rounds the top corners,
+               left square for when this sheet sat flush against all three
+               of the left/right/bottom edges. It no longer does (see the
+               side margins and raised bottom above), so a floating card
+               now reads oddly with two sharp bottom corners. Higher
+               specificity (targets the ID, not just the class) wins here
+               without needing !important - this property never had one. */
+            border-radius: 16px;
+            /* Item (2026-08-05, sixth round, Aaron): "2px gold border" -
+               the shared .notepad rule only puts a border on the TOP side
+               (border-width: 2px 0 0 0, for when this sheet sat flush
+               against the other three edges - it no longer does, see
+               above), and .active's own `border: 4px solid #D4AF37`
+               (desktop-authored) would otherwise win the color/style at
+               equal specificity by source order. Setting the full
+               shorthand explicitly here removes any ambiguity - 2px gold
+               on all four sides regardless of .active state. */
+            border: 2px solid #D4AF37;
+        }
+        /* Apply same mobile sheet styling to Sammy and Stats windows */
+        body.mobile-layout #sammy-export-window,
+        body.mobile-layout #stats-window {
+            left: var(--rail-handle-w) !important;
+            right: var(--rail-handle-w) !important;
+            z-index: 490;
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 4.2rem + 8px) !important;
+            border-radius: 16px;
+            border: 2px solid #D4AF37;
+        }
+        /* Dim backdrop - shown only while Notepad/Draft Pad are open (see
+           showMobileSheetBackdrop()/hideMobileSheetBackdrop() in the JS).
+           Sits above the guidance rail/status arm (dims them too, not just
+           the plain editor content) and below the panel itself. */
+        #mobile-sheet-backdrop { display: none; }
+        body.mobile-layout #mobile-sheet-backdrop.active {
+            display: block;
+            position: fixed; inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 475;
+        }
         body.mobile-layout .notepad-body { flex-direction: column; }
         /* Item (2026-08-05, later round, Aaron): Notepad/Draft Pad
            redesign - "practically unusable... list of notes almost
@@ -2254,6 +2326,27 @@
            padding below is filled with the same dark brown all the way to
            the true bottom edge of the viewport instead of showing
            whatever's behind it. */
+        /* Item (2026-08-05, fifth round, Aaron): "Notepad button still
+           doesn't toggle close" - fourth attempt, and this time a concrete,
+           evidence-backed one rather than another guess. `--kb-height` (set
+           in init(), via the visualViewport API - see that code's own
+           comment) already exists specifically to track how much of the
+           layout viewport the on-screen keyboard covers, but was only ever
+           consumed by #center-scroll-area's padding. #mobile-nav itself
+           (position:fixed, bottom:0) was NOT adjusted for it - `bottom:0`
+           on a fixed element is anchored to the LAYOUT viewport, which
+           does not shrink when the keyboard opens, so on iOS the nav bar
+           stays glued to the true screen bottom, now COVERED by the
+           keyboard, rather than rising to sit above it. Notepad is the
+           ONLY #mobile-nav-toggled panel with a focusable text field
+           (#note-title/#note-content) - Outline/Library/Stats/Text have
+           none, which is exactly why only Notepad ever exhibited this:
+           type a note (keyboard opens, nav bar slides behind it) - tap
+           "Notepad" once to close - the tap lands in the region now
+           covered by the keyboard, never reaching the nav at all, so
+           nothing in mobileNav()/hideNotepad() (all three prior fixes)
+           could possibly have run. bottom now tracks --kb-height so the
+           whole bar rises to sit just above the keyboard instead. */
         body.mobile-layout #mobile-nav {
             position: fixed; left: 0; right: 0; bottom: 0; z-index: 480;
             display: flex; justify-content: space-between; align-items: flex-end;
@@ -2291,8 +2384,12 @@
         body.mobile-layout #mobile-nav button[data-nav="focus"] {
             position: fixed;
             left: 50%; transform: translateX(-50%);
+            /* Independently position:fixed (out of #mobile-nav's own flex
+               flow - see the comment on that rule), so it needs the same
+               --kb-height rise added directly, not inherited from the nav
+               bar's own bottom. */
             bottom: env(safe-area-inset-bottom, 0px);
-            width: 5.25rem; height: 5.25rem;
+            width: 4.2rem; height: 4.2rem;
             padding: 0;
             z-index: 481;
         }
@@ -2306,7 +2403,7 @@
            against the now-gold fill rather than a highlight against the
            old dark one. */
         body.mobile-layout .focus-circle {
-            width: 5.25rem; height: 5.25rem; min-width: 5.25rem; min-height: 5.25rem;
+            width: 4.2rem; height: 4.2rem; min-width: 4.2rem; min-height: 4.2rem;
             border-radius: 50%;
             box-sizing: border-box;
             display: flex; align-items: center; justify-content: center;
@@ -2325,7 +2422,7 @@
            border on each side), so 72px leaves ~4px clearance per side -
            reads as filling the circle without the glyph touching/clipping
            against the border. */
-        body.mobile-layout .focus-circle i { font-size: 4.5rem; color: #3D2B1F; }
+        body.mobile-layout .focus-circle i { font-size: 3.6rem; color: #3D2B1F; }
         /* "Make sure the color of the box behind the word Focus matches the
            color of the circle" - background #3D2B1F -> #D4AF37, matching
            .focus-circle's own new fill exactly. Text color flipped from
@@ -2341,8 +2438,8 @@
         body.mobile-layout .focus-label {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: #D4AF37; color: #3D2B1F;
-            font-size: 1rem; font-weight: 700; letter-spacing: 0.4px;
-            padding: 2px 8px; white-space: nowrap; line-height: 1.4;
+            font-size: 0.8rem; font-weight: 700; letter-spacing: 0.4px;
+            padding: 1.6px 6.4px; white-space: nowrap; line-height: 1.4;
         }
 
         /* The two arms: previously each carried its own background/border
@@ -2363,7 +2460,7 @@
         body.mobile-layout .nav-arm {
             display: flex; align-items: stretch; justify-content: space-evenly;
             height: 3.5rem;
-            width: calc(50% - 2.625rem);
+            width: calc(50% - 2.1rem);
         }
         body.mobile-layout .nav-arm button { min-width: var(--tap); padding: 0; }
 
@@ -2533,7 +2630,7 @@
 
         <!-- LEFT: Outline Panel -->
         <div id="left-panel"
-             class="fixed top-14 left-0 bottom-0 w-80 bg-[#3D2B1F] border-r border-[#D4AF37]/30 overflow-y-auto z-[40] transform transition-transform duration-300">
+             class="fixed top-14 left-0 bottom-0 w-80 bg-[#3D2B1F] border-r-2 border-r-[#D4AF37] overflow-y-auto z-[40] transform transition-transform duration-300">
             
             <div class="p-4">
                 <div class="flex justify-end mb-1 -mr-1">
@@ -2674,7 +2771,7 @@
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="uppercase text-[10px] tracking-[1.5px] text-[#D4AF37]/70 mb-1">
-                                <span id="scene-summary-title"></span><span id="scene-summary-title-sep" class="hidden"> &mdash; </span>SCENE SUMMARY
+                                <span id="scene-summary-title" class="ml-3"></span><span id="scene-summary-title-sep" class="hidden"> &mdash; </span>SCENE SUMMARY
                             </div>
                             <div id="guidance-summary-text" class="text-sm leading-relaxed text-[#F4EDE4]"></div>
                             <button type="button" id="summary-expand-btn" class="m-expand" onclick="toggleMobileClamp('guidance-summary-text', this)"></button>
@@ -2810,7 +2907,7 @@
                                     <i class="fa-solid fa-triangle-exclamation text-[#D4AF37] text-lg"></i>
                                 </div>
                                 <div class="flex-1 min-w-0">
-                                    <div class="uppercase text-[10px] tracking-[1.5px] text-[#D4AF37] font-semibold mb-1">Review Note — What Changed</div>
+                                    <div class="uppercase text-[10px] tracking-[1.5px] text-[#D4AF37] font-semibold mb-1"><i class="fa-solid fa-circle-exclamation mr-1"></i>Review Note — What Changed</div>
                                     <div id="review-note-text" class="text-sm leading-relaxed text-[#F4EDE4]"></div>
                                     <button type="button" id="review-expand-btn" class="m-expand" onclick="toggleMobileClamp('review-note-text', this)"></button>
                                 </div>
@@ -2982,7 +3079,7 @@
 
         <!-- RIGHT: Library Panel -->
         <div id="right-panel"
-             class="fixed top-14 right-0 bottom-0 w-80 bg-[#3D2B1F] border-l border-[#D4AF37]/30 overflow-y-auto z-[40] transform transition-transform duration-300 translate-x-full">
+             class="fixed top-14 right-0 bottom-0 w-80 bg-[#3D2B1F] border-l-2 border-l-[#D4AF37] overflow-y-auto z-[40] transform transition-transform duration-300 translate-x-full">
             
             <div class="p-4">
                 <div class="flex justify-start mb-1 -ml-1">
@@ -3089,6 +3186,16 @@
         <div class="guidance-float-body" data-float-body></div>
         <div class="guidance-float-resize-handle" data-resize-handle></div>
     </div>
+
+    <!-- Item (2026-08-05, fifth round, Aaron): "dim the background... when
+         the notepad window is open," Notepad and Draft Pad only (not
+         Stats/Changelog/Proofreader/Sammy, which also share the .notepad
+         shell) - mobile-only. Also doubles as an easier way to dismiss
+         either panel (tap outside it) than the small close X, which
+         Aaron's flagged is often covered by the guidance rail. A single
+         shared element since only one sheet is ever open at a time
+         (mobileCloseEverything() discipline). -->
+    <div id="mobile-sheet-backdrop" class="hidden" onclick="dismissMobileSheetBackdrop()"></div>
 
     <!-- Floating Notepad -->
     <div id="notepad-window" class="notepad hidden" style="left: 80px; top: 420px; width: 480px; height: 380px;">
@@ -3348,7 +3455,7 @@
     </div>
 
     <!-- ==================== STATS & PROGRESS ==================== -->
-    <div id="stats-window" class="notepad hidden" style="left: 620px; top: 120px; width: 460px; height: 440px;">
+    <div id="stats-window" class="notepad active hidden" style="left: 620px; top: 120px; width: 460px; height: 440px;">
         <div class="notepad-header" id="stats-header">
             <div class="flex items-center gap-x-2">
                 <i class="fa-solid fa-chart-line text-[#D4AF37]"></i>
@@ -3507,7 +3614,7 @@
     </div>
 
     <!-- Proofreader Window -->
-    <div id="proofreader-window" class="notepad hidden" style="left: 580px; top: 80px; width: 520px; height: 460px;">
+    <div id="proofreader-window" class="notepad active hidden" style="left: 580px; top: 80px; width: 520px; height: 460px;">
 
         <div class="notepad-header" id="proofreader-header">
             <div class="flex items-center gap-x-2">
@@ -3557,7 +3664,7 @@
     </div>
 
     <!-- Send to Sammy Export Window -->
-    <div id="sammy-export-window" class="notepad hidden" style="left: 580px; top: 80px; width: 520px; height: 480px;">
+    <div id="sammy-export-window" class="notepad active hidden" style="left: 580px; top: 80px; width: 520px; height: 480px;">
 
         <div class="notepad-header" id="sammy-export-header">
             <div class="flex items-center gap-x-2">
@@ -3569,24 +3676,20 @@
             </button>
         </div>
 
-        <div class="px-3 pt-3 pb-2 border-b border-[#D4AF37]/20">
-            <div class="text-xs text-[#D4AF37]/70">
-                Copy this into a Sammy conversation for a contextual editorial pass.
-                Nothing is sent automatically - this tool only prepares the text.
+        <div class="px-3 pt-3 pb-2 border-b border-[#D4AF37]/20 flex items-start gap-x-3">
+            <button onclick="copySammyExportText()" id="sammy-export-copy-btn" title="Copy all"
+                    class="flex-shrink-0 w-12 h-12 flex items-center justify-center text-[#D4AF37] hover:text-[#E8C86B]">
+                <i class="fa-solid fa-copy text-xl"></i>
+            </button>
+            <div class="text-xs text-[#D4AF37]/70 flex-1">
+                <strong class="text-[#D4AF37]">Grok:</strong> Sammy convo draft text and prompt preparation window. Copy/paste this into a new Grok convo for a contextual editorial pass. Only you are ever allowed to make any edits.
             </div>
         </div>
 
         <div class="flex-1 overflow-y-auto p-3">
-            <textarea id="sammy-export-text" readonly
+            <textarea id="sammy-export-text"
                       class="w-full h-full bg-[#3D2B1F] border border-[#D4AF37]/40 rounded-2xl p-4 text-sm leading-relaxed resize-none focus:outline-none focus:border-[#D4AF37]"
                       style="white-space: pre-wrap;"></textarea>
-        </div>
-
-        <div class="px-3 pb-3">
-            <button onclick="copySammyExportText()" id="sammy-export-copy-btn"
-                    class="w-full h-9 text-sm font-semibold rounded-xl bg-[#D4AF37] text-[#3D2B1F] hover:brightness-110 transition-all">
-                <i class="fa-solid fa-copy mr-1"></i> Copy All
-            </button>
         </div>
 
         <div id="sammy-export-resize-handle" class="notepad-resize-handle"></div>
@@ -3666,7 +3769,7 @@
          zoom control. Scales the root font size, so every rem-based size in
          the tool grows together instead of only the draft text. Stored per
          device (a phone and a laptop want different sizes) and never synced. -->
-    <div id="textsize-window" class="notepad hidden">
+    <div id="textsize-window" class="notepad active hidden">
         <div class="notepad-header">
             <div class="flex items-center gap-x-2">
                 <i class="fa-solid fa-font text-[#D4AF37]"></i>
@@ -4109,13 +4212,13 @@
             // review by Sammy, so the category header can show a marker without
             // requiring the user to expand it first to notice anything changed.
             const flaggedEntries = (entries || []).filter(e => e.status === 'review' && !!e.needsReviewReason && !isReviewDismissed(e.id));
-            // The marker is a span (it lives inside the header button) that
-            // keeps the hover tooltip on desktop, and on mobile becomes a tap
-            // target revealing the same info inline, since hover doesn't exist
-            // on touch. It stays at the START of the category title.
+            // Static indicator only - not tappable. It just tells the user
+            // something inside changed for good; expanding the category (the
+            // header's own tap target) is how she sees which entries and why.
+            // Only entry-level markers are tap-to-view/tap-away-to-clear.
             const flaggedTitles = flaggedEntries.map(e => e.title).join(', ');
             const categoryMarker = flaggedEntries.length > 0
-                ? `<span class="review-flag-btn" role="button" tabindex="0" aria-label="Updated entries" title="Updated: ${flaggedTitles.replace(/"/g, '&quot;')}" onclick="toggleReviewReason(this, event)"><i class="fa-solid fa-circle-exclamation"></i></span> `
+                ? `<span class="review-flag-btn" aria-hidden="true" title="Updated: ${flaggedTitles.replace(/"/g, '&quot;')}"><i class="fa-solid fa-circle-exclamation"></i></span> `
                 : '';
 
             const header = document.createElement('button');
@@ -4149,16 +4252,6 @@
             };
 
             section.appendChild(header);
-
-            // Touch-reachable equivalent of the category marker's hover
-            // tooltip: toggled by tapping the "!" above (mobile only).
-            if (flaggedEntries.length > 0) {
-                const reasonBar = document.createElement('div');
-                reasonBar.className = 'review-reason-inline hidden px-4 py-2 text-sm text-[#D4AF37] bg-[#3D2B1F] border-t border-[#D4AF37]/30';
-                reasonBar.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1.5"></i>Updated: ${flaggedTitles}`;
-                section.appendChild(reasonBar);
-            }
-
             section.appendChild(content);
 
             return section;
@@ -4175,13 +4268,14 @@
             // driving the Library changelog. Dismissed entries (the user has
             // seen the reason and clicked away) drop the marker.
             const isFlagged = entry.status === 'review' && !!entry.needsReviewReason && !isReviewDismissed(entry.id);
-            // Desktop keeps the hover tooltip; on mobile the icon is a tap
-            // target that reveals Sammy's review reason inline. Per item 6
-            // (2026-07-24) the entry marker sits at the END of the title.
-            const marker = isFlagged
-                ? ` <span class="review-flag-btn" role="button" tabindex="0" aria-label="Why this changed" title="${(entry.needsReviewReason || '').replace(/"/g, '&quot;')}" onclick="toggleReviewReason(this, event)"><i class="fa-solid fa-circle-exclamation"></i></span>`
-                : '';
-            const titleDisplay = `${entry.title}${marker}`;
+            // White dot at START for non-flagged, exclamation mark at START
+            // for flagged. The Safari bug this was earlier suspected to
+            // cause turned out to be stale localStorage in one test tab, not
+            // this code - confirmed via a fresh private tab rendering fine.
+            const dotMarker = isFlagged
+                ? `<span class="review-flag-btn" role="button" tabindex="0" aria-label="Why this changed" title="${(entry.needsReviewReason || '').replace(/"/g, '&quot;')}" onclick="toggleReviewReason(this, event)"><i class="fa-solid fa-circle-exclamation"></i></span>`
+                : `<span class="text-[#F4EDE4] mr-1">●</span>`;
+            const titleDisplay = `${dotMarker} ${entry.title}`;
 
             let html = `
                 <div class="flex justify-between items-start gap-2">
@@ -4318,16 +4412,43 @@
             }
         }
 
+        /**
+         * ROOT CAUSE FOUND (2026-08-06): this is a desktop-only feature -
+         * toggles the 4px gold "focused" border on/off depending on whether
+         * the notepad window currently has focus, using a document-wide
+         * `mousedown` listener that removes 'active' the instant ANY click
+         * lands outside the notepad's own DOM (nav buttons, the backdrop,
+         * anywhere). It was never gated to desktop, so on mobile it ran too
+         * - and mobile overloads the SAME 'active' class as the signal for
+         * "is this sheet currently open" (see mobileNav()'s notepad case and
+         * dismissMobileSheetBackdrop(), both of which gate on
+         * `classList.contains('active')`).
+         * Sequence on a real tap: mousedown fires first (this listener runs,
+         * removes 'active' because the tap target - the nav button or the
+         * backdrop - is outside #notepad-window), THEN click fires
+         * (mobileNav('notepad') or dismissMobileSheetBackdrop() runs,  reads
+         * 'active' as already-gone, concludes the sheet must already be
+         * closed, and either re-opens it from scratch or silently no-ops).
+         * This explains both reported symptoms exactly: the nav button
+         * reopening to the notes list instead of closing, AND tapping the
+         * backdrop only clearing the dim overlay without closing the sheet
+         * underneath. Five earlier fix attempts (duplicate-fire guards,
+         * keyboard-height theories) targeted symptoms of a completely
+         * different layer and could never have touched this. Fix: no-op
+         * every path in mobile mode, so 'active' on mobile is governed
+         * exclusively by openNotepad()/hideNotepad() as intended.
+         */
         function setupNotepadBorderBehavior() {
             const notepad = document.getElementById('notepad-window');
-            
-            const activate = () => notepad.classList.add('active');
-            const deactivate = () => notepad.classList.remove('active');
+
+            const activate = () => { if (!isMobileMode()) notepad.classList.add('active'); };
+            const deactivate = () => { if (!isMobileMode()) notepad.classList.remove('active'); };
 
             notepad.addEventListener('mousedown', activate);
             notepad.addEventListener('focusin', activate);
 
             document.addEventListener('mousedown', (e) => {
+                if (isMobileMode()) return;
                 if (!notepad.contains(e.target)) {
                     deactivate();
                 }
@@ -4730,9 +4851,49 @@
             }
         }
 
+        /**
+         * Item (2026-08-05, fifth round): dim backdrop shared by Notepad
+         * and Draft Pad only - mobile-only (no-op off mobile, matching
+         * every other mobileMode-gated helper in this file). Tapping it
+         * closes whichever of the two is actually open, calling
+         * hideNotepad()/hideDraftPad() directly rather than
+         * mobileCloseEverything(null) - same reasoning as the isolated
+         * Notepad nav-toggle fix earlier this round, so a failure in some
+         * unrelated sheet's hide function can't block this dismiss either.
+         */
+        function showMobileSheetBackdrop() {
+            if (!isMobileMode()) return;
+            const backdrop = document.getElementById('mobile-sheet-backdrop');
+            if (backdrop) backdrop.classList.add('active');
+        }
+        function hideMobileSheetBackdrop() {
+            const backdrop = document.getElementById('mobile-sheet-backdrop');
+            if (backdrop) backdrop.classList.remove('active');
+        }
+        // Same same-tap-duplicate-fire guard as mobileNav()'s notepad case
+        // (see that comment) - defensive here too, though unconfirmed
+        // whether it's the same mechanism behind Aaron's report that
+        // tapping the backdrop clears the dim but leaves Notepad open
+        // (Draft Pad closes correctly the same way).
+        let backdropDismissGuardUntil = 0;
+        function dismissMobileSheetBackdrop() {
+            const now = Date.now();
+            if (now < backdropDismissGuardUntil) return;
+            backdropDismissGuardUntil = now + 500;
+            const notepad = document.getElementById('notepad-window');
+            const draftpad = document.getElementById('draftpad-window');
+            const stats = document.getElementById('stats-window');
+            const sammy = document.getElementById('sammy-export-window');
+            if (notepad && notepad.classList.contains('active')) hideNotepad();
+            if (draftpad && draftpad.classList.contains('active')) hideDraftPad();
+            if (stats && stats.classList.contains('active')) hideStatsWindow();
+            if (sammy && sammy.classList.contains('active')) hideSammyExport();
+            hideMobileSheetBackdrop();
+        }
+
         function openNotepad() {
             trackEvent('notepadOpen');
-            if (isMobileMode()) mobileCloseEverything('notepad-window');
+            if (isMobileMode()) { mobileCloseEverything('notepad-window'); showMobileSheetBackdrop(); }
             const notepad = document.getElementById('notepad-window');
             notepad.classList.remove('hidden');
             notepad.style.display = 'flex';
@@ -4798,6 +4959,7 @@
             notepad.style.display = 'none';
             notepad.classList.remove('active');
             if (typeof updateNavActiveState === 'function') updateNavActiveState();
+            hideMobileSheetBackdrop();
 
             try { if (currentNoteId) saveCurrentNote(); } catch (e) { console.error('[Notepad] saveCurrentNote failed on close', e); }
             try { saveNotepadState(); } catch (e) { console.error('[Notepad] saveNotepadState failed on close', e); }
@@ -4807,6 +4969,21 @@
             } catch (e) { console.error('[Notepad] delete-confirm-modal reset failed on close', e); }
         }
 
+        /**
+         * Item (2026-08-06): belt-and-suspenders for the same white-space-
+         * above-keyboard bug the html.mobile-layout position:fixed lock
+         * targets (see that rule's own comment for the root-cause writeup).
+         * The lock should stop the document from panning at all, but iOS
+         * Safari's rubber-band/momentum scroll has a long history of still
+         * nudging window.scrollX/scrollY by a few px even on a
+         * position:fixed document in some OS versions - if that happens
+         * while the keyboard is up, position:fixed content anchored to the
+         * layout viewport would visibly shift by that same amount. Actively
+         * snapping scroll back to (0,0) whenever it drifts, mobile-only,
+         * costs nothing when it never fires (the common case once the CSS
+         * lock is in place) and can't affect desktop's real document
+         * scrolling since it's gated on isMobileMode().
+         */
         // ==================== DRAFT PAD ====================
         // Per-scene draft management. Two kinds of "draft":
         //  1. The CURRENT draft - whatever's live in the main editor right now.
@@ -5029,7 +5206,7 @@
             // Item (2026-08-05, later round, Aaron): see the matching
             // comment in sendSceneToSammy() - opening from the action bank
             // should collapse it, not leave it open behind the new window.
-            if (isMobileMode()) { mobileCloseEverything('draftpad-window'); resetStatusActionsBank(); }
+            if (isMobileMode()) { mobileCloseEverything('draftpad-window'); resetStatusActionsBank(); showMobileSheetBackdrop(); }
             const draftpad = document.getElementById('draftpad-window');
             draftpad.classList.remove('hidden');
             draftpad.style.display = 'flex';
@@ -5066,6 +5243,7 @@
             saveDraftPadState();
             draftpad.style.display = 'none';
             draftpad.classList.remove('active');
+            hideMobileSheetBackdrop();
 
             document.getElementById('draftpad-delete-confirm-modal').classList.remove('flex');
             document.getElementById('draftpad-delete-confirm-modal').classList.add('hidden');
@@ -5586,6 +5764,7 @@
             saveProofreaderState();
             win.style.display = 'none';
             win.classList.remove('active');
+            if (isMobileMode()) { hideMobileSheetBackdrop(); updateNavActiveState(); }
         }
 
         function setProofreaderState(state) {
@@ -6079,7 +6258,7 @@
             // from the scene-status arm's action bank should collapse that
             // bank back closed, not leave it open behind the new window -
             // see the matching call in openDraftPad().
-            if (isMobileMode()) { mobileCloseEverything('sammy-export-window'); resetStatusActionsBank(); }
+            if (isMobileMode()) { mobileCloseEverything('sammy-export-window'); resetStatusActionsBank(); showMobileSheetBackdrop(); }
 
             const textarea = document.getElementById('sammy-export-text');
             textarea.value = buildSammyExportText();
@@ -6096,6 +6275,7 @@
             saveSammyExportState();
             win.style.display = 'none';
             win.classList.remove('active');
+            if (isMobileMode()) hideMobileSheetBackdrop();
         }
 
         function copySammyExportText() {
@@ -7634,7 +7814,7 @@
         // ---- Stats window (mirrors Draft Pad's window pattern) ----
         function showStoryStats() {
             trackEvent('statsOpen');
-            if (isMobileMode()) mobileCloseEverything('stats-window');
+            if (isMobileMode()) { mobileCloseEverything('stats-window'); showMobileSheetBackdrop(); }
             const win = document.getElementById('stats-window');
             win.classList.remove('hidden');
             win.style.display = 'flex';
@@ -7648,6 +7828,7 @@
             saveStatsWindowState();
             win.style.display = 'none';
             win.classList.remove('active');
+            if (isMobileMode()) hideMobileSheetBackdrop();
         }
         function renderStatsWindow() {
             const s = getStatsData();
@@ -9585,6 +9766,12 @@
 
         function applyMobileLayoutClass() {
             document.body.classList.toggle('mobile-layout', isMobileMode());
+            // Mirrored onto <html> too - CSS can't reach the document root
+            // from a body-scoped class alone, and locking html's own scroll
+            // (see the html.mobile-layout rule) is what stops iOS Safari's
+            // native "scroll the focused element into view" from panning
+            // the whole page and revealing blank space above a fixed sheet.
+            document.documentElement.classList.toggle('mobile-layout', isMobileMode());
             applyUiScale();          // no-op / cleared when not mobile
             syncMobileHeaderHeight();
         }
@@ -10286,6 +10473,26 @@
         })();
 
         // ---- Bottom navigation ----
+        // Item (2026-08-05, sixth round, Aaron): "create a new note, begin
+        // editing it - the Notepad button brings me back to the note list
+        // (as if reopening)." This is the smoking gun for a fourth-attempt
+        // theory: a real duplicate firing of this exact click handler for
+        // one physical tap (a documented iOS WebKit quirk, most likely
+        // when the tapped element's own class/size changes as a DIRECT
+        // result of its own click handler - exactly what happens here).
+        // First firing: notepad IS open -> wasOpen true -> hideNotepad()
+        // closes it. Second, near-instant firing of the SAME tap: notepad
+        // is NOW closed -> wasOpen false -> the else branch runs
+        // openNotepad(), which unconditionally resets to list view - so
+        // the whole panel appears to "reopen to the list" instead of
+        // closing, matching this report exactly. (Earlier rounds' "nothing
+        // happens" reports are also consistent with this: before the
+        // list/editor split existed, "reopening" just re-showed the same
+        // editor content, indistinguishable from doing nothing.) Guarded
+        // here with a short time-window swallow of any second invocation
+        // for the SAME tap, rather than trying to prevent the duplicate
+        // event itself (browser-internal, not something JS can suppress
+        // reliably at the source).
         function mobileNav(what) {
             const left = document.getElementById('left-panel');
             const right = document.getElementById('right-panel');
@@ -10320,23 +10527,17 @@
                     break;
                 }
                 case 'notepad': {
-                    // Item (2026-08-05, later round): still not toggling
-                    // closed on real iOS Safari/Chrome after two targeted
-                    // fixes inside hideNotepad() itself - isolating this
-                    // case from mobileCloseEverything(null) entirely as a
-                    // third attempt, since that call also runs
-                    // hideDraftPad/hideChangelog/hideProofreader/
-                    // hideSammyExport/hideStatsWindow/hideTextSize, none of
-                    // which have had the same scrutiny hideNotepad() has -
-                    // if any of THOSE throws, the exception propagates out
-                    // of mobileCloseEverything() uncaught, past this case,
-                    // and out of mobileNav() itself, skipping this case's
-                    // own remaining lines AND the updateNavActiveState()
-                    // call at the very end of mobileNav(). The close path
-                    // now calls hideNotepad() directly - no dependency on
-                    // any other sheet's code at all - and the open path
-                    // wraps the other-sheets cleanup in try/catch so a
-                    // failure there can't stop Notepad from opening either.
+                    // ROOT CAUSE FOUND AND FIXED (2026-08-06), after five
+                    // earlier attempts at the wrong layer (duplicate-fire
+                    // guards, keyboard-height theories): setupNotepadBorderBehavior()'s
+                    // document-wide `mousedown` listener - a desktop-only
+                    // "show gold border while focused" feature - was never
+                    // gated to desktop, so on mobile it removed 'active' the
+                    // instant ANY tap landed outside #notepad-window
+                    // (including this very nav button, and the dim
+                    // backdrop), racing ahead of the click handler below
+                    // that reads 'active' to decide open vs. closed. See
+                    // that function's own comment for the full writeup.
                     const np = document.getElementById('notepad-window');
                     const wasOpen = np.classList.contains('active') && np.style.display !== 'none';
                     if (wasOpen) {
@@ -10422,7 +10623,7 @@
             if (reason) reason.classList.toggle('hidden');
 
             // Item 6: for an ENTRY marker, once the reason is showing, the next
-            // click anywhere else clears the marker from that entry for good.
+            // tap anywhere else clears the marker from that entry for good.
             const entryId = host.classList.contains('library-entry') ? host.dataset.entryId : null;
             if (entryId && reason && !reason.classList.contains('hidden')) {
                 armReviewClear(host, entryId, el);
@@ -10437,16 +10638,16 @@
                 if (reason && reason.contains(e.target)) return;
                 document.removeEventListener('click', handler, true);
                 dismissReview(entryId);
+                // Replace the marker with the same default white dot every
+                // non-flagged entry shows - not just remove it and leave a gap.
                 const m = entryEl.querySelector('.review-flag-btn');
-                if (m) m.remove();
+                if (m) m.outerHTML = '<span class="text-[#F4EDE4] mr-1">●</span>';
                 if (reason) reason.remove();
                 // If the category has no flagged entries left, drop its marker too.
                 const section = entryEl.closest('.library-category');
                 if (section && section.querySelectorAll('.library-category-content .review-flag-btn').length === 0) {
                     const catMarker = section.querySelector('button .review-flag-btn');
                     if (catMarker) catMarker.remove();
-                    const catReason = section.querySelector(':scope > .review-reason-inline');
-                    if (catReason) catReason.remove();
                 }
             };
             // Defer so THIS click (the one that opened the reason) doesn't fire it.
@@ -10510,7 +10711,7 @@
             if (!win) return;
             win.style.display = 'none';
             win.classList.remove('active');
-            updateNavActiveState();
+            if (isMobileMode()) { hideMobileSheetBackdrop(); updateNavActiveState(); }
         }
 
         /**
@@ -10598,19 +10799,6 @@
                 if (document.visibilityState === 'hidden') mobileImmediateSave();
             });
             window.addEventListener('pagehide', mobileImmediateSave);
-            // Keep typed text above the on-screen keyboard: track how much of
-            // the layout viewport the keyboard covers and pad the scroll area
-            // by that amount (see --kb-height use in the mobile CSS).
-            if (window.visualViewport) {
-                const vv = window.visualViewport;
-                const onVV = () => {
-                    if (!isMobileMode()) return;
-                    const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-                    document.documentElement.style.setProperty('--kb-height', kb + 'px');
-                };
-                vv.addEventListener('resize', onVV);
-                vv.addEventListener('scroll', onVV);
-            }
         }
 
         window.onload = init;
