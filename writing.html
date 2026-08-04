@@ -2192,7 +2192,7 @@
                circle's top regardless of safe-area inset or an open
                keyboard, rather than a hardcoded px guess that would drift
                out of sync if either rule's own numbers ever change. */
-            bottom: calc(env(safe-area-inset-bottom, 0px) + 5.25rem + 8px) !important;
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 4.2rem + 8px) !important;
             /* Item (2026-08-05, fifth round, later still, Aaron): "make
                sure the bottom corners... are rounded as well" - the shared
                .notepad rule's `16px 16px 0 0` only rounds the top corners,
@@ -2220,7 +2220,7 @@
             left: var(--rail-handle-w) !important;
             right: var(--rail-handle-w) !important;
             z-index: 490;
-            bottom: calc(env(safe-area-inset-bottom, 0px) + 5.25rem + 8px) !important;
+            bottom: calc(env(safe-area-inset-bottom, 0px) + 4.2rem + 8px) !important;
             border-radius: 16px;
             border: 2px solid #D4AF37;
         }
@@ -2389,7 +2389,7 @@
                --kb-height rise added directly, not inherited from the nav
                bar's own bottom. */
             bottom: env(safe-area-inset-bottom, 0px);
-            width: 5.25rem; height: 5.25rem;
+            width: 4.2rem; height: 4.2rem;
             padding: 0;
             z-index: 481;
         }
@@ -2403,7 +2403,7 @@
            against the now-gold fill rather than a highlight against the
            old dark one. */
         body.mobile-layout .focus-circle {
-            width: 5.25rem; height: 5.25rem; min-width: 5.25rem; min-height: 5.25rem;
+            width: 4.2rem; height: 4.2rem; min-width: 4.2rem; min-height: 4.2rem;
             border-radius: 50%;
             box-sizing: border-box;
             display: flex; align-items: center; justify-content: center;
@@ -2422,7 +2422,7 @@
            border on each side), so 72px leaves ~4px clearance per side -
            reads as filling the circle without the glyph touching/clipping
            against the border. */
-        body.mobile-layout .focus-circle i { font-size: 4.5rem; color: #3D2B1F; }
+        body.mobile-layout .focus-circle i { font-size: 3.6rem; color: #3D2B1F; }
         /* "Make sure the color of the box behind the word Focus matches the
            color of the circle" - background #3D2B1F -> #D4AF37, matching
            .focus-circle's own new fill exactly. Text color flipped from
@@ -2438,8 +2438,8 @@
         body.mobile-layout .focus-label {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: #D4AF37; color: #3D2B1F;
-            font-size: 1rem; font-weight: 700; letter-spacing: 0.4px;
-            padding: 2px 8px; white-space: nowrap; line-height: 1.4;
+            font-size: 0.8rem; font-weight: 700; letter-spacing: 0.4px;
+            padding: 1.6px 6.4px; white-space: nowrap; line-height: 1.4;
         }
 
         /* The two arms: previously each carried its own background/border
@@ -2460,7 +2460,7 @@
         body.mobile-layout .nav-arm {
             display: flex; align-items: stretch; justify-content: space-evenly;
             height: 3.5rem;
-            width: calc(50% - 2.625rem);
+            width: calc(50% - 2.1rem);
         }
         body.mobile-layout .nav-arm button { min-width: var(--tap); padding: 0; }
 
@@ -10635,8 +10635,10 @@
                 if (reason && reason.contains(e.target)) return;
                 document.removeEventListener('click', handler, true);
                 dismissReview(entryId);
+                // Replace the marker with the same default white dot every
+                // non-flagged entry shows - not just remove it and leave a gap.
                 const m = entryEl.querySelector('.review-flag-btn');
-                if (m) m.remove();
+                if (m) m.outerHTML = '<span class="text-[#F4EDE4] mr-1">●</span>';
                 if (reason) reason.remove();
                 // If the category has no flagged entries left, drop its marker too.
                 const section = entryEl.closest('.library-category');
