@@ -4268,11 +4268,17 @@
             // driving the Library changelog. Dismissed entries (the user has
             // seen the reason and clicked away) drop the marker.
             const isFlagged = entry.status === 'review' && !!entry.needsReviewReason && !isReviewDismissed(entry.id);
-            // Show white dot at START for non-flagged, exclamation mark at START for flagged (moved from end)
-            const dotMarker = isFlagged
-                ? `<span class="review-flag-btn" role="button" tabindex="0" aria-label="Why this changed" title="${(entry.needsReviewReason || '').replace(/"/g, '&quot;')}" onclick="toggleReviewReason(this, event)"><i class="fa-solid fa-circle-exclamation"></i></span>`
-                : `<span class="text-[#F4EDE4] mr-1">●</span>`;
-            const titleDisplay = `${dotMarker} ${entry.title}`;
+            // Reverted (per Aaron) to the pre-dot behavior: marker only at
+            // the END of the title for flagged entries, nothing shown for
+            // unflagged entries. The START-of-title white-dot/marker
+            // treatment was suspected to be the cause of a Safari-only bug
+            // where review markers stopped populating (worked fine before
+            // that change); reverting was chosen over further diagnosis
+            // since Safari couldn't be reproduced directly.
+            const marker = isFlagged
+                ? ` <span class="review-flag-btn" role="button" tabindex="0" aria-label="Why this changed" title="${(entry.needsReviewReason || '').replace(/"/g, '&quot;')}" onclick="toggleReviewReason(this, event)"><i class="fa-solid fa-circle-exclamation"></i></span>`
+                : '';
+            const titleDisplay = `${entry.title}${marker}`;
 
             let html = `
                 <div class="flex justify-between items-start gap-2">
@@ -10635,10 +10641,8 @@
                 if (reason && reason.contains(e.target)) return;
                 document.removeEventListener('click', handler, true);
                 dismissReview(entryId);
-                // Replace the marker with the same default white dot every
-                // non-flagged entry shows - not just remove it and leave a gap.
                 const m = entryEl.querySelector('.review-flag-btn');
-                if (m) m.outerHTML = '<span class="text-[#F4EDE4] mr-1">●</span>';
+                if (m) m.remove();
                 if (reason) reason.remove();
                 // If the category has no flagged entries left, drop its marker too.
                 const section = entryEl.closest('.library-category');
