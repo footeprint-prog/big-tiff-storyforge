@@ -4212,13 +4212,13 @@
             // review by Sammy, so the category header can show a marker without
             // requiring the user to expand it first to notice anything changed.
             const flaggedEntries = (entries || []).filter(e => e.status === 'review' && !!e.needsReviewReason && !isReviewDismissed(e.id));
-            // The marker is a span (it lives inside the header button) that
-            // keeps the hover tooltip on desktop, and on mobile becomes a tap
-            // target revealing the same info inline, since hover doesn't exist
-            // on touch. It stays at the START of the category title.
+            // Static indicator only - not tappable. It just tells the user
+            // something inside changed for good; expanding the category (the
+            // header's own tap target) is how she sees which entries and why.
+            // Only entry-level markers are tap-to-view/tap-away-to-clear.
             const flaggedTitles = flaggedEntries.map(e => e.title).join(', ');
             const categoryMarker = flaggedEntries.length > 0
-                ? `<span class="review-flag-btn" role="button" tabindex="0" aria-label="Updated entries" title="Updated: ${flaggedTitles.replace(/"/g, '&quot;')}" onclick="toggleReviewReason(this, event)"><i class="fa-solid fa-circle-exclamation"></i></span> `
+                ? `<span class="review-flag-btn" aria-hidden="true" title="Updated: ${flaggedTitles.replace(/"/g, '&quot;')}"><i class="fa-solid fa-circle-exclamation"></i></span> `
                 : '';
 
             const header = document.createElement('button');
@@ -4252,16 +4252,6 @@
             };
 
             section.appendChild(header);
-
-            // Touch-reachable equivalent of the category marker's hover
-            // tooltip: toggled by tapping the "!" above (mobile only).
-            if (flaggedEntries.length > 0) {
-                const reasonBar = document.createElement('div');
-                reasonBar.className = 'review-reason-inline hidden px-4 py-2 text-sm text-[#D4AF37] bg-[#3D2B1F] border-t border-[#D4AF37]/30';
-                reasonBar.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1.5"></i>Updated: ${flaggedTitles}`;
-                section.appendChild(reasonBar);
-            }
-
             section.appendChild(content);
 
             return section;
@@ -10653,8 +10643,6 @@
                 if (section && section.querySelectorAll('.library-category-content .review-flag-btn').length === 0) {
                     const catMarker = section.querySelector('button .review-flag-btn');
                     if (catMarker) catMarker.remove();
-                    const catReason = section.querySelector(':scope > .review-reason-inline');
-                    if (catReason) catReason.remove();
                 }
             };
             // Defer so THIS click (the one that opened the reason) doesn't fire it.
