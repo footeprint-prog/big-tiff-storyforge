@@ -3248,7 +3248,12 @@
             <div class="notepad-sidebar p-2 text-sm flex flex-col">
                 <div class="flex justify-between items-center mb-2 px-1">
                     <span class="m-hide text-xs font-medium text-[#D4AF37]/80">Your Notes</span>
-                    <button onclick="createNewNote()" aria-label="New note" class="primary-only text-[10px] px-2 py-0.5 bg-[#D4AF37] text-[#3D2B1F] rounded font-semibold">
+                    <!-- Not primary-only: per the documented role spec,
+                         viewers CAN create/edit Notepad notes (just not
+                         delete them or touch the Library) - this had been
+                         incorrectly gated the same as Delete/Add-to-Library,
+                         which blocked viewers from creating a note at all. -->
+                    <button onclick="createNewNote()" aria-label="New note" class="text-[10px] px-2 py-0.5 bg-[#D4AF37] text-[#3D2B1F] rounded font-semibold">
                         <i class="fa-solid fa-plus"></i><span class="btn-text"> New</span>
                     </button>
                 </div>
@@ -3322,18 +3327,27 @@
                      class="flex-1 bg-[#4A3A2E] border border-[#D4AF37]/40 rounded-xl p-3 text-sm focus:outline-none focus:border-[#D4AF37] overflow-y-auto"></div>
 
                 <div class="flex justify-between items-center mt-2">
+                    <!-- Not primary-only - see the "New note" button's own
+                         comment above; viewers can edit/save notes. -->
                     <button onclick="saveCurrentNote()" aria-label="Save note"
-                            class="primary-only px-5 py-1.5 text-xs bg-[#D4AF37] text-[#3D2B1F] font-bold rounded-2xl">
+                            class="px-5 py-1.5 text-xs bg-[#D4AF37] text-[#3D2B1F] font-bold rounded-2xl">
                         <i class="fa-solid fa-floppy-disk"></i><span class="btn-text"> Save</span>
                     </button>
                     <!-- Mobile only: Delete/Add to Library relocated here,
                          contextual to the note open in this view - see the
                          matching hide of #notepad-sidebar-actions above. -->
+                    <!-- Both primary-only, matching the desktop sidebar's own
+                         Delete/Add-to-Library gating above (these are the same
+                         two actions relocated for the mobile editor view, not
+                         a separate feature - they'd inherited no gating at
+                         all here, letting viewers delete notes and touch the
+                         Library from mobile despite being blocked from both
+                         on desktop). -->
                     <div id="m-notepad-editor-actions" class="hidden items-center gap-x-1">
-                        <button onclick="addCurrentNoteToLibrary()" aria-label="Add to Library" class="text-[#D4AF37] hover:text-[#E8C86B] px-2 py-1">
+                        <button onclick="addCurrentNoteToLibrary()" aria-label="Add to Library" class="primary-only text-[#D4AF37] hover:text-[#E8C86B] px-2 py-1">
                             <i class="fa-solid fa-book-open"></i>
                         </button>
-                        <button onclick="requestDeleteNote()" aria-label="Delete note" class="text-red-400 hover:text-red-300 px-2 py-1">
+                        <button onclick="requestDeleteNote()" aria-label="Delete note" class="primary-only text-red-400 hover:text-red-300 px-2 py-1">
                             <i class="fa-solid fa-trash"></i>
                         </button>
                     </div>
