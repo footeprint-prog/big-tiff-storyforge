@@ -77,9 +77,11 @@ they aren't lost now that the old document is marked historical.
 - [x] **Last sync timestamp in Library panel** — DONE 2026-06-22, built
       alongside Library canon sync itself (`#library-last-sync-time`
       verified present in the live file). Checklist was stale here too.
-- [ ] **Auto-expand to first relevant scene** (`unfinished` or `review`) on
-      initial load, rather than requiring the user to pick a scene manually
-      every session.
+- [x] **Auto-expand to first relevant scene on initial load.** SUPERSEDED
+      2026-08-03 — the Nav Home / landing page (mobile: "WHERE I LEFT
+      OFF" plus Last Completed / Sync / Next Unfinished / Random Scene
+      shortcuts) now covers this need directly, making a silent auto-jump
+      on load unnecessary and less clear than an explicit user choice.
 - [ ] **Scene reordering must stay disabled** — confirmed NOT present in the
       live file as of 2026-06-22 (hard requirement, verified, no action
       needed unless this changes).
@@ -146,6 +148,26 @@ they aren't lost now that the old document is marked historical.
       `a8b593e`), verified byte-identical against the live domain
       directly. All three — `claude/mobile-port`, `main`, and the live
       site — match as of this update.
+      **UPDATE 2026-08-04:** two more rounds + live promotions. First: a
+      full desktop-vs-mobile parity comparison (published as an artifact,
+      not repeated here) found most mobile-port changes were already
+      shared or deliberate touch-vs-mouse differences needing no action;
+      four genuine gaps fixed on desktop - the Review-pill WCAG contrast
+      failure (had never been fixed on desktop, only mobile), Copy/Paste
+      restored to the desktop editor toolbar (accidentally deleted from
+      shared markup by an earlier "mobile-only" round), the global text-
+      size control given a desktop entry point, and Library review-marker
+      click interaction extended to desktop. Also fixed in passing: Stats/
+      Text Size windows silently failing to open on the very first tap
+      each session, on both layouts. Second round: a full Notepad/Draft
+      Pad functionality review (prompted by a desktop bug report that
+      couldn't be reproduced despite extensive testing) found and fixed a
+      viewer-role gating inconsistency running in both directions - see
+      CHANGELOG's two 2026-08-04 entries and `Mobile_Port_Handoff.md` for
+      full detail. Both rounds promoted to bigtiffsworld.com (commits
+      `2ed5fd8` then `706a79d`), each verified byte-identical against the
+      live domain directly. All three — `claude/mobile-port`, `main`, and
+      the live site — match as of this update.
 - [x] **Achievements & usage-tracking data layer.** DONE 2026-07-26 — 188
       achievements embedded with machine-readable rules (cross-checked
       against the source JSON, 0 mismatches), an AES-encrypted
@@ -306,23 +328,24 @@ if no longer wanted.
       They do not currently exist in `writing.html`. Likely a holdover from
       a Grok-sandbox-specific issue that may not apply to Erica's actual
       browser environment — needs a decision, not urgent.
-- [ ] **Bring desktop's Notepad up to date with mobile's new behavior.**
-      Mobile-only fixes/changes landed 2026-08-05 (later round) that desktop
-      never received, by design (mobile-port work is scoped mobile-only
-      unless Aaron says otherwise): `hideNotepad()`'s save-before-close
-      reordering (a save/cleanup error can no longer block the panel from
-      closing), and the derived note-list title (first 3 words + "…"
-      instead of the literal "Untitled Note" when a note has no explicit
-      title). The nav-button toggle-close bug mentioned in earlier versions
-      of this entry **is resolved** (root cause found: `setupNotepadBorderBehavior()`,
-      a desktop-only "gold border on focus" feature, had a document-wide
-      `mousedown` listener that was never gated to desktop, so on mobile it
-      stripped the `.active` class before the toggle's own click handler
-      could read it — fixed by gating that whole function to desktop).
-      Desktop's Notepad shares the same underlying functions for some of
-      this (`saveCurrentNote`, `renderNotesList`) so it likely already
-      inherits parts of it for free; needs a deliberate check once the
-      mobile side is fully settled, not before.
+- [x] **Bring desktop's Notepad up to date with mobile's new behavior.**
+      RESOLVED 2026-08-04. The specific items this was originally tracking
+      turned out to already be shared, ungated functions -
+      `hideNotepad()`'s save-before-close reordering and the derived
+      note-list title (first 3 words + "…") both apply identically on
+      desktop, confirmed by reading the code directly (no `isMobileMode()`
+      branch in either). The nav-button toggle-close bug mentioned in
+      earlier versions of this entry was also resolved (root cause:
+      `setupNotepadBorderBehavior()`'s document-wide `mousedown` listener
+      wasn't gated to desktop and was clobbering mobile's own open/closed
+      state - fixed by gating that whole function to desktop).
+      **2026-08-04, same day:** a full functionality review (prompted by a
+      report that desktop Notepad "cannot type/add notes/add library
+      entry") could not reproduce any break via extensive real-interaction
+      testing, but did find and fix a real role-gating bug in both
+      directions - see CHANGELOG's 2026-08-04 "second round" entry and
+      `Mobile_Port_Handoff.md`'s "Notepad/Draft Pad review" section for
+      the full story before touching this feature again.
 
 ## Questions Needing Erica's Input (Not Yet Reviewed)
 
@@ -334,4 +357,4 @@ rather than assuming the whole list is still live.
 
 ---
 
-*Last Updated: 2026-08-03*
+*Last Updated: 2026-08-04*

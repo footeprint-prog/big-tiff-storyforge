@@ -2,6 +2,123 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-04, second round] – Notepad/Draft Pad full functionality review; viewer-role gating fixed both directions
+
+Prompted by a report that desktop Notepad "cannot type, cannot add new
+notes, cannot add library entry." Promoted to `bigtiffsworld.com` this
+round (see Deployed section below).
+
+### Investigated
+Exhaustive real-interaction testing (actual button `.click()` dispatch,
+real `execCommand`/input-event text entry, full end-to-end chains, on
+both the dev preview and the live production site) found **no
+reproducible break** in either Notepad or Draft Pad: New/type/Save/Add-
+to-Library and New/Rename/Load-into-Editor/Delete snapshot all worked
+correctly every time. Button geometry (size, position, z-index, overlap)
+was also verified clean - nothing invisible-but-technically-clickable.
+One false alarm along the way: "Load into Editor" appeared to silently
+no-op in testing - traced to the headless test environment auto-
+dismissing the native `confirm()` dialog the function calls, not a real
+bug (a human clicking OK never hits this).
+
+### Changed
+Investigation did surface one real, confirmed bug - a role-gating
+inconsistency that went **both directions** at once:
+- Desktop's "New note" and "Save" buttons were marked `.primary-only`,
+  fully blocking the `viewer` role from creating or saving notes at all.
+  The documented spec says viewers *should* be able to create/edit notes
+  (just not delete them or touch the Library) - fixed by removing
+  `.primary-only` from both.
+- Mobile's relocated Delete/Add-to-Library buttons (in
+  `#m-notepad-editor-actions`, shown instead of the desktop sidebar's
+  originals per the 2026-08-05-dated mobile redesign) carried **no**
+  gating at all - the opposite problem, letting viewers delete notes and
+  touch the Library from mobile despite being correctly blocked on
+  desktop. Fixed by adding `.primary-only` to both.
+
+Doesn't affect Erica (`ericap` account is `role: primary`, unrestricted)
+- confirmed directly against `accounts.json` in `big-tiff-data`. Affects
+the `aaronf`/`guest` viewer accounts.
+
+### Verification notes
+- Role-gating fix verified by toggling `body.classList.add('role-viewer')`
+  directly and checking `getComputedStyle().display` on all four affected
+  buttons, on both `isMobileMode()` states - each now shows/hides exactly
+  per spec.
+- Full Notepad and Draft Pad flows re-run end-to-end after the fix to
+  confirm normal (non-viewer) functionality is unaffected.
+
+### Deployed
+- `claude/mobile-port` commit `92c83a8` merged to dev repo `main` at
+  `2546cdc`, promoted to `bigtiffsworld.com` via `big_tiff_launchpage`
+  commit `706a79d`. Verified byte-identical against
+  `https://bigtiffsworld.com/app/` directly.
+
+## [2026-08-04] – Desktop parity pass: contrast fix, Copy/Paste restored, text-size control ported, Library markers extended; Stats/Text Size first-tap bug fixed
+
+Followed a line-item comparison of every mobile-port change against
+desktop's actual current behavior (most turned out to already be shared
+code or deliberate touch-vs-mouse differences needing no action - see
+`Mobile_Port_Handoff.md`'s Deployment facts table for where that
+comparison lives). Four items were genuine gaps; all four fixed here,
+plus one bug found in the process. Promoted to `bigtiffsworld.com` this
+round.
+
+### Changed
+- **Review-pill contrast fixed on desktop.** `.status-pill-review` and
+  `.scene-review`'s base (shared) rules were still `#8B1E1E` dark red on
+  gold - 4.34:1, failing WCAG AA's 4.5:1 floor. This had only ever been
+  patched mobile-only (`#3D2B1F`, 6.39:1); desktop carried the failing
+  color since before the mobile port even started. Applied the same fix
+  to the base rule (removing the now-redundant mobile-only override) and
+  to the matching dropdown-arrow SVG fill.
+- **Copy/Paste restored to the desktop editor toolbar**, desktop-only,
+  via a new `pasteToEditor()` function (`copySelection()` was already
+  generic/reusable as-is). An earlier "mobile-only" round had deleted
+  these buttons from the single shared `#editor-toolbar` DOM entirely
+  instead of hiding them on mobile, so desktop had silently lost them
+  too - not a deliberate cross-platform decision, an accidental one.
+- **Global UI text-size control given a desktop entry point.** The
+  existing `#editor-text-size-btn` is now shown on both layouts (was
+  mobile-only); `#textsize-window` given explicit desktop floating-window
+  positioning (`left/top/width/height`, matching every other utility
+  window). No JS changes needed beyond that - `openTextSize()`/
+  `hideTextSize()` already gated their mobile-only side effects
+  internally.
+- **Library review-marker click-to-view/click-away-to-dismiss extended
+  to desktop** (removed `toggleReviewReason()`'s `isMobileMode()` early
+  return) - adds to, not replaces, the existing hover tooltip.
+- **Bug found and fixed while wiring the Text Size desktop button:**
+  `mobileNav()`'s `'stats'` and `'text'` cases detected "already open" via
+  `classList.contains('active')`, but Stats/Text Size (and Sammy/
+  Proofreader) now carry `'active'` permanently in their markup for
+  desktop border styling, not as a real open/closed toggle - this
+  silently ate the very first tap on either window every session, on
+  **both** mobile and desktop. Fixed by checking
+  `getComputedStyle().display` instead, which reflects actual visibility
+  regardless of which mechanism (class or inline style) is hiding the
+  element.
+
+### Verification notes
+- All four items measured directly (computed color values, button
+  `display`/geometry, real `.click()` dispatch through `mobileNav()`,
+  real end-to-end marker tap-to-view/tap-away-to-dismiss) on the local
+  dev preview with `setMobilePreview()` toggled both ways.
+- The Stats/Text Size first-tap bug was caught specifically because
+  fixing it was necessary to verify the Text Size desktop button worked
+  at all on a truly fresh page load - a reminder that a bug can hide
+  behind another feature's own verification step.
+- Mobile confirmed unaffected: Copy/Paste/divider still hidden
+  (`display: none !important` needed - the shared `.text-tool-btn` sizing
+  rule has higher specificity and would otherwise win), Text Size button
+  still shown, review-marker interaction unchanged.
+
+### Deployed
+- `claude/mobile-port` commit `a6a80ed` merged to dev repo `main` at
+  `5b84165`, promoted to `bigtiffsworld.com` via `big_tiff_launchpage`
+  commit `2ed5fd8`. Verified byte-identical against
+  `https://bigtiffsworld.com/app/` directly.
+
 ## [2026-08-03] – Keyboard behavior revert, Notepad toggle delay removed, Proofreader/Text Size sheet treatment, Library review-marker fixes, Focus button resize; promoted to live site
 
 Mobile-only, at Erica's/Aaron's direction. Promoted to `bigtiffsworld.com`

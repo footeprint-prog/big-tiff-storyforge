@@ -1,30 +1,43 @@
 # Big Tiff StoryForge — Mobile Port Handoff
 
 ## For: whoever picks up mobile work next (agent or human)
-## From: Claude sessions, 2026-07-24 – 2026-08-03, at Aaron's/Erica's direction
-## Status: **fully caught up as of 2026-08-03 — dev repo `main`,
+## From: Claude sessions, 2026-07-24 – 2026-08-04, at Aaron's/Erica's direction
+## Status: **fully caught up as of 2026-08-04 — dev repo `main`,
 ##         `claude/mobile-port`, and the live site all match again**
-##         (`claude/mobile-port` commit `a47c749`, `main` commit `a5c2241`
-##         via merge, `big_tiff_launchpage` `main` commit `a8b593e`).
-##         This round (2026-08-03) covered: removed all iOS keyboard-height
-##         tracking/adjustment (reverted to default Safari behavior after
-##         several targeted fixes made things worse), removed a 500ms
-##         Notepad-toggle guard that was blocking rapid taps, gave
-##         Proofreader/Text Size the same mobile sheet treatment as
-##         Notepad/Draft Pad, and a long back-and-forth on Library review
-##         markers - see "Library review markers" section below for the
-##         full story, it has real lessons for whoever touches this next.
-##         Focus button also scaled down 20% (84px circle -> 67.2px /
-##         5.25rem -> 4.2rem, icon and label scaled to match, plus the
-##         clearance math above it for Notepad/Draft Pad/Sammy/Stats and
-##         the nav-arm width split recalculated to stay in sync). Prior
-##         rounds (through 2026-08-05 per that round's own dating - the
-##         guidance-rail handle overhaul, the bottom-nav/editor-toolbar
-##         rebuild, etc.) are unchanged and still summarized below. See
-##         CHANGELOG for the full round-by-round detail - not repeated here.
-## Live site (`bigtiffsworld.com`) status: **promoted 2026-08-03** (commit
-##         `a8b593e` in `big_tiff_launchpage`, copied from dev repo commit
-##         `a47c749`), verified **byte-identical** against the actual live
+##         (`claude/mobile-port` commit `92c83a8`, `main` commit `2546cdc`
+##         via merge, `big_tiff_launchpage` `main` commit `706a79d`).
+##         Two rounds landed 2026-08-04, both promoted live same-day:
+##         1. **Desktop parity pass** - a line-item comparison of every
+##            mobile-port change against desktop's actual behavior (most
+##            were already shared code or deliberate touch-vs-mouse
+##            differences, no action needed) surfaced four real gaps, all
+##            fixed: the Review-pill WCAG contrast failure (only ever
+##            patched mobile-only, desktop had carried the failing color
+##            the whole time), Copy/Paste restored to the desktop editor
+##            toolbar (an earlier "mobile-only" round had accidentally
+##            deleted them from shared markup), the global text-size
+##            control given a desktop entry point, and Library review-
+##            marker click interaction extended to desktop (adds to, not
+##            replaces, the existing hover tooltip). Also fixed in passing:
+##            Stats/Text Size windows silently failing to open on the very
+##            first tap each session, on **both** layouts - see "Desktop
+##            parity pass" section below.
+##         2. **Notepad/Draft Pad functionality review** - prompted by a
+##            report that desktop Notepad "cannot type/add notes/add
+##            library entry." Extensive real-interaction testing could not
+##            reproduce any break in either feature, but found and fixed a
+##            real viewer-role gating bug running in both directions - see
+##            "Notepad/Draft Pad review" section below before assuming
+##            either feature is broken again without first testing it
+##            yourself the same way.
+##         The 2026-08-03 round before these (keyboard-behavior revert,
+##         Notepad-toggle-guard removal, Library review-marker fixes, Focus
+##         button resize) and all prior rounds are unchanged and still
+##         summarized below. See CHANGELOG for full round-by-round detail -
+##         not repeated here.
+## Live site (`bigtiffsworld.com`) status: **promoted 2026-08-04** (commit
+##         `706a79d` in `big_tiff_launchpage`, copied from dev repo commit
+##         `2546cdc`), verified **byte-identical** against the actual live
 ##         domain response (not just the Pages build API, which can report
 ##         "built" before a CDN edge actually serves the new bytes -
 ##         fetched `https://bigtiffsworld.com/app/` directly and diffed
@@ -41,17 +54,21 @@
 ##         workflow. What's still genuinely open: his test device (15 Pro)
 ##         differs from Erica's phone (16 Pro Max per her user profile) — a
 ##         device-specific bug on her exact model isn't ruled out just
-##         because his 15 Pro checks look fine. This round's Library
-##         review-marker bug was specifically device/browser-context
+##         because his 15 Pro checks look fine. The 2026-08-03 round's
+##         Library review-marker bug was specifically device/browser-context
 ##         dependent (see below) - a reminder that "works on my test device"
 ##         doesn't rule out a different real-world context still failing.
+##         The 2026-08-04 Notepad report couldn't be reproduced at all
+##         despite thorough testing - if it recurs, get exact repro steps
+##         (browser, logged in or guest, exact symptom) before assuming
+##         it's the same root cause as anything documented here.
 ## Dev branch: `claude/mobile-port` — long-lived, kept around, not deleted,
 ##             still the working branch for ongoing mobile UI iteration
 ##             (its GitHub Pages config is what gives the ~1min preview
 ##             rebuild). Merged to `main` periodically, not abandoned.
-## Dev repo main: https://github.com/footeprint-prog/big-tiff-storyforge — **matches `claude/mobile-port` exactly** (merge commit `a5c2241`, 2026-08-03). Expect `main` to trail again once new commits land on the branch - that's normal, re-sync before the next promotion.
+## Dev repo main: https://github.com/footeprint-prog/big-tiff-storyforge — **matches `claude/mobile-port` exactly** (merge commit `2546cdc`, 2026-08-04). Expect `main` to trail again once new commits land on the branch - that's normal, re-sync before the next promotion.
 ## Live preview (dev repo Pages): https://footeprint-prog.github.io/big-tiff-storyforge/writing.html (tracks `claude/mobile-port`)
-## **Real live site: https://bigtiffsworld.com/app/ — matches `main`/`claude/mobile-port` as of 2026-08-03, verified against the live domain directly.**
+## **Real live site: https://bigtiffsworld.com/app/ — matches `main`/`claude/mobile-port` as of 2026-08-04, verified against the live domain directly.**
 
 ## Library review markers — a debugging story worth reading before touching this code
 This round involved a long, winding investigation into Library review
@@ -95,6 +112,60 @@ because the actual root causes were **not** where they first appeared to be:
    clear herself (Settings > Safari > Advanced > Website Data > remove the
    site entry) rather than fixed from this end - there's no code-side fix
    for one browser tab's accumulated local state.
+
+## Desktop parity pass (2026-08-04) — where to find it, what's left
+A full side-by-side comparison of every mobile-port change against
+desktop's actual current code (not changelog claims) was published as an
+HTML artifact during the session that did this work - it isn't saved to
+this repo, so if you need the full 30+-item table again, it would need
+regenerating rather than looked up. The short version: **most mobile-port
+changes need zero desktop action** - they're either already shared code
+(desktop gets them for free, no `isMobileMode()` gate exists) or
+deliberate touch-vs-mouse differences (bottom nav, Focus button, sheet
+chrome, guidance rail) that have no sensible desktop translation. Four
+items were genuine gaps and are now fixed (contrast, Copy/Paste, text-
+size control, review-marker click - see CHANGELOG's 2026-08-04 entry for
+detail). **Before assuming a new mobile feature needs "porting to
+desktop," check whether the underlying function is already
+`isMobileMode()`-gated at all** - if it isn't, desktop already has it.
+
+## Notepad/Draft Pad review (2026-08-04) — what was and wasn't found
+A desktop bug report ("cannot type, cannot add new notes, cannot add
+library entry") triggered an exhaustive functional review of both
+features. Worth recording precisely what was and wasn't verified, since
+the report couldn't be reproduced:
+- **Tested and confirmed working**, via real `.click()` dispatch on the
+  actual DOM buttons (not calling internal functions directly) plus real
+  text entry (`execCommand('insertText')`/input events, not just setting
+  `.value`): Notepad's New/type-title/type-content/Save/Add-to-Library,
+  and Draft Pad's New/Rename/Load-into-Editor/Delete snapshot. Tested on
+  both the local dev preview and the live production site.
+- **Button geometry verified clean**: size, position, z-index, and
+  `elementFromPoint()` overlap checked for every relevant button - nothing
+  invisible, zero-sized, or covered by something else that `.click()`
+  would silently bypass.
+- **One false alarm**: "Load into Editor" appeared to no-op in testing -
+  the function calls native `confirm()`, which this headless test
+  environment auto-dismisses. Not a real bug; overriding `window.confirm`
+  to return `true` confirmed the rest of the function works correctly.
+- **What WAS found and fixed**: a `.primary-only`/viewer-role gating bug,
+  in both directions at once. Desktop's New/Save buttons were fully
+  blocked for `viewer` accounts, contradicting the documented spec
+  (viewers should be able to create/edit notes, just not delete or touch
+  the Library - see `project_persistence_architecture` memory / commit
+  history for the spec). Mobile's relocated Delete/Add-to-Library buttons
+  (`#m-notepad-editor-actions`) had the opposite problem - no gating at
+  all, letting viewers delete and touch the Library from mobile. Both
+  fixed to match spec on both layouts. **Confirmed this doesn't explain
+  Erica's report** - her account (`ericap`) is `role: primary` in
+  `accounts.json`, unrestricted either way.
+- **If this report recurs**: get exact repro steps before assuming it's
+  the same thing - which browser, logged in or guest, and what literally
+  happens (blank area? console error? button does nothing at all?). A
+  full re-test of both features from scratch, the way this round did it,
+  is the fastest way to re-confirm or rule out a regression, but it
+  couldn't find anything wrong this time and shouldn't be assumed broken
+  again without new evidence.
 
 ---
 
@@ -185,9 +256,9 @@ Two real bugs were caught this way that a naive test would have missed:
 
 | Where | Repo | What's there |
 |---|---|---|
-| Dev repo Pages preview | `big-tiff-storyforge`, branch `claude/mobile-port` (Pages config) | **Current** — `writing.html` content has everything through the 2026-08-03 Library-review-marker/Focus-resize/keyboard-revert round, commit `a47c749`. Rebuilds ~1 min after any push to that branch. |
-| Dev repo `main` | `big-tiff-storyforge` | **Merged and current as of 2026-08-03** (merge commit `a5c2241`). `main` and `claude/mobile-port` are identical at time of writing; expect `main` to trail again once new commits land on the branch. |
-| **Real live site** | `big_tiff_launchpage`, branch `main`, custom domain `bigtiffsworld.com` via Porkbun DNS (no Cloudflare in the path) | **Promoted 2026-08-03** (commit `a8b593e`, copied from dev repo commit `a47c749`). Assets/manifest unchanged this round (checksums verified identical against the dev repo), only `app/index.html` needed copying; `start_url` was already `./index.html` from a prior round. Verified byte-identical against `https://bigtiffsworld.com/app/` directly (line-ending-normalized — this Windows checkout's `core.autocrlf` makes local/live diffs look nonzero even when content is identical; don't mistake that for drift). |
+| Dev repo Pages preview | `big-tiff-storyforge`, branch `claude/mobile-port` (Pages config) | **Current** — `writing.html` content has everything through the 2026-08-04 Notepad/Draft-Pad viewer-role-gating round, commit `92c83a8`. Rebuilds ~1 min after any push to that branch. |
+| Dev repo `main` | `big-tiff-storyforge` | **Merged and current as of 2026-08-04** (merge commit `2546cdc`). `main` and `claude/mobile-port` are identical at time of writing; expect `main` to trail again once new commits land on the branch. |
+| **Real live site** | `big_tiff_launchpage`, branch `main`, custom domain `bigtiffsworld.com` via Porkbun DNS (no Cloudflare in the path) | **Promoted 2026-08-04** (commit `706a79d`, copied from dev repo commit `2546cdc`). Assets/manifest unchanged this round (checksums verified identical against the dev repo), only `app/index.html` needed copying; `start_url` was already `./index.html` from a prior round. Verified byte-identical against `https://bigtiffsworld.com/app/` directly (line-ending-normalized — this Windows checkout's `core.autocrlf` makes local/live diffs look nonzero even when content is identical; don't mistake that for drift). |
 
 ## Complete workflow: edit → verify → push → (optional) promote
 
