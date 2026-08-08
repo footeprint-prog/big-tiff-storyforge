@@ -228,6 +228,23 @@ they aren't lost now that the old document is marked historical.
         weekly selection/reset itself still needs wiring (deterministic
         seeded pick of 5 per ISO week, identical on every device and not
         re-rollable by refreshing).
+      - **UPDATE 2026-08-07:** item 2 (achievement book) shipped on
+        `claude/mobile-port`, replacing the Stats window entirely per
+        Aaron's finalized spec — double-sided cards (dull-gray locked /
+        illustrated unlocked, slide-swap transition not a 3D flip), a
+        summary+index opening spread, per-family cover pages (embellished
+        art + checklist) leading with Radiant, permanent family-grouped
+        paginated grids (6/page desktop, 4/page mobile — every card's
+        position is fixed for life, only its face changes), and tap-to-focus
+        detail (date completed if unlocked, objective + live progress if
+        not). Item 1 (icons) got a working id-keyed art-lookup + placeholder
+        pattern rather than a separate discussion; real family assignment
+        and per-card/per-family art are only in for an 18-card pilot set (see
+        Aaron's design-concept sheet) — the other ~170 render via the
+        placeholder until art/family data is extended, no code change needed
+        when it is. Items 4-6 (weekly) remain fully deferred, confirmed by
+        Aaron as not yet designed — this round intentionally scoped them
+        out. See `Mobile_Port_Handoff.md` for the fuller writeup.
 - [ ] **Visual skinning of the tool.** Aaron is producing a fantasy-themed
       visual mockup separately; once complete, it will be broken down into
       individual elements to "skin" the existing functional tool. Directly

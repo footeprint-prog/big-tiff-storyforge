@@ -2,6 +2,96 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-07] – Achievements card-collector book UI (replaces the Stats window)
+
+Phase 1 of the achievements UI (`CHECKLIST.md`'s "Achievements — UI phase"
+item), designed and planned in a dedicated discussion with Aaron before any
+code was written. Scoped deliberately to the 188-achievement book only —
+weekly achievements (pool/rotation/jar UI) remain fully deferred; Aaron
+confirmed that engine hasn't been designed yet.
+
+### Added
+The Stats button now opens a full card-collector book instead of the old
+6-tile teaser strip, entirely replacing `renderStatsWindow()`'s previous
+output:
+- **Opening spread**: a summary page (total unlocked, always-visible
+  in-progress list with live values) facing an index page (quicklinks into
+  each of the 6 families).
+- **Family sections, fixed order, Radiant first**: a cover page per family
+  (large embellished art + achievement checklist), then paginated card
+  grids — 6 cards/page desktop, 4/page mobile (`bookPageSize()`, driven by
+  `isMobileMode()`, not hardcoded). Every achievement's family + order is
+  permanent for the life of the book; unlocking only swaps that slot's
+  card face, never its position.
+- **Tap-to-focus card detail**: unlocked cards show title + date completed
+  (`unlockedAt`); locked/in-progress cards show title + description +
+  live progress instead.
+- **Live unlock animation**: a `bigtiff:achievement` listener slides a
+  card's face from locked to unlocked in place, in real time, if that
+  card is on the currently-visible grid page — the codebase's first
+  `@keyframes`-free, transition-only card animation (matches the existing
+  `.sliding-panel` motion style, no 3D flip/`backface-visibility`).
+- **`ACHIEVEMENT_FAMILY`** id→family lookup, seeded with the 18-card pilot
+  set from Aaron's design-concept spreadsheet (Arc & Halo, Classic
+  Lattice, Dense Ornament, Open / Airy, Rune-edged, Radiant). The other
+  ~170 ids fall into a trailing "Unassigned" section until the sheet is
+  extended — a data-only change, no code change needed when it is.
+- **Art asset lookup**: `achievementArtSrc(id, unlocked)` →
+  `assets/achievements/<id>-locked|unlocked.png`; `familyCoverSrc(family)`
+  → `assets/achievements/family-<slug>.png`. Both `onerror`-fall back to a
+  CSS-drawn placeholder (existing gold/parchment palette + the
+  already-existing `STATS_CAT_ICON` category glyph) since only the pilot
+  18 have real art yet.
+
+### Fixed during verification (not part of the original design)
+- Card-title font-size was 11.2px (`0.7rem`) — under the project's 12px
+  accessibility floor. Bumped to `0.75rem`.
+- Three new dimmed/secondary text labels (locked card titles, unchecked
+  checklist items, the empty in-progress message) used `rgba(...)`
+  alpha-transparency against dark backgrounds — violates the documented
+  "no opacity-dimmed labels" rule from Erica's accessibility profile.
+  Replaced with a solid `#B8A88F`, confirmed ≥4.5:1 contrast (WCAG AA)
+  against every background it appears on.
+- New primary-tier buttons (`.stats-tap-btn` grid pagination,
+  `.stats-family-link` index quicklinks, `.stats-book-enter`) were losing
+  the 44px `--tap` floor to the existing catch-all `body.mobile-layout
+  .notepad button` chrome-tier rule (30px) on specificity — not something
+  a code read alone would have caught. Added the three to the codebase's
+  existing centralized PRIMARY-tier selector list rather than fighting
+  specificity locally.
+
+### Verification notes
+- Real DOM measurement throughout (`getBoundingClientRect`/
+  `getComputedStyle`), not screenshots — this dev environment's Browser
+  pane isn't compositing frames this session (confirmed via
+  `document.hidden === true`, a backgrounded tab).
+- Seeded fake `PROG.u` state via console to exercise unlocked/in-progress/
+  locked simultaneously; cross-checked `computeBookLayout()`'s per-family
+  counts against `getAchievementBook()` directly (188 total, 3+3+3+3+3+3
+  pilot families + 170 Unassigned, confirmed).
+- Confirmed card position is stable across unlock-state changes (same id
+  stayed in the same family/page/slot before and after seeding an unlock).
+- Confirmed the unlocked-card and locked-card focus views show the right
+  content each (`Completed <date>` vs. description+progress), and that
+  closing the focus view returns to the same grid page.
+- The live slide-swap animation's cleanup (`transitionend` → remove the
+  old face) didn't complete in the live dispatch test because this dev
+  tab is backgrounded and Chromium pauses `requestAnimationFrame` for
+  hidden tabs — not a code bug. Verified correctness by manually driving
+  the same rAF callback + a synthetic `transitionend` event, which
+  completed cleanly.
+- Both layouts checked (`setMobilePreview(true|false)`): mobile grid is 2
+  actual columns at a 4-per-page chunk size, desktop 3 columns at 6; the
+  mobile-only tap-target fix confirmed 44px/30px on the correct elements
+  without affecting desktop's unenforced natural button sizing (`--tap`/
+  `--tap-sm` are mobile-only custom properties by design, scoped to
+  `body.mobile-layout`, not `:root`).
+
+### Deployed
+- Pushed to `claude/mobile-port` only (commit `62cdafe`), per standing
+  iteration-loop rule — no merge to `main` or promotion to
+  `bigtiffsworld.com` without a fresh, explicit ask.
+
 ## [2026-08-04, second round] – Notepad/Draft Pad full functionality review; viewer-role gating fixed both directions
 
 Prompted by a report that desktop Notepad "cannot type, cannot add new

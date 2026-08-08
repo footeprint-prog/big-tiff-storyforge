@@ -1,9 +1,16 @@
 # Big Tiff StoryForge — Mobile Port Handoff
 
 ## For: whoever picks up mobile work next (agent or human)
-## From: Claude sessions, 2026-07-24 – 2026-08-04, at Aaron's/Erica's direction
-## Status: **fully caught up as of 2026-08-04 — dev repo `main`,
-##         `claude/mobile-port`, and the live site all match again**
+## From: Claude sessions, 2026-07-24 – 2026-08-07, at Aaron's/Erica's direction
+## Status (2026-08-07): `claude/mobile-port` is AHEAD of `main` and the live
+##         site again — commit `62cdafe` adds the achievements card-book UI
+##         (see CHANGELOG's 2026-08-07 entry), pushed to `claude/mobile-port`
+##         only per the standing iteration-loop rule. `main` (`2546cdc`) and
+##         `bigtiffsworld.com` (`706a79d`) still reflect the prior
+##         2026-08-04 state below until an explicit merge/promote ask.
+## Status as of 2026-08-04 (superseded above, kept for history): **fully
+##         caught up — dev repo `main`, `claude/mobile-port`, and the live
+##         site all matched**
 ##         (`claude/mobile-port` commit `92c83a8`, `main` commit `2546cdc`
 ##         via merge, `big_tiff_launchpage` `main` commit `706a79d`).
 ##         Two rounds landed 2026-08-04, both promoted live same-day:
