@@ -534,6 +534,60 @@
             overflow: hidden;
         }
 
+        /* ---- Achievement card book (Stats window content) ---- */
+        .stats-book-page { display: flex; flex-direction: column; min-width: 0; }
+        .stats-book-spread { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .stats-book-totals { text-align: center; background: #4A3A2E; border: 1px solid rgba(212,175,55,0.4); border-radius: 12px; padding: 0.75rem; }
+        .stats-book-inprogress { display: flex; flex-direction: column; gap: 0.4rem; }
+        .stats-inprogress-row { display: flex; justify-content: space-between; gap: 0.5rem; background: #3D2B1F; border: 1px solid rgba(212,175,55,0.15); border-radius: 8px; padding: 0.4rem 0.6rem; font-size: 0.8rem; }
+        .stats-inprogress-title { color: #F4EDE4; }
+        .stats-inprogress-value { color: #D4AF37; white-space: nowrap; }
+        .stats-inprogress-empty { color: #B8A88F; font-size: 0.8rem; padding: 0.4rem 0; }
+        .stats-family-link { display: flex; justify-content: space-between; align-items: center; width: 100%; background: #4A3A2E; border: 1px solid rgba(212,175,55,0.4); border-radius: 10px; padding: 0.6rem 0.8rem; margin-bottom: 0.5rem; color: #F4EDE4; cursor: pointer; min-height: var(--tap); }
+        .stats-family-link:hover { border-color: #D4AF37; }
+        .stats-family-link-name { font-weight: 600; }
+        .stats-family-link-count { color: #D4AF37; font-size: 0.8rem; }
+        .stats-book-back { display: inline-flex; align-items: center; gap: 0.4rem; align-self: flex-start; background: none; border: none; color: #D4AF37; cursor: pointer; padding: 0.3rem 0.2rem; margin-bottom: 0.75rem; min-height: var(--tap-sm); }
+        .stats-book-back:hover { color: #E8C86B; }
+        .stats-book-cover { align-items: center; text-align: center; }
+        .stats-family-cover-art-wrap { position: relative; width: 220px; height: 160px; max-width: 100%; border-radius: 12px; background: linear-gradient(135deg, #4A3A2E, #2A2119); display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 0.75rem; }
+        .stats-family-cover-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .stats-family-cover-art-wrap .stats-art-placeholder-icon { font-size: 2.5rem; color: rgba(212,175,55,0.4); }
+        .stats-family-cover-title { color: #D4AF37; font-size: 1.1rem; font-weight: 700; margin-bottom: 0.75rem; }
+        .stats-family-checklist { list-style: none; text-align: left; width: 100%; max-width: 320px; margin: 0 0 0.75rem; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+        .stats-family-checklist li { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: #B8A88F; }
+        .stats-family-checklist li i { color: rgba(212,175,55,0.4); }
+        .stats-family-checklist li.is-checked { color: #F4EDE4; }
+        .stats-family-checklist li.is-checked i { color: #D4AF37; }
+        .stats-book-enter { background: #4A3A2E; border: 1px solid #D4AF37; color: #D4AF37; border-radius: 10px; padding: 0.5rem 1rem; cursor: pointer; min-height: var(--tap); }
+        .stats-book-enter:hover { background: #5A4A3E; }
+        .stats-book-grid-toolbar { display: flex; align-items: center; justify-content: space-between; }
+        .stats-book-page-indicator { color: #D4AF37; font-size: 0.75rem; }
+        .stats-book-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; flex: 1; align-content: start; }
+        .stats-card { cursor: pointer; text-align: center; }
+        .stats-card-art-slot { position: relative; aspect-ratio: 3 / 4; border-radius: 10px; overflow: hidden; background: #2A2119; border: 1px solid rgba(212,175,55,0.25); }
+        .stats-card-art-wrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; transition: transform 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.4s cubic-bezier(0.4,0,0.2,1); transform: translateY(0); opacity: 1; }
+        .stats-card-art-wrap.stats-card-face-incoming { transform: translateY(100%); opacity: 0; }
+        .stats-card-art-wrap.is-leaving { transform: translateY(-100%); opacity: 0; }
+        .stats-card-art-wrap .stats-art-placeholder-icon { font-size: 1.6rem; }
+        .stats-card-art-wrap.is-locked .stats-art-placeholder-icon { color: rgba(212,175,55,0.35); filter: grayscale(1) brightness(0.7); }
+        .stats-card-art-wrap.is-unlocked .stats-art-placeholder-icon { color: #D4AF37; }
+        .stats-card-art { width: 100%; height: 100%; object-fit: cover; }
+        .stats-card-title { font-size: 0.75rem; margin-top: 0.35rem; color: #F4EDE4; line-height: 1.2; }
+        .stats-card.is-locked .stats-card-title { color: #B8A88F; }
+        .stats-book-grid-nav { display: flex; justify-content: space-between; margin-top: 0.75rem; }
+        .stats-tap-btn { display: inline-flex; align-items: center; gap: 0.4rem; background: #4A3A2E; border: 1px solid rgba(212,175,55,0.4); color: #D4AF37; border-radius: 8px; padding: 0.4rem 0.8rem; cursor: pointer; min-height: var(--tap); }
+        .stats-tap-btn:hover { border-color: #D4AF37; }
+        .stats-tap-btn:disabled { opacity: 0.35; cursor: default; }
+        .stats-card-focus-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 50; }
+        .stats-card-focus { position: relative; background: #3D2B1F; border: 2px solid #D4AF37; border-radius: 16px; padding: 1.25rem; width: 260px; max-width: 90vw; text-align: center; }
+        .stats-card-focus-close { position: absolute; top: 0.4rem; right: 0.4rem; }
+        .stats-card-focus-art { position: relative; width: 100%; aspect-ratio: 3 / 4; border-radius: 10px; overflow: hidden; background: #2A2119; border: 1px solid rgba(212,175,55,0.25); margin-bottom: 0.75rem; }
+        .stats-card-focus-title { color: #D4AF37; font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
+        .stats-card-focus-date { color: rgba(244,237,228,0.8); font-size: 0.8rem; }
+        .stats-card-focus-desc { color: #F4EDE4; font-size: 0.8rem; margin-bottom: 0.4rem; }
+        .stats-card-focus-progress { color: #D4AF37; font-size: 0.8rem; }
+
         .notepad-sidebar {
             width: 160px;
             border-right: 1px solid #8B6F47;
@@ -892,7 +946,10 @@
         body.mobile-layout #scene-status-bar button,
         body.mobile-layout .landing-nav-btn,
         body.mobile-layout .status-dropdown-trigger,
-        body.mobile-layout .m-expand { min-height: var(--tap); min-width: var(--tap); }
+        body.mobile-layout .m-expand,
+        body.mobile-layout #stats-window .stats-tap-btn,
+        body.mobile-layout #stats-window .stats-family-link,
+        body.mobile-layout #stats-window .stats-book-enter { min-height: var(--tap); min-width: var(--tap); }
 
         body.mobile-layout input[type="text"],
         body.mobile-layout input[type="password"],
@@ -2237,6 +2294,12 @@
             border-radius: 16px;
             border: 2px solid #D4AF37;
         }
+        /* Achievement book on mobile: 4 cards per grid page (vs 6 on
+           desktop, via bookPageSize()), and the summary/index spread
+           stacks vertically instead of sitting side-by-side - there's no
+           room for two columns in a phone-width sheet. */
+        body.mobile-layout .stats-book-spread { grid-template-columns: 1fr; gap: 1rem; }
+        body.mobile-layout .stats-book-grid { grid-template-columns: repeat(2, 1fr); }
         /* Dim backdrop - shown only while Notepad/Draft Pad are open (see
            showMobileSheetBackdrop()/hideMobileSheetBackdrop() in the JS).
            Sits above the guidance rail/status arm (dims them too, not just
@@ -3495,11 +3558,11 @@
     </div>
 
     <!-- ==================== STATS & PROGRESS ==================== -->
-    <div id="stats-window" class="notepad active hidden" style="left: 620px; top: 120px; width: 460px; height: 440px;">
+    <div id="stats-window" class="notepad active hidden" style="left: 560px; top: 90px; width: 760px; height: 560px;">
         <div class="notepad-header" id="stats-header">
             <div class="flex items-center gap-x-2">
-                <i class="fa-solid fa-chart-line text-[#D4AF37]"></i>
-                <h3>Stats &amp; Progress</h3>
+                <i class="fa-solid fa-book-sparkles text-[#D4AF37]"></i>
+                <h3>Achievement Book</h3>
             </div>
             <button onclick="hideStatsWindow()" class="notepad-close">
                 <i class="fa-solid fa-times"></i>
@@ -3507,16 +3570,7 @@
         </div>
 
         <div class="notepad-body" style="flex-direction: column;">
-            <div class="p-4 overflow-y-auto flex-1 text-sm w-full">
-                <!-- Counters -->
-                <div id="stats-counters" class="grid grid-cols-3 gap-2 mb-4"></div>
-                <!-- Achievements -->
-                <div class="flex items-center justify-between mb-2">
-                    <span class="section-label text-[#D4AF37]">Achievements</span>
-                    <span id="stats-ach-count" class="text-[10px] text-[#D4AF37]/60"></span>
-                </div>
-                <div id="stats-achievements" class="grid grid-cols-2 gap-2"></div>
-            </div>
+            <div id="stats-book" class="stats-book p-4 overflow-y-auto flex-1 text-sm w-full"></div>
         </div>
 
         <div id="stats-resize-handle" class="notepad-resize-handle"></div>
@@ -7827,17 +7881,14 @@
                 totalScenes: total,
                 totalWords: words,
                 streak,
-                achievements: statsAchievementTiles(),
                 achievementsUnlocked: PROG ? Object.keys(PROG.u).length : 0,
                 achievementsTotal: (window.ACHIEVEMENTS || []).length
             };
         }
 
-        // The Stats window shows a 6-tile teaser, not the full book (that's a
-        // later phase). Real engine data: everything already unlocked, newest
-        // first, backfilled with whatever is closest to unlocking - so the
-        // panel always shows something actionable rather than a wall of locks.
-        // Icons are per-category placeholders until the real icon set lands.
+        // Per-category icon fallback, used when an achievement's real art
+        // (assets/achievements/<id>-locked|unlocked.png) hasn't been
+        // delivered yet - see achievementArtSrc() below.
         const STATS_CAT_ICON = {
             'first-steps': 'fa-seedling', 'consistency': 'fa-fire',
             'scene-progress': 'fa-layer-group', 'wordcraft-lifetime': 'fa-feather',
@@ -7845,20 +7896,60 @@
             'usage-tracking': 'fa-compass', 'depth': 'fa-water',
             'completion': 'fa-trophy', 'weekly': 'fa-star'
         };
-        function statsAchievementTiles() {
-            const book = progSafe(getAchievementBook, null);
-            if (!book || !book.length) return [];
-            const done = book.filter(a => a.unlocked)
-                .sort((x, y) => String(y.unlockedAt).localeCompare(String(x.unlockedAt)));
-            const near = book.filter(a => !a.unlocked && !a.hidden)
-                .sort((x, y) => y.progress.pct - x.progress.pct);
-            return done.concat(near).slice(0, 6).map(a => ({
-                id: a.id,
-                icon: STATS_CAT_ICON[a.category] || 'fa-award',
-                label: a.title,
-                unlocked: a.unlocked
-            }));
+
+        // ---- Achievement card book: family layout, pagination, art lookup ----
+        // Achievement id -> family name. Only the 18-card pilot set is
+        // assigned so far (Aaron's design-concept spreadsheet, 2026-08-07);
+        // every other id falls into the trailing "Unassigned" bucket below
+        // until the sheet is extended - see Mobile_Port_Handoff.md.
+        const ACHIEVEMENT_FAMILY = {
+            'portal-opened': 'Arc & Halo', 'first-words': 'Arc & Halo', 'first-scene-complete': 'Arc & Halo',
+            'words-100': 'Classic Lattice', 'words-15000': 'Classic Lattice', 'words-50000': 'Classic Lattice',
+            'streak-of-balance': 'Dense Ornament', 'perfect-week-1': 'Dense Ornament', 'streak-30': 'Dense Ornament',
+            'zero-word-logins-3': 'Open / Airy', 'library-opens-25': 'Open / Airy', 'late-night-write': 'Open / Airy',
+            'draft-pad-opened': 'Rune-edged', 'focus-mode-engaged': 'Rune-edged', 'status-journey': 'Rune-edged',
+            'ya-length-reached': 'Radiant', 'the-novel-complete': 'Radiant', 'gift-delivered': 'Radiant'
+        };
+        // Radiant leads the book per Aaron's spec; Unassigned trails until
+        // every id has a real family assigned.
+        const FAMILY_ORDER = ['Radiant', 'Arc & Halo', 'Classic Lattice', 'Dense Ornament', 'Open / Airy', 'Rune-edged', 'Unassigned'];
+        function familySlug(name) {
+            return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
         }
+        // Fixed, family-grouped book layout - every achievement keeps the
+        // same slot regardless of unlock state ("achievements will never
+        // change position from where they begin," Aaron 2026-08-07).
+        function computeBookLayout() {
+            const book = progSafe(getAchievementBook, null) || [];
+            const byFamily = {};
+            FAMILY_ORDER.forEach(f => { byFamily[f] = []; });
+            book.forEach(a => {
+                const fam = ACHIEVEMENT_FAMILY[a.id] || 'Unassigned';
+                (byFamily[fam] || (byFamily[fam] = [])).push(a);
+            });
+            return FAMILY_ORDER.map(family => ({ family, achievements: byFamily[family] || [] }));
+        }
+        function bookPageSize() { return isMobileMode() ? 4 : 6; }
+        function chunkArr(arr, size) {
+            const out = [];
+            for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+            return out;
+        }
+        function achievementArtSrc(id, unlocked) {
+            return `assets/achievements/${id}-${unlocked ? 'unlocked' : 'locked'}.png`;
+        }
+        function familyCoverSrc(family) {
+            return `assets/achievements/family-${familySlug(family)}.png`;
+        }
+
+        // ---- Book navigation state (resets to the summary/index spread
+        // every time the window opens - see showStoryStats()) ----
+        let bookView = { mode: 'summary', family: null, page: 0, focusId: null };
+        function bookGoSummary() { bookView = { mode: 'summary', family: null, page: 0, focusId: null }; renderStatsWindow(); }
+        function bookGoFamilyCover(family) { bookView = { mode: 'cover', family, page: 0, focusId: null }; renderStatsWindow(); }
+        function bookGoFamilyGrid(family, page) { bookView = { mode: 'grid', family, page: Math.max(0, page || 0), focusId: null }; renderStatsWindow(); }
+        function bookOpenCard(id) { bookView = Object.assign({}, bookView, { focusId: id }); renderStatsWindow(); }
+        function bookCloseCard() { bookView = Object.assign({}, bookView, { focusId: null }); renderStatsWindow(); }
 
         function refreshProgressPill() {
             const label = document.getElementById('progress-pill-label');
@@ -7879,6 +7970,8 @@
             win.style.display = 'flex';
             win.classList.add('active');
             restoreStatsWindowState();
+            // Always open back at the front of the book, like a physical one.
+            bookView = { mode: 'summary', family: null, page: 0, focusId: null };
             renderStatsWindow();
         }
         function hideStatsWindow() {
@@ -7889,27 +7982,147 @@
             win.classList.remove('active');
             if (isMobileMode()) hideMobileSheetBackdrop();
         }
+        function statsCardHTML(a) {
+            return `<div class="stats-card ${a.unlocked ? 'is-unlocked' : 'is-locked'}" data-id="${a.id}" onclick="bookOpenCard('${a.id}')">
+                <div class="stats-card-art-slot">
+                    <div class="stats-card-art-wrap ${a.unlocked ? 'is-unlocked' : 'is-locked'}">
+                        <i class="fa-solid ${STATS_CAT_ICON[a.category] || 'fa-award'} stats-art-placeholder-icon"></i>
+                        <img class="stats-card-art" src="${achievementArtSrc(a.id, a.unlocked)}" alt="" onerror="this.style.display='none'">
+                    </div>
+                </div>
+                <div class="stats-card-title">${a.title}</div>
+            </div>`;
+        }
+        function renderBookSummaryHTML() {
+            const book = progSafe(getAchievementBook, null) || [];
+            const unlockedCount = book.filter(a => a.unlocked).length;
+            const inProgress = book.filter(a => !a.unlocked && !a.hidden && a.progress.cur > 0)
+                .sort((x, y) => y.progress.pct - x.progress.pct);
+            const layout = computeBookLayout();
+            return `<div class="stats-book-spread">
+                <div class="stats-book-page stats-book-summary">
+                    <div class="stats-book-totals">
+                        <div class="text-2xl font-bold text-[#D4AF37]">${unlockedCount} / ${book.length}</div>
+                        <div class="text-[10px] text-[#D4AF37]/70 tracking-wider uppercase mt-0.5">Achievements Unlocked</div>
+                    </div>
+                    <div class="section-label text-[#D4AF37] mb-2 mt-4">In Progress</div>
+                    <div class="stats-book-inprogress">
+                        ${inProgress.length ? inProgress.map(a => `
+                            <div class="stats-inprogress-row">
+                                <span class="stats-inprogress-title">${a.title}</span>
+                                <span class="stats-inprogress-value">${a.progress.label}</span>
+                            </div>`).join('') : '<div class="stats-inprogress-empty">Nothing in progress yet — start writing!</div>'}
+                    </div>
+                </div>
+                <div class="stats-book-page stats-book-index">
+                    <div class="section-label text-[#D4AF37] mb-2">Families</div>
+                    ${layout.map(({ family, achievements }) => {
+                        const done = achievements.filter(a => a.unlocked).length;
+                        return `<button class="stats-family-link" onclick="bookGoFamilyCover('${family}')">
+                            <span class="stats-family-link-name">${family}</span>
+                            <span class="stats-family-link-count">${done}/${achievements.length}</span>
+                        </button>`;
+                    }).join('')}
+                </div>
+            </div>`;
+        }
+        function renderFamilyCoverHTML(family) {
+            const layout = computeBookLayout().find(f => f.family === family);
+            const achievements = layout ? layout.achievements : [];
+            return `<div class="stats-book-page stats-book-cover">
+                <button class="stats-book-back" onclick="bookGoSummary()"><i class="fa-solid fa-arrow-left"></i> Index</button>
+                <div class="stats-family-cover-art-wrap">
+                    <i class="fa-solid fa-image stats-art-placeholder-icon"></i>
+                    <img class="stats-family-cover-art" src="${familyCoverSrc(family)}" alt="${family}" onerror="this.style.display='none'">
+                </div>
+                <h3 class="stats-family-cover-title">${family}</h3>
+                <ul class="stats-family-checklist">
+                    ${achievements.map(a => `<li class="${a.unlocked ? 'is-checked' : ''}"><i class="fa-solid ${a.unlocked ? 'fa-square-check' : 'fa-square'}"></i> ${a.title}</li>`).join('')}
+                </ul>
+                <button class="stats-book-enter" onclick="bookGoFamilyGrid('${family}', 0)">View Cards <i class="fa-solid fa-arrow-right"></i></button>
+            </div>`;
+        }
+        function renderFamilyGridHTML(family, page) {
+            const layout = computeBookLayout().find(f => f.family === family);
+            const achievements = layout ? layout.achievements : [];
+            const pages = chunkArr(achievements, bookPageSize());
+            const totalPages = Math.max(pages.length, 1);
+            const curPage = Math.min(Math.max(page, 0), totalPages - 1);
+            const pageItems = pages[curPage] || [];
+            return `<div class="stats-book-page stats-book-grid-page">
+                <div class="stats-book-grid-toolbar">
+                    <button class="stats-book-back" onclick="bookGoFamilyCover('${family}')"><i class="fa-solid fa-arrow-left"></i> ${family}</button>
+                    <span class="stats-book-page-indicator">Page ${curPage + 1} / ${totalPages}</span>
+                </div>
+                <div class="stats-book-grid">${pageItems.map(statsCardHTML).join('')}</div>
+                <div class="stats-book-grid-nav">
+                    <button class="stats-tap-btn" ${curPage <= 0 ? 'disabled' : ''} onclick="bookGoFamilyGrid('${family}', ${curPage - 1})"><i class="fa-solid fa-chevron-left"></i> Prev</button>
+                    <button class="stats-tap-btn" ${curPage >= totalPages - 1 ? 'disabled' : ''} onclick="bookGoFamilyGrid('${family}', ${curPage + 1})">Next <i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+            </div>`;
+        }
+        function renderCardFocusHTML(id) {
+            const book = progSafe(getAchievementBook, null) || [];
+            const a = book.find(x => x.id === id);
+            if (!a) return '';
+            const dateStr = a.unlockedAt ? new Date(a.unlockedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : '';
+            return `<div class="stats-card-focus-backdrop" onclick="bookCloseCard()">
+                <div class="stats-card-focus" onclick="event.stopPropagation()">
+                    <button class="notepad-close stats-card-focus-close" onclick="bookCloseCard()"><i class="fa-solid fa-times"></i></button>
+                    <div class="stats-card-art-wrap stats-card-focus-art ${a.unlocked ? 'is-unlocked' : 'is-locked'}">
+                        <i class="fa-solid ${STATS_CAT_ICON[a.category] || 'fa-award'} stats-art-placeholder-icon"></i>
+                        <img class="stats-card-art" src="${achievementArtSrc(a.id, a.unlocked)}" alt="" onerror="this.style.display='none'">
+                    </div>
+                    <h3 class="stats-card-focus-title">${a.title}</h3>
+                    ${a.unlocked
+                        ? `<div class="stats-card-focus-date">Completed ${dateStr}</div>`
+                        : `<div class="stats-card-focus-desc">${a.description}</div><div class="stats-card-focus-progress">${a.progress.label}</div>`}
+                </div>
+            </div>`;
+        }
         function renderStatsWindow() {
-            const s = getStatsData();
-            const tile = (val, lbl) =>
-                `<div class="bg-[#4A3A2E] border border-[#D4AF37]/40 rounded-xl p-3 text-center">
-                    <div class="text-2xl font-bold text-[#D4AF37]">${val}</div>
-                    <div class="text-[10px] text-[#D4AF37]/70 tracking-wider uppercase mt-0.5">${lbl}</div>
-                 </div>`;
-            document.getElementById('stats-counters').innerHTML =
-                tile(s.scenesCompleted, 'Scenes Done') +
-                tile(s.totalWords.toLocaleString(), 'Words') +
-                tile(s.streak, 'Day Streak');
-            // Count is the REAL total across all 188, not the 6 teaser tiles.
-            document.getElementById('stats-ach-count').textContent =
-                `${s.achievementsUnlocked}/${s.achievementsTotal}`;
-            document.getElementById('stats-achievements').innerHTML = s.achievements.map(a =>
-                `<div class="flex items-center gap-x-2 rounded-xl p-2 border ${a.unlocked
-                    ? 'border-[#D4AF37]/50 bg-[#4A3A2E]'
-                    : 'border-[#D4AF37]/15 bg-[#3D2B1F] opacity-50'}">
-                    <i class="fa-solid ${a.icon} ${a.unlocked ? 'text-[#D4AF37]' : 'text-[#D4AF37]/40'}"></i>
-                    <span class="text-xs ${a.unlocked ? 'text-[#F4EDE4]' : 'text-[#D4AF37]/50'}">${a.label}</span>
-                 </div>`).join('');
+            const el = document.getElementById('stats-book');
+            if (!el) return;
+            if (bookView.mode === 'cover') { el.innerHTML = renderFamilyCoverHTML(bookView.family); return; }
+            if (bookView.mode === 'grid') {
+                el.innerHTML = renderFamilyGridHTML(bookView.family, bookView.page) + (bookView.focusId ? renderCardFocusHTML(bookView.focusId) : '');
+                return;
+            }
+            el.innerHTML = renderBookSummaryHTML();
+        }
+        // Live-unlock animation: if the book is open on a grid page that
+        // contains a newly-unlocked id, slide that specific card's face
+        // from locked to unlocked in place - never reorders/repositions it.
+        window.addEventListener('bigtiff:achievement', (e) => {
+            const win = document.getElementById('stats-window');
+            if (!win || getComputedStyle(win).display === 'none') return;
+            if (bookView.mode !== 'grid') return;
+            const items = (e.detail && e.detail.items) || [];
+            const idsUnlocked = new Set(items.map(x => x.id));
+            win.querySelectorAll('.stats-card.is-locked[data-id]').forEach(cardEl => {
+                const id = cardEl.getAttribute('data-id');
+                if (idsUnlocked.has(id)) animateCardUnlock(cardEl, id);
+            });
+        });
+        function animateCardUnlock(cardEl, id) {
+            const book = progSafe(getAchievementBook, null) || [];
+            const a = book.find(x => x.id === id);
+            const slot = cardEl.querySelector('.stats-card-art-slot');
+            const oldWrap = slot && slot.querySelector('.stats-card-art-wrap');
+            if (!a || !slot || !oldWrap) return;
+            const newWrap = document.createElement('div');
+            newWrap.className = 'stats-card-art-wrap is-unlocked stats-card-face-incoming';
+            newWrap.innerHTML = `<i class="fa-solid ${STATS_CAT_ICON[a.category] || 'fa-award'} stats-art-placeholder-icon"></i>
+                <img class="stats-card-art" src="${achievementArtSrc(a.id, true)}" alt="" onerror="this.style.display='none'">`;
+            slot.appendChild(newWrap);
+            void newWrap.offsetWidth; // force reflow so the transition below actually plays
+            requestAnimationFrame(() => {
+                oldWrap.classList.add('is-leaving');
+                newWrap.classList.remove('stats-card-face-incoming');
+            });
+            oldWrap.addEventListener('transitionend', () => oldWrap.remove(), { once: true });
+            cardEl.classList.remove('is-locked');
+            cardEl.classList.add('is-unlocked');
         }
         function makeStatsWindowDraggable() {
             const win = document.getElementById('stats-window');
