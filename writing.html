@@ -11112,7 +11112,13 @@
 
         function applyUiScale() {
             const root = document.documentElement;
-            if (!isMobileMode()) { root.style.removeProperty('font-size'); return; }
+            // Was mobile-only ("!isMobileMode() -> return" here made this a
+            // no-op on desktop) from when this control was mobile-only
+            // chrome. Aaron gave it a desktop entry point on 2026-08-04 -
+            // this function was never updated to match, so the desktop
+            // Text Size window opened but its slider/buttons silently did
+            // nothing (found 2026-08-09). Root `font-size` scaling works
+            // identically on both layouts - nothing here is mobile-specific.
             const pct = getUiScale();
             // 100% is the browser default - don't pin a value at all there.
             if (pct === 100) root.style.removeProperty('font-size');
