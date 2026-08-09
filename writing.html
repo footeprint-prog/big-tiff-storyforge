@@ -534,9 +534,28 @@
             overflow: hidden;
         }
 
-        /* ---- Achievement card book (Stats window content) ---- */
-        .stats-book-page { display: flex; flex-direction: column; min-width: 0; }
-        .stats-book-spread { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        /* ---- Achievement card book (Stats window content) ----
+           The window itself reads as an open book: two independent "leaf"
+           panels (their own background/border, asymmetric radius so only
+           the outer corners round - the spine-side corners stay square)
+           sitting side by side with a shadowed spine seam between them
+           (Aaron, 2026-08-08). Corner turn-arrows page through one flat
+           sequence of spreads - see buildBookSpreads(). */
+        .stats-book-window .notepad-body { padding: 0; background: transparent; }
+        .stats-book-shell { position: relative; flex: 1; overflow: hidden; }
+        .stats-book-leaf { position: absolute; top: 8px; bottom: 8px; width: calc(50% - 4px); overflow-y: auto; background: #3D2B1F; padding: 1rem 1.25rem; }
+        .stats-book-leaf-left { left: 8px; border: 2px solid #8B6F47; border-right-width: 1px; border-radius: 14px 3px 3px 14px; }
+        .stats-book-leaf-right { right: 8px; border: 2px solid #8B6F47; border-left-width: 1px; border-radius: 3px 14px 14px 3px; }
+        .stats-book-spine { position: absolute; top: 8px; bottom: 8px; left: 50%; width: 22px; margin-left: -11px; background: linear-gradient(90deg, transparent, rgba(0,0,0,0.4) 45%, rgba(0,0,0,0.4) 55%, transparent); pointer-events: none; z-index: 3; }
+        .stats-book-turn { position: absolute; bottom: 12px; width: 36px; height: 36px; border-radius: 50%; background: #4A3A2E; border: 1px solid rgba(212,175,55,0.5); color: #D4AF37; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 6; }
+        .stats-book-turn:hover { border-color: #D4AF37; }
+        .stats-book-turn:disabled { opacity: 0.3; cursor: default; }
+        .stats-book-turn-prev { left: 12px; }
+        /* Inset further than the prev arrow - clears the desktop resize
+           handle (.notepad-resize-handle, 16x16 at the true bottom-right
+           corner of #stats-window; hidden on mobile, see line ~1184). */
+        .stats-book-turn-next { right: 20px; bottom: 20px; }
+        body.mobile-layout .stats-book-turn-next { right: 12px; bottom: 12px; }
         .stats-book-totals { text-align: center; background: #4A3A2E; border: 1px solid rgba(212,175,55,0.4); border-radius: 12px; padding: 0.75rem; }
         .stats-book-inprogress { display: flex; flex-direction: column; gap: 0.4rem; }
         .stats-inprogress-row { display: flex; justify-content: space-between; gap: 0.5rem; background: #3D2B1F; border: 1px solid rgba(212,175,55,0.15); border-radius: 8px; padding: 0.4rem 0.6rem; font-size: 0.8rem; }
@@ -547,23 +566,17 @@
         .stats-family-link:hover { border-color: #D4AF37; }
         .stats-family-link-name { font-weight: 600; }
         .stats-family-link-count { color: #D4AF37; font-size: 0.8rem; }
-        .stats-book-back { display: inline-flex; align-items: center; gap: 0.4rem; align-self: flex-start; background: none; border: none; color: #D4AF37; cursor: pointer; padding: 0.3rem 0.2rem; margin-bottom: 0.75rem; min-height: var(--tap-sm); }
-        .stats-book-back:hover { color: #E8C86B; }
-        .stats-book-cover { align-items: center; text-align: center; }
-        .stats-family-cover-art-wrap { position: relative; width: 220px; height: 160px; max-width: 100%; border-radius: 12px; background: linear-gradient(135deg, #4A3A2E, #2A2119); display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 0.75rem; }
+        .stats-family-cover-art-wrap { position: relative; width: 220px; height: 160px; max-width: 100%; border-radius: 12px; background: linear-gradient(135deg, #4A3A2E, #2A2119); display: flex; align-items: center; justify-content: center; overflow: hidden; margin: 0 auto 0.75rem; }
         .stats-family-cover-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
         .stats-family-cover-art-wrap .stats-art-placeholder-icon { font-size: 2.5rem; color: rgba(212,175,55,0.4); }
-        .stats-family-cover-title { color: #D4AF37; font-size: 1.1rem; font-weight: 700; margin-bottom: 0.75rem; }
-        .stats-family-checklist { list-style: none; text-align: left; width: 100%; max-width: 320px; margin: 0 0 0.75rem; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
+        .stats-family-cover-title { color: #D4AF37; font-size: 1.1rem; font-weight: 700; margin-bottom: 0.75rem; text-align: center; }
+        .stats-family-checklist { list-style: none; text-align: left; width: 100%; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
         .stats-family-checklist li { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: #B8A88F; }
         .stats-family-checklist li i { color: rgba(212,175,55,0.4); }
         .stats-family-checklist li.is-checked { color: #F4EDE4; }
         .stats-family-checklist li.is-checked i { color: #D4AF37; }
-        .stats-book-enter { background: #4A3A2E; border: 1px solid #D4AF37; color: #D4AF37; border-radius: 10px; padding: 0.5rem 1rem; cursor: pointer; min-height: var(--tap); }
-        .stats-book-enter:hover { background: #5A4A3E; }
-        .stats-book-grid-toolbar { display: flex; align-items: center; justify-content: space-between; }
-        .stats-book-page-indicator { color: #D4AF37; font-size: 0.75rem; }
-        .stats-book-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; flex: 1; align-content: start; }
+        .stats-book-page-indicator { color: #D4AF37; font-size: 0.75rem; margin-bottom: 0.5rem; }
+        .stats-book-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
         .stats-card { cursor: pointer; text-align: center; }
         .stats-card-art-slot { position: relative; aspect-ratio: 3 / 4; border-radius: 10px; overflow: hidden; background: #2A2119; border: 1px solid rgba(212,175,55,0.25); }
         .stats-card-art-wrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; transition: transform 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.4s cubic-bezier(0.4,0,0.2,1); transform: translateY(0); opacity: 1; }
@@ -575,10 +588,6 @@
         .stats-card-art { width: 100%; height: 100%; object-fit: cover; }
         .stats-card-title { font-size: 0.75rem; margin-top: 0.35rem; color: #F4EDE4; line-height: 1.2; }
         .stats-card.is-locked .stats-card-title { color: #B8A88F; }
-        .stats-book-grid-nav { display: flex; justify-content: space-between; margin-top: 0.75rem; }
-        .stats-tap-btn { display: inline-flex; align-items: center; gap: 0.4rem; background: #4A3A2E; border: 1px solid rgba(212,175,55,0.4); color: #D4AF37; border-radius: 8px; padding: 0.4rem 0.8rem; cursor: pointer; min-height: var(--tap); }
-        .stats-tap-btn:hover { border-color: #D4AF37; }
-        .stats-tap-btn:disabled { opacity: 0.35; cursor: default; }
         .stats-card-focus-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 50; }
         .stats-card-focus { position: relative; background: #3D2B1F; border: 2px solid #D4AF37; border-radius: 16px; padding: 1.25rem; width: 260px; max-width: 90vw; text-align: center; }
         .stats-card-focus-close { position: absolute; top: 0.4rem; right: 0.4rem; }
@@ -947,9 +956,8 @@
         body.mobile-layout .landing-nav-btn,
         body.mobile-layout .status-dropdown-trigger,
         body.mobile-layout .m-expand,
-        body.mobile-layout #stats-window .stats-tap-btn,
         body.mobile-layout #stats-window .stats-family-link,
-        body.mobile-layout #stats-window .stats-book-enter { min-height: var(--tap); min-width: var(--tap); }
+        body.mobile-layout #stats-window .stats-book-turn { min-height: var(--tap); min-width: var(--tap); }
 
         body.mobile-layout input[type="text"],
         body.mobile-layout input[type="password"],
@@ -2298,8 +2306,8 @@
            desktop, via bookPageSize()), and the summary/index spread
            stacks vertically instead of sitting side-by-side - there's no
            room for two columns in a phone-width sheet. */
-        body.mobile-layout .stats-book-spread { grid-template-columns: 1fr; gap: 1rem; }
         body.mobile-layout .stats-book-grid { grid-template-columns: repeat(2, 1fr); }
+        body.mobile-layout .stats-book-leaf { padding: 0.75rem 0.85rem; }
         /* Dim backdrop - shown only while Notepad/Draft Pad are open (see
            showMobileSheetBackdrop()/hideMobileSheetBackdrop() in the JS).
            Sits above the guidance rail/status arm (dims them too, not just
@@ -3558,19 +3566,32 @@
     </div>
 
     <!-- ==================== STATS & PROGRESS ==================== -->
-    <div id="stats-window" class="notepad active hidden" style="left: 560px; top: 90px; width: 760px; height: 560px;">
+    <div id="stats-window" class="notepad active hidden stats-book-window" style="left: 560px; top: 90px; width: 760px; height: 560px;">
         <div class="notepad-header" id="stats-header">
             <div class="flex items-center gap-x-2">
                 <i class="fa-solid fa-book-sparkles text-[#D4AF37]"></i>
                 <h3>Achievement Book</h3>
             </div>
-            <button onclick="hideStatsWindow()" class="notepad-close">
-                <i class="fa-solid fa-times"></i>
-            </button>
+            <div class="flex items-center gap-x-1">
+                <button onclick="bookGoSummary()" class="notepad-close" aria-label="Book index">
+                    <i class="fa-solid fa-list"></i>
+                </button>
+                <button onclick="hideStatsWindow()" class="notepad-close">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+            </div>
         </div>
 
-        <div class="notepad-body" style="flex-direction: column;">
-            <div id="stats-book" class="stats-book p-4 overflow-y-auto flex-1 text-sm w-full"></div>
+        <div class="notepad-body stats-book-shell" id="stats-book-shell">
+            <div id="stats-book-left" class="stats-book-leaf stats-book-leaf-left"></div>
+            <div class="stats-book-spine"></div>
+            <div id="stats-book-right" class="stats-book-leaf stats-book-leaf-right"></div>
+            <button id="stats-book-prev" class="stats-book-turn stats-book-turn-prev" onclick="bookTurnPage(-1)" aria-label="Previous page">
+                <i class="fa-solid fa-angle-left"></i>
+            </button>
+            <button id="stats-book-next" class="stats-book-turn stats-book-turn-next" onclick="bookTurnPage(1)" aria-label="Next page">
+                <i class="fa-solid fa-angle-right"></i>
+            </button>
         </div>
 
         <div id="stats-resize-handle" class="notepad-resize-handle"></div>
@@ -7898,20 +7919,96 @@
         };
 
         // ---- Achievement card book: family layout, pagination, art lookup ----
-        // Achievement id -> family name. Only the 18-card pilot set is
-        // assigned so far (Aaron's design-concept spreadsheet, 2026-08-07);
-        // every other id falls into the trailing "Unassigned" bucket below
-        // until the sheet is extended - see Mobile_Port_Handoff.md.
+        // Achievement id -> family name, complete for all 188 - sourced from
+        // Aaron's Drive doc "Rewards Project - Achievement Family Sort &
+        // Icon Plan" (2026-08-07), cross-checked id-by-id against the real
+        // ACHIEVEMENTS array and cross-validated by category totals (every
+        // one of the 9 existing `c:` category counts reconciles exactly
+        // against this family breakdown - see CHANGELOG). Nothing here is
+        // guessed; the "Unassigned" bucket below only exists as a defensive
+        // fallback for a future achievement id added without updating this
+        // map - it should render empty today.
         const ACHIEVEMENT_FAMILY = {
-            'portal-opened': 'Arc & Halo', 'first-words': 'Arc & Halo', 'first-scene-complete': 'Arc & Halo',
-            'words-100': 'Classic Lattice', 'words-15000': 'Classic Lattice', 'words-50000': 'Classic Lattice',
-            'streak-of-balance': 'Dense Ornament', 'perfect-week-1': 'Dense Ornament', 'streak-30': 'Dense Ornament',
-            'zero-word-logins-3': 'Open / Airy', 'library-opens-25': 'Open / Airy', 'late-night-write': 'Open / Airy',
-            'draft-pad-opened': 'Rune-edged', 'focus-mode-engaged': 'Rune-edged', 'status-journey': 'Rune-edged',
-            'ya-length-reached': 'Radiant', 'the-novel-complete': 'Radiant', 'gift-delivered': 'Radiant'
+            // Arc & Halo (13) - firsts / major completions
+            'portal-opened': 'Arc & Halo', 'first-sync': 'Arc & Halo', 'scene-selected': 'Arc & Halo',
+            'guidance-received': 'Arc & Halo', 'first-words': 'Arc & Halo', 'status-touched': 'Arc & Halo',
+            'progress-window-opened': 'Arc & Halo', 'first-scene-complete': 'Arc & Halo', 'half-the-path': 'Arc & Halo',
+            'three-quarters-path': 'Arc & Halo', 'all-scenes-complete': 'Arc & Halo', 'full-outline-clear': 'Arc & Halo',
+            'first-full-pass': 'Arc & Halo',
+            // Classic Lattice (75) - core progress / word count
+            'review-resolver': 'Classic Lattice', 'scenes-2': 'Classic Lattice', 'scenes-3': 'Classic Lattice',
+            'scenes-4': 'Classic Lattice', 'scenes-5': 'Classic Lattice', 'scenes-7': 'Classic Lattice',
+            'scenes-10': 'Classic Lattice', 'scenes-12': 'Classic Lattice', 'scenes-15': 'Classic Lattice',
+            'scenes-20': 'Classic Lattice', 'scenes-25': 'Classic Lattice',
+            'words-100': 'Classic Lattice', 'words-250': 'Classic Lattice', 'words-500': 'Classic Lattice',
+            'words-750': 'Classic Lattice', 'words-1000': 'Classic Lattice', 'words-1500': 'Classic Lattice',
+            'words-2000': 'Classic Lattice', 'words-2500': 'Classic Lattice', 'words-3000': 'Classic Lattice',
+            'words-4000': 'Classic Lattice', 'words-5000': 'Classic Lattice', 'words-6000': 'Classic Lattice',
+            'words-7000': 'Classic Lattice', 'words-7500': 'Classic Lattice', 'words-8000': 'Classic Lattice',
+            'words-9000': 'Classic Lattice', 'words-10000': 'Classic Lattice', 'words-11000': 'Classic Lattice',
+            'words-12000': 'Classic Lattice', 'words-12500': 'Classic Lattice', 'words-14000': 'Classic Lattice',
+            'words-15000': 'Classic Lattice', 'words-16000': 'Classic Lattice', 'words-17500': 'Classic Lattice',
+            'words-18000': 'Classic Lattice', 'words-20000': 'Classic Lattice', 'words-22500': 'Classic Lattice',
+            'words-25000': 'Classic Lattice', 'words-27500': 'Classic Lattice', 'words-30000': 'Classic Lattice',
+            'words-32500': 'Classic Lattice', 'words-35000': 'Classic Lattice', 'words-37500': 'Classic Lattice',
+            'words-40000': 'Classic Lattice', 'words-42500': 'Classic Lattice', 'words-45000': 'Classic Lattice',
+            'words-47500': 'Classic Lattice', 'words-50000': 'Classic Lattice', 'words-55000': 'Classic Lattice',
+            'words-60000': 'Classic Lattice', 'words-65000': 'Classic Lattice', 'words-70000': 'Classic Lattice',
+            'session-250': 'Classic Lattice', 'session-500': 'Classic Lattice', 'session-750': 'Classic Lattice',
+            'session-1000': 'Classic Lattice', 'session-1500': 'Classic Lattice', 'session-2000': 'Classic Lattice',
+            'day-500': 'Classic Lattice', 'day-750': 'Classic Lattice', 'day-1000': 'Classic Lattice',
+            'day-1500': 'Classic Lattice', 'day-2000': 'Classic Lattice',
+            'days-1k-x3': 'Classic Lattice', 'days-1k-x5': 'Classic Lattice', 'days-1k-x7': 'Classic Lattice',
+            'streak-1k-3': 'Classic Lattice', 'streak-1k-5': 'Classic Lattice', 'streak-1k-7': 'Classic Lattice',
+            'personal-best-session': 'Classic Lattice',
+            'draft-depth-500': 'Classic Lattice', 'draft-depth-1000': 'Classic Lattice',
+            'draft-depth-1500': 'Classic Lattice', 'draft-depth-2000': 'Classic Lattice',
+            // Dense Ornament (14) - streaks / consistency
+            'one-day-wonder': 'Dense Ornament', 'three-day-harmonic': 'Dense Ornament', 'week-of-resonance': 'Dense Ornament',
+            'streak-of-balance': 'Dense Ornament', 'extended-harmonic': 'Dense Ornament', 'streak-14': 'Dense Ornament',
+            'streak-21': 'Dense Ornament', 'streak-30': 'Dense Ornament', 'streak-keeper': 'Dense Ornament',
+            'monthly-cadence': 'Dense Ornament', 'monthly-strong': 'Dense Ornament', 'perfect-week-1': 'Dense Ornament',
+            'perfect-weeks-2': 'Dense Ornament', 'perfect-streak-2': 'Dense Ornament',
+            // Open / Airy (49) - tool exploration / curious habits (usage-tracking)
+            'library-opens-5': 'Open / Airy', 'library-opens-10': 'Open / Airy', 'library-opens-25': 'Open / Airy',
+            'library-opens-50': 'Open / Airy', 'library-opens-100': 'Open / Airy',
+            'outline-opens-10': 'Open / Airy', 'outline-opens-25': 'Open / Airy', 'outline-opens-50': 'Open / Airy',
+            'search-used-5': 'Open / Airy', 'search-used-15': 'Open / Airy', 'search-used-30': 'Open / Airy',
+            'zero-word-logins-3': 'Open / Airy', 'zero-word-logins-10': 'Open / Airy', 'zero-word-logins-25': 'Open / Airy',
+            'status-changes-10': 'Open / Airy', 'status-changes-25': 'Open / Airy',
+            'checkpoints-created-5': 'Open / Airy', 'checkpoints-created-15': 'Open / Airy',
+            'focus-mode-uses-5': 'Open / Airy', 'focus-mode-uses-15': 'Open / Airy',
+            'send-to-sammy-5': 'Open / Airy', 'send-to-sammy-15': 'Open / Airy',
+            'mobile-days-5': 'Open / Airy', 'mobile-days-15': 'Open / Airy',
+            'weekend-writer-3': 'Open / Airy', 'weekend-writer-8': 'Open / Airy',
+            'late-night-write': 'Open / Airy', 'early-bird-write': 'Open / Airy',
+            'draftlog-opens-3': 'Open / Airy', 'draftlog-opens-10': 'Open / Airy', 'draftlog-opens-25': 'Open / Airy',
+            'snapshot-created-3': 'Open / Airy', 'snapshot-created-10': 'Open / Airy',
+            'snapshot-restored-3': 'Open / Airy', 'snapshot-restored-10': 'Open / Airy',
+            'notepad-opens-3': 'Open / Airy', 'notepad-opens-10': 'Open / Airy', 'notepad-opens-25': 'Open / Airy',
+            'notepad-notes-3': 'Open / Airy', 'notepad-notes-10': 'Open / Airy',
+            'mobile-context-open-5': 'Open / Airy', 'mobile-context-open-15': 'Open / Airy',
+            'focus-writing-3': 'Open / Airy', 'focus-reading-3': 'Open / Airy',
+            'proofreader-runs-5': 'Open / Airy', 'proofreader-runs-15': 'Open / Airy',
+            'changelog-opens-5': 'Open / Airy', 'sync-actions-5': 'Open / Airy', 'sync-actions-15': 'Open / Airy',
+            // Rune-edged (20) - tool mastery / systems (tool-mastery + depth)
+            'draft-pad-opened': 'Rune-edged', 'checkpoint-created': 'Rune-edged', 'snapshot-restored': 'Rune-edged',
+            'library-explorer': 'Rune-edged', 'lore-guardian': 'Rune-edged', 'notepad-awakened': 'Rune-edged',
+            'focus-mode-engaged': 'Rune-edged', 'proofreader-consulted': 'Rune-edged', 'sent-to-sammy': 'Rune-edged',
+            'mobile-portal': 'Rune-edged', 'notepad-to-library': 'Rune-edged', 'mobile-context-open-1': 'Rune-edged',
+            'mobile-guidance-rail': 'Rune-edged',
+            'multiple-checkpoints': 'Rune-edged', 'guidance-returned': 'Rune-edged', 'status-journey': 'Rune-edged',
+            'changelog-reader': 'Rune-edged', 'revisited-scene-5': 'Rune-edged', 'two-scenes-same-day': 'Rune-edged',
+            'proof-suggestions-applied': 'Rune-edged',
+            // Radiant (17) - high-tier / special completions
+            'perfect-weeks-3': 'Radiant', 'perfect-streak-3': 'Radiant', 'perfect-streak-5': 'Radiant', 'perfect-streak-8': 'Radiant',
+            'words-75000': 'Radiant', 'words-80000': 'Radiant', 'words-85000': 'Radiant', 'words-90000': 'Radiant',
+            'words-95000': 'Radiant', 'words-100000': 'Radiant', 'words-110000': 'Radiant', 'words-120000': 'Radiant',
+            'the-novel-complete': 'Radiant', 'manuscript-assembled': 'Radiant', 'harmonic-closure': 'Radiant',
+            'ya-length-reached': 'Radiant', 'gift-delivered': 'Radiant'
         };
-        // Radiant leads the book per Aaron's spec; Unassigned trails until
-        // every id has a real family assigned.
+        // Radiant leads the book per Aaron's spec; Unassigned trails and is
+        // expected to render empty (all 188 have a real family above).
         const FAMILY_ORDER = ['Radiant', 'Arc & Halo', 'Classic Lattice', 'Dense Ornament', 'Open / Airy', 'Rune-edged', 'Unassigned'];
         function familySlug(name) {
             return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
@@ -7942,14 +8039,43 @@
             return `assets/achievements/family-${familySlug(family)}.png`;
         }
 
-        // ---- Book navigation state (resets to the summary/index spread
-        // every time the window opens - see showStoryStats()) ----
-        let bookView = { mode: 'summary', family: null, page: 0, focusId: null };
-        function bookGoSummary() { bookView = { mode: 'summary', family: null, page: 0, focusId: null }; renderStatsWindow(); }
-        function bookGoFamilyCover(family) { bookView = { mode: 'cover', family, page: 0, focusId: null }; renderStatsWindow(); }
-        function bookGoFamilyGrid(family, page) { bookView = { mode: 'grid', family, page: Math.max(0, page || 0), focusId: null }; renderStatsWindow(); }
-        function bookOpenCard(id) { bookView = Object.assign({}, bookView, { focusId: id }); renderStatsWindow(); }
-        function bookCloseCard() { bookView = Object.assign({}, bookView, { focusId: null }); renderStatsWindow(); }
+        // ---- Book navigation state: one flat sequence of two-page spreads,
+        // like turning pages in a real book (Aaron, 2026-08-08). Spread 0 is
+        // always Summary(left)/Index(right). Each family then contributes:
+        // Cover(left)+firstGridPage(right) as its opening spread, then its
+        // remaining grid pages two-per-spread. Resets to spread 0 every time
+        // the window opens - see showStoryStats(). ----
+        function buildBookSpreads() {
+            const layout = computeBookLayout().filter(f => f.achievements.length > 0);
+            const spreads = [{ type: 'summary-index' }];
+            layout.forEach(({ family, achievements }) => {
+                const pages = chunkArr(achievements, bookPageSize());
+                spreads.push({ type: 'cover-grid', family, gridPage: 0, totalGridPages: pages.length });
+                for (let i = 1; i < pages.length; i += 2) {
+                    spreads.push({
+                        type: 'grid-grid', family,
+                        leftPage: i, rightPage: (i + 1 < pages.length) ? i + 1 : null,
+                        totalGridPages: pages.length
+                    });
+                }
+            });
+            return spreads;
+        }
+        let bookView = { spreadIndex: 0, focusId: null };
+        function bookGoSummary() { bookView = { spreadIndex: 0, focusId: null }; renderStatsWindow(); }
+        function bookTurnPage(delta) {
+            const spreads = buildBookSpreads();
+            bookView.spreadIndex = Math.max(0, Math.min(spreads.length - 1, bookView.spreadIndex + delta));
+            bookView.focusId = null;
+            renderStatsWindow();
+        }
+        function bookGoToFamily(family) {
+            const spreads = buildBookSpreads();
+            const idx = spreads.findIndex(s => s.type === 'cover-grid' && s.family === family);
+            if (idx >= 0) { bookView.spreadIndex = idx; bookView.focusId = null; renderStatsWindow(); }
+        }
+        function bookOpenCard(id) { bookView.focusId = id; renderStatsWindow(); }
+        function bookCloseCard() { bookView.focusId = null; renderStatsWindow(); }
 
         function refreshProgressPill() {
             const label = document.getElementById('progress-pill-label');
@@ -7971,7 +8097,7 @@
             win.classList.add('active');
             restoreStatsWindowState();
             // Always open back at the front of the book, like a physical one.
-            bookView = { mode: 'summary', family: null, page: 0, focusId: null };
+            bookView = { spreadIndex: 0, focusId: null };
             renderStatsWindow();
         }
         function hideStatsWindow() {
@@ -7993,73 +8119,54 @@
                 <div class="stats-card-title">${a.title}</div>
             </div>`;
         }
-        function renderBookSummaryHTML() {
+        function renderSummaryPageHTML() {
             const book = progSafe(getAchievementBook, null) || [];
             const unlockedCount = book.filter(a => a.unlocked).length;
             const inProgress = book.filter(a => !a.unlocked && !a.hidden && a.progress.cur > 0)
                 .sort((x, y) => y.progress.pct - x.progress.pct);
-            const layout = computeBookLayout();
-            return `<div class="stats-book-spread">
-                <div class="stats-book-page stats-book-summary">
-                    <div class="stats-book-totals">
-                        <div class="text-2xl font-bold text-[#D4AF37]">${unlockedCount} / ${book.length}</div>
-                        <div class="text-[10px] text-[#D4AF37]/70 tracking-wider uppercase mt-0.5">Achievements Unlocked</div>
-                    </div>
-                    <div class="section-label text-[#D4AF37] mb-2 mt-4">In Progress</div>
-                    <div class="stats-book-inprogress">
-                        ${inProgress.length ? inProgress.map(a => `
-                            <div class="stats-inprogress-row">
-                                <span class="stats-inprogress-title">${a.title}</span>
-                                <span class="stats-inprogress-value">${a.progress.label}</span>
-                            </div>`).join('') : '<div class="stats-inprogress-empty">Nothing in progress yet — start writing!</div>'}
-                    </div>
+            return `<div class="stats-book-totals">
+                    <div class="text-2xl font-bold text-[#D4AF37]">${unlockedCount} / ${book.length}</div>
+                    <div class="text-[10px] text-[#D4AF37]/70 tracking-wider uppercase mt-0.5">Achievements Unlocked</div>
                 </div>
-                <div class="stats-book-page stats-book-index">
-                    <div class="section-label text-[#D4AF37] mb-2">Families</div>
-                    ${layout.map(({ family, achievements }) => {
-                        const done = achievements.filter(a => a.unlocked).length;
-                        return `<button class="stats-family-link" onclick="bookGoFamilyCover('${family}')">
-                            <span class="stats-family-link-name">${family}</span>
-                            <span class="stats-family-link-count">${done}/${achievements.length}</span>
-                        </button>`;
-                    }).join('')}
-                </div>
-            </div>`;
+                <div class="section-label text-[#D4AF37] mb-2 mt-4">In Progress</div>
+                <div class="stats-book-inprogress">
+                    ${inProgress.length ? inProgress.map(a => `
+                        <div class="stats-inprogress-row">
+                            <span class="stats-inprogress-title">${a.title}</span>
+                            <span class="stats-inprogress-value">${a.progress.label}</span>
+                        </div>`).join('') : '<div class="stats-inprogress-empty">Nothing in progress yet — start writing!</div>'}
+                </div>`;
         }
-        function renderFamilyCoverHTML(family) {
+        function renderIndexPageHTML(spreads) {
+            const layout = computeBookLayout();
+            return `<div class="section-label text-[#D4AF37] mb-2">Families</div>
+                ${layout.map(({ family, achievements }) => {
+                    const done = achievements.filter(a => a.unlocked).length;
+                    return `<button class="stats-family-link" onclick="bookGoToFamily('${family}')">
+                        <span class="stats-family-link-name">${family}</span>
+                        <span class="stats-family-link-count">${done}/${achievements.length}</span>
+                    </button>`;
+                }).join('')}`;
+        }
+        function renderCoverPageHTML(family) {
             const layout = computeBookLayout().find(f => f.family === family);
             const achievements = layout ? layout.achievements : [];
-            return `<div class="stats-book-page stats-book-cover">
-                <button class="stats-book-back" onclick="bookGoSummary()"><i class="fa-solid fa-arrow-left"></i> Index</button>
-                <div class="stats-family-cover-art-wrap">
+            return `<div class="stats-family-cover-art-wrap">
                     <i class="fa-solid fa-image stats-art-placeholder-icon"></i>
                     <img class="stats-family-cover-art" src="${familyCoverSrc(family)}" alt="${family}" onerror="this.style.display='none'">
                 </div>
                 <h3 class="stats-family-cover-title">${family}</h3>
                 <ul class="stats-family-checklist">
                     ${achievements.map(a => `<li class="${a.unlocked ? 'is-checked' : ''}"><i class="fa-solid ${a.unlocked ? 'fa-square-check' : 'fa-square'}"></i> ${a.title}</li>`).join('')}
-                </ul>
-                <button class="stats-book-enter" onclick="bookGoFamilyGrid('${family}', 0)">View Cards <i class="fa-solid fa-arrow-right"></i></button>
-            </div>`;
+                </ul>`;
         }
-        function renderFamilyGridHTML(family, page) {
+        function renderGridPageHTML(family, pageIndex, totalGridPages) {
             const layout = computeBookLayout().find(f => f.family === family);
             const achievements = layout ? layout.achievements : [];
             const pages = chunkArr(achievements, bookPageSize());
-            const totalPages = Math.max(pages.length, 1);
-            const curPage = Math.min(Math.max(page, 0), totalPages - 1);
-            const pageItems = pages[curPage] || [];
-            return `<div class="stats-book-page stats-book-grid-page">
-                <div class="stats-book-grid-toolbar">
-                    <button class="stats-book-back" onclick="bookGoFamilyCover('${family}')"><i class="fa-solid fa-arrow-left"></i> ${family}</button>
-                    <span class="stats-book-page-indicator">Page ${curPage + 1} / ${totalPages}</span>
-                </div>
-                <div class="stats-book-grid">${pageItems.map(statsCardHTML).join('')}</div>
-                <div class="stats-book-grid-nav">
-                    <button class="stats-tap-btn" ${curPage <= 0 ? 'disabled' : ''} onclick="bookGoFamilyGrid('${family}', ${curPage - 1})"><i class="fa-solid fa-chevron-left"></i> Prev</button>
-                    <button class="stats-tap-btn" ${curPage >= totalPages - 1 ? 'disabled' : ''} onclick="bookGoFamilyGrid('${family}', ${curPage + 1})">Next <i class="fa-solid fa-chevron-right"></i></button>
-                </div>
-            </div>`;
+            const pageItems = pages[pageIndex] || [];
+            return `<div class="stats-book-page-indicator">${family} — page ${pageIndex + 1} / ${totalGridPages}</div>
+                <div class="stats-book-grid">${pageItems.map(statsCardHTML).join('')}</div>`;
         }
         function renderCardFocusHTML(id) {
             const book = progSafe(getAchievementBook, null) || [];
@@ -8081,22 +8188,40 @@
             </div>`;
         }
         function renderStatsWindow() {
-            const el = document.getElementById('stats-book');
-            if (!el) return;
-            if (bookView.mode === 'cover') { el.innerHTML = renderFamilyCoverHTML(bookView.family); return; }
-            if (bookView.mode === 'grid') {
-                el.innerHTML = renderFamilyGridHTML(bookView.family, bookView.page) + (bookView.focusId ? renderCardFocusHTML(bookView.focusId) : '');
-                return;
+            const leftEl = document.getElementById('stats-book-left');
+            const rightEl = document.getElementById('stats-book-right');
+            if (!leftEl || !rightEl) return;
+            const spreads = buildBookSpreads();
+            if (bookView.spreadIndex >= spreads.length) bookView.spreadIndex = spreads.length - 1;
+            if (bookView.spreadIndex < 0) bookView.spreadIndex = 0;
+            const spread = spreads[bookView.spreadIndex] || { type: 'summary-index' };
+            if (spread.type === 'summary-index') {
+                leftEl.innerHTML = renderSummaryPageHTML();
+                rightEl.innerHTML = renderIndexPageHTML(spreads);
+            } else if (spread.type === 'cover-grid') {
+                leftEl.innerHTML = renderCoverPageHTML(spread.family);
+                rightEl.innerHTML = renderGridPageHTML(spread.family, spread.gridPage, spread.totalGridPages);
+            } else {
+                leftEl.innerHTML = renderGridPageHTML(spread.family, spread.leftPage, spread.totalGridPages);
+                rightEl.innerHTML = (spread.rightPage != null) ? renderGridPageHTML(spread.family, spread.rightPage, spread.totalGridPages) : '';
             }
-            el.innerHTML = renderBookSummaryHTML();
+            const prevBtn = document.getElementById('stats-book-prev');
+            const nextBtn = document.getElementById('stats-book-next');
+            if (prevBtn) prevBtn.disabled = bookView.spreadIndex <= 0;
+            if (nextBtn) nextBtn.disabled = bookView.spreadIndex >= spreads.length - 1;
+            const existingFocus = document.querySelector('.stats-card-focus-backdrop');
+            if (existingFocus) existingFocus.remove();
+            if (bookView.focusId) {
+                const shell = document.getElementById('stats-book-shell');
+                if (shell) shell.insertAdjacentHTML('beforeend', renderCardFocusHTML(bookView.focusId));
+            }
         }
-        // Live-unlock animation: if the book is open on a grid page that
+        // Live-unlock animation: if the book is open and a visible page
         // contains a newly-unlocked id, slide that specific card's face
         // from locked to unlocked in place - never reorders/repositions it.
         window.addEventListener('bigtiff:achievement', (e) => {
             const win = document.getElementById('stats-window');
             if (!win || getComputedStyle(win).display === 'none') return;
-            if (bookView.mode !== 'grid') return;
             const items = (e.detail && e.detail.items) || [];
             const idsUnlocked = new Set(items.map(x => x.id));
             win.querySelectorAll('.stats-card.is-locked[data-id]').forEach(cardEl => {
