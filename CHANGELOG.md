@@ -2,6 +2,26 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-09, third round] – Fixed: Text Size controls inert on desktop
+
+Follow-up to the second round's toggle-close fix: Aaron confirmed the
+window now opens/closes correctly, but reported "the buttons do nothing"
+and the slider "changes nothing." Root cause: `applyUiScale()` still had
+`if (!isMobileMode()) return` from when this control was mobile-only
+chrome, predating its 2026-08-04 desktop entry point - so every call
+(`setUiScale`, `stepUiScale`, the slider's `oninput`) reached the desktop
+early-return and did nothing. Removed the guard - `root.style.fontSize`
+percentage scaling isn't mobile-specific.
+
+**Verification**: real `.click()` on the `+`/Reset buttons and a real
+`input` event dispatch on the slider (not calling the JS functions
+directly), confirmed root `<html>` font-size and a real preview
+paragraph's computed font-size both scale correctly on desktop (16px→
+16.8px at 105%, 14px→21px at 150%), readout text updates each step, and
+mobile scaling re-confirmed unaffected (125% → 20px root, same as before).
+
+**Deployed**: `claude/mobile-port` only (commit `8192409`).
+
 ## [2026-08-09, second round] – Fixed: Text Size button not closing on desktop
 
 Aaron reported the Text Size window "appears to not work on desktop."
