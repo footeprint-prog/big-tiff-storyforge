@@ -543,7 +543,15 @@
            sequence of spreads - see buildBookSpreads(). */
         .stats-book-window .notepad-body { padding: 0; background: transparent; }
         .stats-book-shell { position: relative; flex: 1; overflow: hidden; }
-        .stats-book-leaf { position: absolute; top: 8px; bottom: 8px; width: calc(50% - 4px); overflow-y: auto; background: #3D2B1F; padding: 1rem 1.25rem; }
+        /* Bottom padding reserves a blank strip under the (non-scrolling,
+           absolutely-positioned) corner turn-arrows so scrolled content
+           never sits underneath them - the arrows sit on top of this
+           padding, not on top of a card/checklist row/list item. Sized to
+           clear the arrow's own bottom offset + height with a small margin
+           (desktop: 20px + 36px = 56px; mobile: 12px + 44px = 56px too,
+           but gets its own larger value below since mobile's --tap floor
+           makes the arrow bigger than its 36px desktop base). */
+        .stats-book-leaf { position: absolute; top: 8px; bottom: 8px; width: calc(50% - 4px); overflow-y: auto; background: #3D2B1F; padding: 1rem 1.25rem 4rem; }
         .stats-book-leaf-left { left: 8px; border: 2px solid #8B6F47; border-right-width: 1px; border-radius: 14px 3px 3px 14px; }
         .stats-book-leaf-right { right: 8px; border: 2px solid #8B6F47; border-left-width: 1px; border-radius: 3px 14px 14px 3px; }
         .stats-book-spine { position: absolute; top: 8px; bottom: 8px; left: 50%; width: 22px; margin-left: -11px; background: linear-gradient(90deg, transparent, rgba(0,0,0,0.4) 45%, rgba(0,0,0,0.4) 55%, transparent); pointer-events: none; z-index: 3; }
@@ -2307,7 +2315,10 @@
            stacks vertically instead of sitting side-by-side - there's no
            room for two columns in a phone-width sheet. */
         body.mobile-layout .stats-book-grid { grid-template-columns: repeat(2, 1fr); }
-        body.mobile-layout .stats-book-leaf { padding: 0.75rem 0.85rem; }
+        /* Mobile arrows are 44px tall (--tap floor) vs desktop's 36px base,
+           at the same 12px bottom offset - needs its own, larger reserved
+           strip so content can't scroll underneath them either. */
+        body.mobile-layout .stats-book-leaf { padding: 0.75rem 0.85rem 4.5rem; }
         /* Dim backdrop - shown only while Notepad/Draft Pad are open (see
            showMobileSheetBackdrop()/hideMobileSheetBackdrop() in the JS).
            Sits above the guidance rail/status arm (dims them too, not just
