@@ -2,6 +2,36 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-09, second round] – Fixed: Text Size button not closing on desktop
+
+Aaron reported the Text Size window "appears to not work on desktop."
+Reproduced via real `.click()` dispatch (not calling the JS function
+directly): it opened correctly on the first click but a second click did
+nothing - the window just stayed open.
+
+**Root cause**: `mobileNav('text')`'s toggle-close depended on
+`mobileCloseEverything(null)` to hide the window when already open. That
+call is a real close on mobile, but a deliberate no-op on desktop (desktop
+intentionally allows multiple floating windows) - so the close half of the
+toggle silently did nothing there. Reachable on desktop specifically
+because the toolbar's Text Size button calls `mobileNav('text')` on both
+layouts (unlike the header Stats button, which calls `showStoryStats()`
+directly). Fixed by mirroring the already-correct `'notepad'` case's shape:
+close explicitly when open, only defer to `mobileCloseEverything` for the
+"close everything else" half of opening. Also fixed the `'stats'` case,
+flagged in an existing code comment as sharing the identical bug shape -
+not currently reachable on desktop, but latent for any future desktop
+entry point wired the same way.
+
+**Verification**: real `.click()` dispatch on the actual toolbar button,
+open/close/reopen/close cycle (4 clicks) confirmed correct on desktop;
+`mobileNav('stats')` given the same 3-call check; mobile's real one-at-a-
+time enforcement re-confirmed unaffected (opening Text Size on mobile still
+closes an already-open Stats window, since `mobileCloseEverything` really
+does close things there).
+
+**Deployed**: `claude/mobile-port` only (commit `a3c26a0`).
+
 ## [2026-08-09] – Achievement book: full family data + real open-book window
 
 Follow-up to 2026-08-07's card-book UI, prompted by Aaron pointing at a
