@@ -10924,9 +10924,22 @@
                     // ate the very first tap each session (bug found
                     // 2026-08-03 while wiring desktop's Text Size entry
                     // point, which shares this exact case shape below).
+                    // 2026-08-09: the close-half of the toggle was relying on
+                    // mobileCloseEverything(null) to actually hide the window
+                    // when wasOpen - that's a real close on mobile, but a
+                    // deliberate no-op on desktop (desktop allows multiple
+                    // floating windows), so a second click silently did
+                    // nothing there. Mirror the already-correct 'notepad'
+                    // case above: close explicitly when open, only defer to
+                    // mobileCloseEverything for the "close everything else
+                    // first" half of actually opening.
                     const wasOpen = getComputedStyle(sw).display !== 'none';
-                    mobileCloseEverything(null);
-                    if (!wasOpen) showStoryStats();
+                    if (wasOpen) {
+                        hideStatsWindow();
+                    } else {
+                        mobileCloseEverything(null);
+                        showStoryStats();
+                    }
                     break;
                 }
                 case 'outline': {
@@ -10965,10 +10978,19 @@
                 }
                 case 'text': {
                     const ts = document.getElementById('textsize-window');
-                    // See the 'stats' case above - same bug, same fix.
+                    // See the 'stats' case above - same bug, same fix. This
+                    // is the button actually reachable on desktop (the
+                    // toolbar's Text Size button calls mobileNav('text') on
+                    // both layouts), so this is the one Aaron could
+                    // reproduce: it opened fine but never closed again on a
+                    // second click, on desktop specifically.
                     const wasOpen = getComputedStyle(ts).display !== 'none';
-                    mobileCloseEverything(null);
-                    if (!wasOpen) openTextSize();
+                    if (wasOpen) {
+                        hideTextSize();
+                    } else {
+                        mobileCloseEverything(null);
+                        openTextSize();
+                    }
                     break;
                 }
                 case 'focus':
