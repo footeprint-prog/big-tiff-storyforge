@@ -228,6 +228,11 @@ they aren't lost now that the old document is marked historical.
         weekly selection/reset itself still needs wiring (deterministic
         seeded pick of 5 per ISO week, identical on every device and not
         re-rollable by refreshing).
+      - **UPDATE 2026-08-09:** family data for item 1/2 is now complete for
+        all 188 (was an 18-card pilot subset) - see CHANGELOG's 2026-08-09
+        entry. The book window itself was also rebuilt to a real two-leaf
+        open-book shape with corner page-turn arrows, per Aaron's follow-up
+        spec, replacing the earlier single-pane layout.
       - **UPDATE 2026-08-07:** item 2 (achievement book) shipped on
         `claude/mobile-port`, replacing the Stats window entirely per
         Aaron's finalized spec — double-sided cards (dull-gray locked /

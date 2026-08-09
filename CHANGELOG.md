@@ -2,6 +2,70 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-09] – Achievement book: full family data + real open-book window
+
+Follow-up to 2026-08-07's card-book UI, prompted by Aaron pointing at a
+fuller Drive doc than the 18-card pilot originally wired in, plus a
+concrete spec for how the window itself should look and page-turn.
+
+### Added
+- **`ACHIEVEMENT_FAMILY` now covers all 188 achievements**, not just the
+  18-card pilot. Source: Aaron's Drive doc "Rewards Project - Achievement
+  Family Sort & Icon Plan" (2026-07-28 revision - the smaller, complete
+  one; the newer "(Final)" 2026-08-02 spreadsheet only adds extra
+  art-production columns for the same 18 pilot cards and repeatedly
+  truncated through the available Drive-reading tools around ~100 rows).
+  Verified before shipping: 55 individual ids spot-checked directly
+  against the live `ACHIEVEMENTS` array (100% match), plus every one of
+  the 9 existing `category` (`c:`) counts reconciles exactly against the
+  new 6-family breakdown (e.g. all 49 `usage-tracking` achievements land
+  in Open / Airy, all 22 `wordcraft-session` land in Classic Lattice) and
+  family totals sum to exactly 188. The `Unassigned` fallback bucket is
+  now expected to render empty - it only exists for a future achievement
+  added without a matching family entry.
+- **The book window is now a real open-book shape**, not a single pane
+  with two rendered "page" divs inside it. Two independent leaf panels
+  (own background/border, asymmetric `border-radius` - rounded only on
+  the outer corners, square where they meet at the spine) sit side by
+  side with a shadowed spine seam between them.
+- **Navigation redesigned as one flat spread sequence** (`buildBookSpreads()`),
+  turned via circular corner arrows (lower-left = previous, lower-right =
+  next), matching how a physical book pages: spread 0 is Summary(left)/
+  Index(right); each family then opens with Cover(left)/first grid
+  page(right), followed by its remaining grid pages paired two-per-spread.
+  Per-page card counts are unchanged from the original spec (6 desktop /
+  4 mobile) - two pages are simply visible at once now, not doubled per
+  page. An odd leftover page (only Rune-edged hits this today, at 20
+  achievements / 6 per page) renders alone with an empty facing page
+  rather than borrowing from the next family, so every family's cover
+  always opens a fresh spread. Index quicklinks still jump straight to a
+  family's opening spread; a small header button returns to spread 0 from
+  anywhere.
+
+### Verification notes
+- `computeBookLayout()` cross-checked live: family counts (17/13/75/14/49/20/0)
+  sum to 188 and match `getAchievementBook().length` exactly.
+- `buildBookSpreads()` cross-checked: 22 total spreads (1 summary-index +
+  6 cover-grid + 15 grid-grid), and the Rune-edged odd-leftover case
+  confirmed to produce `rightPage: null` on its last spread rather than
+  bleeding into the next family.
+- Forward/back navigation, direct family jump, and card tap-to-focus
+  (unlocked -> date completed, locked -> description + live progress) all
+  re-verified end-to-end via real DOM interaction after the rewrite.
+- Corner turn-arrow placement checked against the existing desktop
+  `.notepad-resize-handle` (16x16 at the true bottom-right corner, hidden
+  on mobile) to confirm no overlap.
+- Both layouts re-verified via `setMobilePreview`/`resize_window` (this
+  session's Browser pane was stuck at a stale 299x227 viewport from
+  earlier Drive navigation on the first mobile pass - caught and re-run at
+  a real 375x812 mobile size before trusting the numbers). Card-title and
+  page-indicator font sizes confirmed still ≥12px after the CSS rewrite.
+
+### Deployed
+- Pushed to `claude/mobile-port` only (commit `1f31604`), per standing
+  iteration-loop rule - no merge to `main` or promotion to
+  `bigtiffsworld.com` without a fresh, explicit ask.
+
 ## [2026-08-07] – Achievements card-collector book UI (replaces the Stats window)
 
 Phase 1 of the achievements UI (`CHECKLIST.md`'s "Achievements — UI phase"
