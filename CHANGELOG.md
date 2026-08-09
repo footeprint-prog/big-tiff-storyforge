@@ -2,6 +2,55 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-09, fourth round] – Achievement book: in-progress polish, numeric titles, bottom pagination
+
+Four adjustments requested after Aaron confirmed the book and both Text
+Size fixes all work correctly.
+
+### Added
+- **In-progress rows** on the summary page now show a visual progress bar
+  (`.stats-inprogress-bar-fill`, width from `a.progress.pct`), the
+  achievement's description text, and jump straight to that achievement's
+  spread when clicked - `bookGoToAchievement(id)` looks up its family +
+  chunked page position (permanent, per the book's own rule) and finds the
+  spread containing it.
+- **Numeric titles**: achievements whose real title spells the number out
+  ("Fifteen Thousand", "Thirty-Day Harmonic", "Twenty-Five Scenes Woven")
+  now show the digit form in the book, via a new `displayTitle(a)` /
+  `NUMERIC_TITLE_OVERRIDE` lookup applied everywhere a title renders
+  (cards, checklist, focus view, in-progress list). Display-only - the
+  underlying `ACHIEVEMENTS` array `t:` field is untouched, so toasts and
+  anything else reading titles directly are unaffected. Covers all 73
+  affected ids (streak-14/21/30, scenes-2..25, words-100..120000,
+  days-1k-x3/5/7, streak-1k-3/5/7, one-day-wonder, three-day-harmonic,
+  perfect-weeks-2/3) - every other title already showed digits or has no
+  number in it at all.
+- **Pagination text relocated** from the top of each leaf down to sit just
+  above its corresponding corner arrow - the arrows stay exactly where
+  they were. Two independent labels (left/right) since the two visible
+  pages can land on different page numbers within the same family.
+
+### Fixed during verification
+- The first pass placed the indicator's `bottom` offset (54px) below the
+  next-arrow's top edge (56px, from its 20px offset + 36px height) -
+  caught via rect-overlap measurement, not visually. Bumped to 60px.
+- Re-tuned each leaf's reserved bottom padding (5.5rem desktop / 6rem
+  mobile) so scrolled content clears both the indicator text and the
+  arrow beneath it together, not just the arrow alone as before.
+
+### Verification notes
+- Confirmed numeric titles render correctly for a sample across families;
+  confirmed a real in-progress row shows bar/description/value and that
+  clicking it actually lands on the spread containing that exact
+  achievement's card (checked via the rendered card's `data-id`, not just
+  the spread index changing).
+- Rect-overlap checks (indicator vs. last card in a full 6-card page,
+  indicator vs. its own corner arrow) on both desktop and mobile after
+  the offset fix - all clear.
+
+### Deployed
+- `claude/mobile-port` only (commit `bef0048`).
+
 ## [2026-08-09, third round] – Fixed: Text Size controls inert on desktop
 
 Follow-up to the second round's toggle-close fix: Aaron confirmed the
