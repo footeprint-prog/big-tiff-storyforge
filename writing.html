@@ -599,15 +599,25 @@
         .stats-family-cover-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
         .stats-family-cover-art-wrap .stats-art-placeholder-icon { font-size: 2.5rem; color: rgba(212,175,55,0.4); }
         .stats-family-cover-title { color: #D4AF37; font-size: 1.1rem; font-weight: 700; margin-bottom: 0.75rem; text-align: center; }
-        .stats-family-checklist { list-style: none; text-align: left; width: 100%; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.3rem; }
-        .stats-family-checklist li { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: #B8A88F; }
-        .stats-family-checklist li i { color: rgba(212,175,55,0.4); }
+        .stats-family-checklist { list-style: none; text-align: left; width: 100%; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+        .stats-family-checklist li { display: flex; flex-direction: column; gap: 0.1rem; font-size: 0.8rem; color: #B8A88F; }
+        .stats-checklist-row { display: flex; align-items: center; gap: 0.5rem; }
+        .stats-checklist-row i { color: rgba(212,175,55,0.4); }
         .stats-family-checklist li.is-checked { color: #F4EDE4; }
-        .stats-family-checklist li.is-checked i { color: #D4AF37; }
+        .stats-family-checklist li.is-checked .stats-checklist-row i { color: #D4AF37; }
+        .stats-checklist-desc { font-size: 0.68rem; color: #8A7A68; margin-left: 1.3rem; }
+        .stats-family-checklist li.is-checked .stats-checklist-desc { color: #B8A88F; }
         .stats-book-page-indicator { color: #D4AF37; font-size: 0.75rem; margin-bottom: 0.5rem; }
-        .stats-book-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
-        .stats-card { cursor: pointer; text-align: center; }
-        .stats-card-art-slot { position: relative; aspect-ratio: 3 / 4; border-radius: 10px; overflow: hidden; background: #2A2119; border: 1px solid rgba(212,175,55,0.25); }
+        /* Grid fills the leaf's full content box (height:100%, rows as 1fr)
+           so the 6/4-card page IS the page - no leftover empty margin
+           below a fixed-size grid (Aaron, 2026-08-09: "the size of the
+           page should be the size of the cards shown in grid"). Cards
+           stretch to their cell instead of a fixed aspect-ratio; the art
+           image already uses object-fit:cover so it crops cleanly at
+           whatever box size results. */
+        .stats-book-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr); gap: 0.75rem; height: 100%; }
+        .stats-card { cursor: pointer; text-align: center; display: flex; flex-direction: column; height: 100%; }
+        .stats-card-art-slot { position: relative; flex: 1; min-height: 0; border-radius: 10px; overflow: hidden; background: #2A2119; border: 1px solid rgba(212,175,55,0.25); }
         .stats-card-art-wrap { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; transition: transform 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.4s cubic-bezier(0.4,0,0.2,1); transform: translateY(0); opacity: 1; }
         .stats-card-art-wrap.stats-card-face-incoming { transform: translateY(100%); opacity: 0; }
         .stats-card-art-wrap.is-leaving { transform: translateY(-100%); opacity: 0; }
@@ -615,14 +625,16 @@
         .stats-card-art-wrap.is-locked .stats-art-placeholder-icon { color: rgba(212,175,55,0.35); filter: grayscale(1) brightness(0.7); }
         .stats-card-art-wrap.is-unlocked .stats-art-placeholder-icon { color: #D4AF37; }
         .stats-card-art { width: 100%; height: 100%; object-fit: cover; }
-        .stats-card-title { font-size: 0.75rem; margin-top: 0.35rem; color: #F4EDE4; line-height: 1.2; }
+        .stats-card-title { font-size: 0.75rem; margin-top: 0.35rem; color: #F4EDE4; line-height: 1.2; flex-shrink: 0; }
         .stats-card.is-locked .stats-card-title { color: #B8A88F; }
+        .stats-card-desc { font-size: 0.62rem; margin-top: 0.15rem; color: #B8A88F; line-height: 1.2; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; flex-shrink: 0; }
+        .stats-card.is-locked .stats-card-desc { color: #8A7A68; }
         .stats-card-focus-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 50; }
         .stats-card-focus { position: relative; background: #3D2B1F; border: 2px solid #D4AF37; border-radius: 16px; padding: 1.25rem; width: 260px; max-width: 90vw; text-align: center; }
         .stats-card-focus-close { position: absolute; top: 0.4rem; right: 0.4rem; }
         .stats-card-focus-art { position: relative; width: 100%; aspect-ratio: 3 / 4; border-radius: 10px; overflow: hidden; background: #2A2119; border: 1px solid rgba(212,175,55,0.25); margin-bottom: 0.75rem; }
         .stats-card-focus-title { color: #D4AF37; font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
-        .stats-card-focus-date { color: rgba(244,237,228,0.8); font-size: 0.8rem; }
+        .stats-card-focus-date { color: #B8A88F; font-size: 0.8rem; margin-top: 0.2rem; }
         .stats-card-focus-desc { color: #F4EDE4; font-size: 0.8rem; margin-bottom: 0.4rem; }
         .stats-card-focus-progress { color: #D4AF37; font-size: 0.8rem; }
 
@@ -3598,15 +3610,15 @@
     </div>
 
     <!-- ==================== STATS & PROGRESS ==================== -->
-    <div id="stats-window" class="notepad active hidden stats-book-window" style="left: 560px; top: 90px; width: 760px; height: 560px;">
+    <div id="stats-window" class="notepad active hidden stats-book-window" style="left: 460px; top: 50px; width: 960px; height: 700px;">
         <div class="notepad-header" id="stats-header">
             <div class="flex items-center gap-x-2">
                 <i class="fa-solid fa-book-sparkles text-[#D4AF37]"></i>
                 <h3>Achievement Book</h3>
             </div>
             <div class="flex items-center gap-x-1">
-                <button onclick="bookGoSummary()" class="notepad-close" aria-label="Book index">
-                    <i class="fa-solid fa-list"></i>
+                <button onclick="bookGoSummary()" class="notepad-close" aria-label="Return to index" style="display:flex;align-items:center;gap:4px;width:auto;font-size:0.75rem;">
+                    <i class="fa-solid fa-list"></i><span>Index</span>
                 </button>
                 <button onclick="hideStatsWindow()" class="notepad-close">
                     <i class="fa-solid fa-times"></i>
@@ -8119,6 +8131,14 @@
         function displayTitle(a) {
             return NUMERIC_TITLE_OVERRIDE[a.id] || a.title;
         }
+        // getAchievementBook() doesn't expose the raw rule metric, only the
+        // engine's ACHIEVEMENTS array does - needed to dedupe ladder
+        // achievements (word-count thresholds, streak thresholds, usage
+        // counters, etc.) down to just the next one in the in-progress list.
+        function achievementMetric(id) {
+            const raw = (window.ACHIEVEMENTS || []).find(x => x.id === id);
+            return raw ? raw.r.m : id;
+        }
 
         // ---- Book navigation state: one flat sequence of two-page spreads,
         // like turning pages in a real book (Aaron, 2026-08-08). Spread 0 is
@@ -8216,18 +8236,27 @@
                     </div>
                 </div>
                 <div class="stats-card-title">${displayTitle(a)}</div>
+                <div class="stats-card-desc">${a.description}</div>
             </div>`;
         }
         function renderSummaryPageHTML() {
             const book = progSafe(getAchievementBook, null) || [];
             const unlockedCount = book.filter(a => a.unlocked).length;
-            // Closest-to-completion only, not every achievement with any
-            // progress at all (Aaron, 2026-08-09) - a shortlist reads as
-            // "almost there," a full list reads as a to-do backlog.
-            const IN_PROGRESS_SHORTLIST = 5;
-            const inProgress = book.filter(a => !a.unlocked && !a.hidden && a.progress.cur > 0)
-                .sort((x, y) => y.progress.pct - x.progress.pct)
-                .slice(0, IN_PROGRESS_SHORTLIST);
+            // Show ALL genuinely in-progress achievements, but collapse
+            // "ladder" achievements that share the same underlying metric
+            // (e.g. every word-count threshold all move together as
+            // words.total climbs) down to just the closest one - showing
+            // every rung at once was noise, not signal (Aaron, 2026-08-09).
+            // Achievements with a metric no one else shares pass through
+            // untouched.
+            const candidates = book.filter(a => !a.unlocked && !a.hidden && a.progress.cur > 0);
+            const closestPerMetric = new Map();
+            candidates.forEach(a => {
+                const metric = achievementMetric(a.id);
+                const existing = closestPerMetric.get(metric);
+                if (!existing || a.progress.pct > existing.progress.pct) closestPerMetric.set(metric, a);
+            });
+            const inProgress = [...closestPerMetric.values()].sort((x, y) => y.progress.pct - x.progress.pct);
             return `<div class="stats-book-totals">
                     <div class="text-2xl font-bold text-[#D4AF37]">${unlockedCount} / ${book.length}</div>
                     <div class="text-[10px] text-[#D4AF37]/70 tracking-wider uppercase mt-0.5">Achievements Unlocked</div>
@@ -8265,7 +8294,10 @@
                 </div>
                 <h3 class="stats-family-cover-title">${family}</h3>
                 <ul class="stats-family-checklist">
-                    ${achievements.map(a => `<li class="${a.unlocked ? 'is-checked' : ''}"><i class="fa-solid ${a.unlocked ? 'fa-square-check' : 'fa-square'}"></i> ${displayTitle(a)}</li>`).join('')}
+                    ${achievements.map(a => `<li class="${a.unlocked ? 'is-checked' : ''}">
+                        <div class="stats-checklist-row"><i class="fa-solid ${a.unlocked ? 'fa-square-check' : 'fa-square'}"></i> ${displayTitle(a)}</div>
+                        <div class="stats-checklist-desc">${a.description}</div>
+                    </li>`).join('')}
                 </ul>`;
         }
         function renderGridPageHTML(family, pageIndex, totalGridPages) {
@@ -8298,9 +8330,10 @@
                         <img class="stats-card-art" src="${achievementArtSrc(a.id, a.unlocked)}" alt="" onerror="this.style.display='none'">
                     </div>
                     <h3 class="stats-card-focus-title">${displayTitle(a)}</h3>
+                    <div class="stats-card-focus-desc">${a.description}</div>
                     ${a.unlocked
                         ? `<div class="stats-card-focus-date">Completed ${dateStr}</div>`
-                        : `<div class="stats-card-focus-desc">${a.description}</div><div class="stats-card-focus-progress">${a.progress.label}</div>`}
+                        : `<div class="stats-card-focus-progress">${a.progress.label}</div>`}
                 </div>
             </div>`;
         }
