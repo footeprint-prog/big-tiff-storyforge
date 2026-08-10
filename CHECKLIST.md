@@ -228,6 +228,19 @@ they aren't lost now that the old document is marked historical.
         weekly selection/reset itself still needs wiring (deterministic
         seeded pick of 5 per ISO week, identical on every device and not
         re-rollable by refreshing).
+      - **UPDATE 2026-08-10:** items 2 and 3 are now DONE and **live on
+        bigtiffsworld.com** (promoted this date, `big_tiff_launchpage`
+        commit `8dc3e5e`) — the book shows total counts + a deduped
+        in-progress list (ladder achievements like word-count thresholds
+        collapse to just the closest one, not every rung) on its opening
+        spread, satisfying item 3's split without a separate window. Several
+        rounds of direct UI feedback landed too: uniform card sizing,
+        descriptions shown everywhere an achievement appears, a visible
+        Index button, a bigger default window, and page-turn navigation
+        refinements. See CHANGELOG's 2026-08-09/2026-08-10 entries for the
+        blow-by-blow. Item 1 (icons/art) still genuinely open — only the
+        18-card pilot has real art, the rest render via placeholder. Items
+        4-6 (weekly) untouched, per Aaron's explicit scope-out.
       - **UPDATE 2026-08-09:** family data for item 1/2 is now complete for
         all 188 (was an 18-card pilot subset) - see CHANGELOG's 2026-08-09
         entry. The book window itself was also rebuilt to a real two-leaf
