@@ -2,6 +2,347 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-09, sixth round] – Achievement book: full in-progress list (deduped), Index button, bigger cards, descriptions everywhere
+
+Corrected the fifth round's in-progress cap (wasn't what Aaron meant) and
+three more adjustments.
+
+### Changed
+- **In-progress list**: back to showing every genuinely in-progress
+  achievement, but achievements that share the same underlying rule metric
+  (`r.m` - word-count thresholds, streak thresholds, usage counters like
+  `counter.libraryOpen`) collapse to just the closest one via a new
+  `achievementMetric(id)` lookup against the raw `ACHIEVEMENTS` array
+  (`getAchievementBook()` doesn't expose the metric itself). The earlier
+  flat 5-item cap is gone entirely - dozens of word-count achievements all
+  showing "in progress" together (since they all move with the same
+  `words.total` counter) was the actual problem, not list length.
+- **Index button** in the header now has a visible "Index" label next to
+  the icon, not icon-only - reachable from any page.
+- **Window and cards scaled up**: default size 760x560 -> 960x700, and the
+  card grid now fills the leaf's full content box (`height:100%`, `1fr`
+  rows, no fixed `aspect-ratio` on the art slot) instead of a small fixed
+  grid leaving empty space below it. Cards roughly doubled in size
+  (~100x130px -> ~135x264px at the new default). Same base CSS on both
+  layouts, so mobile gets the same "no wasted space" treatment within its
+  own (device-driven) sheet size.
+- **Descriptions added everywhere** an achievement appears: grid cards
+  (line-clamped to 3 lines), the family checklist, and the focus view's
+  unlocked case (previously only the locked case showed description text).
+
+### Fixed in passing
+- `.stats-card-focus-date` used `rgba(244,237,228,0.8)` - an opacity-
+  dimmed label, same category of bug already fixed elsewhere in this
+  feature per the project's accessibility profile. Solid `#B8A88F` now.
+
+### Verification notes
+- Seeded partial progress across the entire `words.total` ladder at once;
+  confirmed only 1 word-count row appears (not dozens) and non-laddered
+  achievements still show individually.
+- Confirmed the Index button jumps correctly from a deep grid spread
+  (index 20) back to spread 0.
+- A stale cached page load initially showed the old 760x560 size during
+  verification - caught by checking the live `style` attribute directly
+  before trusting the rect measurement, not just the rendered rect alone.
+- Confirmed the ~74-82px gap below a full 6/4-card grid exactly matches
+  the leaf's own reserved footer padding (not leftover unfilled space) on
+  both desktop and mobile.
+
+### Deployed
+- `claude/mobile-port` only (commit `c37db4b`).
+
+## [2026-08-09, fifth round] – Achievement book: idiom revert, no bare numbers, in-progress shortlist, pagination beside arrows
+
+Four follow-up adjustments to the fourth round's in-progress/numeric-title/
+pagination work.
+
+### Changed
+- **`one-day-wonder` reverted** to its real title ("One Day Wonder") - the
+  only genuine idiom in the numeric-title override set; every other
+  conversion (plain counts like "Fifteen Thousand") stays as digits.
+- **No bare-number titles anywhere in the book.** Every word-count entry in
+  `NUMERIC_TITLE_OVERRIDE` now keeps a real word suffix ("250 Words," not
+  "250") - spot-checked programmatically across all 188 achievements
+  (`/^[\d,]+$/` test against every `displayTitle()` output), zero matches.
+- **In-progress list capped to 5** (`IN_PROGRESS_SHORTLIST`), closest to
+  completion first - was showing every achievement with any progress at
+  all, which read as a backlog rather than "almost there."
+- **Pagination text moved beside its arrow** (shared flex group,
+  `.stats-book-turn-group`) instead of stacked above it - the arrows'
+  actual position is unchanged. Now shows on every page type (added
+  "Summary" / "Index" / "`<family>` — Cover" labels), not just grid pages.
+  Styled all-caps, smaller, bold per spec.
+- **Leaf content fades instead of hard-clipping** near the footer: added a
+  `mask-image` gradient over the last 64px of each leaf so scrolled
+  content visually tapers off before the arrow/pagination row rather than
+  stopping dead against the reserved padding.
+
+### Verification notes
+- Programmatic scan confirmed zero bare-number titles and the two named
+  fixes (`one-day-wonder`, `words-250`/`words-1500`/`words-75000` sample).
+- In-progress row count and descending-percent order confirmed after
+  seeding enough partial progress to exceed the cap.
+- Pagination label text and rect-overlap checks (indicator vs. last card,
+  indicator vs. its own arrow) confirmed on summary, cover, and full
+  6-card grid spreads, on both desktop and mobile - all clear, and
+  indicator vertically centered with its arrow (same row, not stacked).
+
+### Deployed
+- `claude/mobile-port` only (commit `5c4122e`).
+
+## [2026-08-09, fourth round] – Achievement book: in-progress polish, numeric titles, bottom pagination
+
+Four adjustments requested after Aaron confirmed the book and both Text
+Size fixes all work correctly.
+
+### Added
+- **In-progress rows** on the summary page now show a visual progress bar
+  (`.stats-inprogress-bar-fill`, width from `a.progress.pct`), the
+  achievement's description text, and jump straight to that achievement's
+  spread when clicked - `bookGoToAchievement(id)` looks up its family +
+  chunked page position (permanent, per the book's own rule) and finds the
+  spread containing it.
+- **Numeric titles**: achievements whose real title spells the number out
+  ("Fifteen Thousand", "Thirty-Day Harmonic", "Twenty-Five Scenes Woven")
+  now show the digit form in the book, via a new `displayTitle(a)` /
+  `NUMERIC_TITLE_OVERRIDE` lookup applied everywhere a title renders
+  (cards, checklist, focus view, in-progress list). Display-only - the
+  underlying `ACHIEVEMENTS` array `t:` field is untouched, so toasts and
+  anything else reading titles directly are unaffected. Covers all 73
+  affected ids (streak-14/21/30, scenes-2..25, words-100..120000,
+  days-1k-x3/5/7, streak-1k-3/5/7, one-day-wonder, three-day-harmonic,
+  perfect-weeks-2/3) - every other title already showed digits or has no
+  number in it at all.
+- **Pagination text relocated** from the top of each leaf down to sit just
+  above its corresponding corner arrow - the arrows stay exactly where
+  they were. Two independent labels (left/right) since the two visible
+  pages can land on different page numbers within the same family.
+
+### Fixed during verification
+- The first pass placed the indicator's `bottom` offset (54px) below the
+  next-arrow's top edge (56px, from its 20px offset + 36px height) -
+  caught via rect-overlap measurement, not visually. Bumped to 60px.
+- Re-tuned each leaf's reserved bottom padding (5.5rem desktop / 6rem
+  mobile) so scrolled content clears both the indicator text and the
+  arrow beneath it together, not just the arrow alone as before.
+
+### Verification notes
+- Confirmed numeric titles render correctly for a sample across families;
+  confirmed a real in-progress row shows bar/description/value and that
+  clicking it actually lands on the spread containing that exact
+  achievement's card (checked via the rendered card's `data-id`, not just
+  the spread index changing).
+- Rect-overlap checks (indicator vs. last card in a full 6-card page,
+  indicator vs. its own corner arrow) on both desktop and mobile after
+  the offset fix - all clear.
+
+### Deployed
+- `claude/mobile-port` only (commit `bef0048`).
+
+## [2026-08-09, third round] – Fixed: Text Size controls inert on desktop
+
+Follow-up to the second round's toggle-close fix: Aaron confirmed the
+window now opens/closes correctly, but reported "the buttons do nothing"
+and the slider "changes nothing." Root cause: `applyUiScale()` still had
+`if (!isMobileMode()) return` from when this control was mobile-only
+chrome, predating its 2026-08-04 desktop entry point - so every call
+(`setUiScale`, `stepUiScale`, the slider's `oninput`) reached the desktop
+early-return and did nothing. Removed the guard - `root.style.fontSize`
+percentage scaling isn't mobile-specific.
+
+**Verification**: real `.click()` on the `+`/Reset buttons and a real
+`input` event dispatch on the slider (not calling the JS functions
+directly), confirmed root `<html>` font-size and a real preview
+paragraph's computed font-size both scale correctly on desktop (16px→
+16.8px at 105%, 14px→21px at 150%), readout text updates each step, and
+mobile scaling re-confirmed unaffected (125% → 20px root, same as before).
+
+**Deployed**: `claude/mobile-port` only (commit `8192409`).
+
+## [2026-08-09, second round] – Fixed: Text Size button not closing on desktop
+
+Aaron reported the Text Size window "appears to not work on desktop."
+Reproduced via real `.click()` dispatch (not calling the JS function
+directly): it opened correctly on the first click but a second click did
+nothing - the window just stayed open.
+
+**Root cause**: `mobileNav('text')`'s toggle-close depended on
+`mobileCloseEverything(null)` to hide the window when already open. That
+call is a real close on mobile, but a deliberate no-op on desktop (desktop
+intentionally allows multiple floating windows) - so the close half of the
+toggle silently did nothing there. Reachable on desktop specifically
+because the toolbar's Text Size button calls `mobileNav('text')` on both
+layouts (unlike the header Stats button, which calls `showStoryStats()`
+directly). Fixed by mirroring the already-correct `'notepad'` case's shape:
+close explicitly when open, only defer to `mobileCloseEverything` for the
+"close everything else" half of opening. Also fixed the `'stats'` case,
+flagged in an existing code comment as sharing the identical bug shape -
+not currently reachable on desktop, but latent for any future desktop
+entry point wired the same way.
+
+**Verification**: real `.click()` dispatch on the actual toolbar button,
+open/close/reopen/close cycle (4 clicks) confirmed correct on desktop;
+`mobileNav('stats')` given the same 3-call check; mobile's real one-at-a-
+time enforcement re-confirmed unaffected (opening Text Size on mobile still
+closes an already-open Stats window, since `mobileCloseEverything` really
+does close things there).
+
+**Deployed**: `claude/mobile-port` only (commit `a3c26a0`).
+
+## [2026-08-09] – Achievement book: full family data + real open-book window
+
+Follow-up to 2026-08-07's card-book UI, prompted by Aaron pointing at a
+fuller Drive doc than the 18-card pilot originally wired in, plus a
+concrete spec for how the window itself should look and page-turn.
+
+### Added
+- **`ACHIEVEMENT_FAMILY` now covers all 188 achievements**, not just the
+  18-card pilot. Source: Aaron's Drive doc "Rewards Project - Achievement
+  Family Sort & Icon Plan" (2026-07-28 revision - the smaller, complete
+  one; the newer "(Final)" 2026-08-02 spreadsheet only adds extra
+  art-production columns for the same 18 pilot cards and repeatedly
+  truncated through the available Drive-reading tools around ~100 rows).
+  Verified before shipping: 55 individual ids spot-checked directly
+  against the live `ACHIEVEMENTS` array (100% match), plus every one of
+  the 9 existing `category` (`c:`) counts reconciles exactly against the
+  new 6-family breakdown (e.g. all 49 `usage-tracking` achievements land
+  in Open / Airy, all 22 `wordcraft-session` land in Classic Lattice) and
+  family totals sum to exactly 188. The `Unassigned` fallback bucket is
+  now expected to render empty - it only exists for a future achievement
+  added without a matching family entry.
+- **The book window is now a real open-book shape**, not a single pane
+  with two rendered "page" divs inside it. Two independent leaf panels
+  (own background/border, asymmetric `border-radius` - rounded only on
+  the outer corners, square where they meet at the spine) sit side by
+  side with a shadowed spine seam between them.
+- **Navigation redesigned as one flat spread sequence** (`buildBookSpreads()`),
+  turned via circular corner arrows (lower-left = previous, lower-right =
+  next), matching how a physical book pages: spread 0 is Summary(left)/
+  Index(right); each family then opens with Cover(left)/first grid
+  page(right), followed by its remaining grid pages paired two-per-spread.
+  Per-page card counts are unchanged from the original spec (6 desktop /
+  4 mobile) - two pages are simply visible at once now, not doubled per
+  page. An odd leftover page (only Rune-edged hits this today, at 20
+  achievements / 6 per page) renders alone with an empty facing page
+  rather than borrowing from the next family, so every family's cover
+  always opens a fresh spread. Index quicklinks still jump straight to a
+  family's opening spread; a small header button returns to spread 0 from
+  anywhere.
+
+### Verification notes
+- `computeBookLayout()` cross-checked live: family counts (17/13/75/14/49/20/0)
+  sum to 188 and match `getAchievementBook().length` exactly.
+- `buildBookSpreads()` cross-checked: 22 total spreads (1 summary-index +
+  6 cover-grid + 15 grid-grid), and the Rune-edged odd-leftover case
+  confirmed to produce `rightPage: null` on its last spread rather than
+  bleeding into the next family.
+- Forward/back navigation, direct family jump, and card tap-to-focus
+  (unlocked -> date completed, locked -> description + live progress) all
+  re-verified end-to-end via real DOM interaction after the rewrite.
+- Corner turn-arrow placement checked against the existing desktop
+  `.notepad-resize-handle` (16x16 at the true bottom-right corner, hidden
+  on mobile) to confirm no overlap.
+- Both layouts re-verified via `setMobilePreview`/`resize_window` (this
+  session's Browser pane was stuck at a stale 299x227 viewport from
+  earlier Drive navigation on the first mobile pass - caught and re-run at
+  a real 375x812 mobile size before trusting the numbers). Card-title and
+  page-indicator font sizes confirmed still ≥12px after the CSS rewrite.
+
+### Deployed
+- Pushed to `claude/mobile-port` only (commit `1f31604`), per standing
+  iteration-loop rule - no merge to `main` or promotion to
+  `bigtiffsworld.com` without a fresh, explicit ask.
+
+## [2026-08-07] – Achievements card-collector book UI (replaces the Stats window)
+
+Phase 1 of the achievements UI (`CHECKLIST.md`'s "Achievements — UI phase"
+item), designed and planned in a dedicated discussion with Aaron before any
+code was written. Scoped deliberately to the 188-achievement book only —
+weekly achievements (pool/rotation/jar UI) remain fully deferred; Aaron
+confirmed that engine hasn't been designed yet.
+
+### Added
+The Stats button now opens a full card-collector book instead of the old
+6-tile teaser strip, entirely replacing `renderStatsWindow()`'s previous
+output:
+- **Opening spread**: a summary page (total unlocked, always-visible
+  in-progress list with live values) facing an index page (quicklinks into
+  each of the 6 families).
+- **Family sections, fixed order, Radiant first**: a cover page per family
+  (large embellished art + achievement checklist), then paginated card
+  grids — 6 cards/page desktop, 4/page mobile (`bookPageSize()`, driven by
+  `isMobileMode()`, not hardcoded). Every achievement's family + order is
+  permanent for the life of the book; unlocking only swaps that slot's
+  card face, never its position.
+- **Tap-to-focus card detail**: unlocked cards show title + date completed
+  (`unlockedAt`); locked/in-progress cards show title + description +
+  live progress instead.
+- **Live unlock animation**: a `bigtiff:achievement` listener slides a
+  card's face from locked to unlocked in place, in real time, if that
+  card is on the currently-visible grid page — the codebase's first
+  `@keyframes`-free, transition-only card animation (matches the existing
+  `.sliding-panel` motion style, no 3D flip/`backface-visibility`).
+- **`ACHIEVEMENT_FAMILY`** id→family lookup, seeded with the 18-card pilot
+  set from Aaron's design-concept spreadsheet (Arc & Halo, Classic
+  Lattice, Dense Ornament, Open / Airy, Rune-edged, Radiant). The other
+  ~170 ids fall into a trailing "Unassigned" section until the sheet is
+  extended — a data-only change, no code change needed when it is.
+- **Art asset lookup**: `achievementArtSrc(id, unlocked)` →
+  `assets/achievements/<id>-locked|unlocked.png`; `familyCoverSrc(family)`
+  → `assets/achievements/family-<slug>.png`. Both `onerror`-fall back to a
+  CSS-drawn placeholder (existing gold/parchment palette + the
+  already-existing `STATS_CAT_ICON` category glyph) since only the pilot
+  18 have real art yet.
+
+### Fixed during verification (not part of the original design)
+- Card-title font-size was 11.2px (`0.7rem`) — under the project's 12px
+  accessibility floor. Bumped to `0.75rem`.
+- Three new dimmed/secondary text labels (locked card titles, unchecked
+  checklist items, the empty in-progress message) used `rgba(...)`
+  alpha-transparency against dark backgrounds — violates the documented
+  "no opacity-dimmed labels" rule from Erica's accessibility profile.
+  Replaced with a solid `#B8A88F`, confirmed ≥4.5:1 contrast (WCAG AA)
+  against every background it appears on.
+- New primary-tier buttons (`.stats-tap-btn` grid pagination,
+  `.stats-family-link` index quicklinks, `.stats-book-enter`) were losing
+  the 44px `--tap` floor to the existing catch-all `body.mobile-layout
+  .notepad button` chrome-tier rule (30px) on specificity — not something
+  a code read alone would have caught. Added the three to the codebase's
+  existing centralized PRIMARY-tier selector list rather than fighting
+  specificity locally.
+
+### Verification notes
+- Real DOM measurement throughout (`getBoundingClientRect`/
+  `getComputedStyle`), not screenshots — this dev environment's Browser
+  pane isn't compositing frames this session (confirmed via
+  `document.hidden === true`, a backgrounded tab).
+- Seeded fake `PROG.u` state via console to exercise unlocked/in-progress/
+  locked simultaneously; cross-checked `computeBookLayout()`'s per-family
+  counts against `getAchievementBook()` directly (188 total, 3+3+3+3+3+3
+  pilot families + 170 Unassigned, confirmed).
+- Confirmed card position is stable across unlock-state changes (same id
+  stayed in the same family/page/slot before and after seeding an unlock).
+- Confirmed the unlocked-card and locked-card focus views show the right
+  content each (`Completed <date>` vs. description+progress), and that
+  closing the focus view returns to the same grid page.
+- The live slide-swap animation's cleanup (`transitionend` → remove the
+  old face) didn't complete in the live dispatch test because this dev
+  tab is backgrounded and Chromium pauses `requestAnimationFrame` for
+  hidden tabs — not a code bug. Verified correctness by manually driving
+  the same rAF callback + a synthetic `transitionend` event, which
+  completed cleanly.
+- Both layouts checked (`setMobilePreview(true|false)`): mobile grid is 2
+  actual columns at a 4-per-page chunk size, desktop 3 columns at 6; the
+  mobile-only tap-target fix confirmed 44px/30px on the correct elements
+  without affecting desktop's unenforced natural button sizing (`--tap`/
+  `--tap-sm` are mobile-only custom properties by design, scoped to
+  `body.mobile-layout`, not `:root`).
+
+### Deployed
+- Pushed to `claude/mobile-port` only (commit `62cdafe`), per standing
+  iteration-loop rule — no merge to `main` or promotion to
+  `bigtiffsworld.com` without a fresh, explicit ask.
+
 ## [2026-08-04, second round] – Notepad/Draft Pad full functionality review; viewer-role gating fixed both directions
 
 Prompted by a report that desktop Notepad "cannot type, cannot add new
