@@ -2,6 +2,55 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-09, sixth round] – Achievement book: full in-progress list (deduped), Index button, bigger cards, descriptions everywhere
+
+Corrected the fifth round's in-progress cap (wasn't what Aaron meant) and
+three more adjustments.
+
+### Changed
+- **In-progress list**: back to showing every genuinely in-progress
+  achievement, but achievements that share the same underlying rule metric
+  (`r.m` - word-count thresholds, streak thresholds, usage counters like
+  `counter.libraryOpen`) collapse to just the closest one via a new
+  `achievementMetric(id)` lookup against the raw `ACHIEVEMENTS` array
+  (`getAchievementBook()` doesn't expose the metric itself). The earlier
+  flat 5-item cap is gone entirely - dozens of word-count achievements all
+  showing "in progress" together (since they all move with the same
+  `words.total` counter) was the actual problem, not list length.
+- **Index button** in the header now has a visible "Index" label next to
+  the icon, not icon-only - reachable from any page.
+- **Window and cards scaled up**: default size 760x560 -> 960x700, and the
+  card grid now fills the leaf's full content box (`height:100%`, `1fr`
+  rows, no fixed `aspect-ratio` on the art slot) instead of a small fixed
+  grid leaving empty space below it. Cards roughly doubled in size
+  (~100x130px -> ~135x264px at the new default). Same base CSS on both
+  layouts, so mobile gets the same "no wasted space" treatment within its
+  own (device-driven) sheet size.
+- **Descriptions added everywhere** an achievement appears: grid cards
+  (line-clamped to 3 lines), the family checklist, and the focus view's
+  unlocked case (previously only the locked case showed description text).
+
+### Fixed in passing
+- `.stats-card-focus-date` used `rgba(244,237,228,0.8)` - an opacity-
+  dimmed label, same category of bug already fixed elsewhere in this
+  feature per the project's accessibility profile. Solid `#B8A88F` now.
+
+### Verification notes
+- Seeded partial progress across the entire `words.total` ladder at once;
+  confirmed only 1 word-count row appears (not dozens) and non-laddered
+  achievements still show individually.
+- Confirmed the Index button jumps correctly from a deep grid spread
+  (index 20) back to spread 0.
+- A stale cached page load initially showed the old 760x560 size during
+  verification - caught by checking the live `style` attribute directly
+  before trusting the rect measurement, not just the rendered rect alone.
+- Confirmed the ~74-82px gap below a full 6/4-card grid exactly matches
+  the leaf's own reserved footer padding (not leftover unfilled space) on
+  both desktop and mobile.
+
+### Deployed
+- `claude/mobile-port` only (commit `c37db4b`).
+
 ## [2026-08-09, fifth round] – Achievement book: idiom revert, no bare numbers, in-progress shortlist, pagination beside arrows
 
 Four follow-up adjustments to the fourth round's in-progress/numeric-title/
