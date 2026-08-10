@@ -2,6 +2,45 @@
 
 All notable changes to the webtool during active development.
 
+## [2026-08-09, fifth round] – Achievement book: idiom revert, no bare numbers, in-progress shortlist, pagination beside arrows
+
+Four follow-up adjustments to the fourth round's in-progress/numeric-title/
+pagination work.
+
+### Changed
+- **`one-day-wonder` reverted** to its real title ("One Day Wonder") - the
+  only genuine idiom in the numeric-title override set; every other
+  conversion (plain counts like "Fifteen Thousand") stays as digits.
+- **No bare-number titles anywhere in the book.** Every word-count entry in
+  `NUMERIC_TITLE_OVERRIDE` now keeps a real word suffix ("250 Words," not
+  "250") - spot-checked programmatically across all 188 achievements
+  (`/^[\d,]+$/` test against every `displayTitle()` output), zero matches.
+- **In-progress list capped to 5** (`IN_PROGRESS_SHORTLIST`), closest to
+  completion first - was showing every achievement with any progress at
+  all, which read as a backlog rather than "almost there."
+- **Pagination text moved beside its arrow** (shared flex group,
+  `.stats-book-turn-group`) instead of stacked above it - the arrows'
+  actual position is unchanged. Now shows on every page type (added
+  "Summary" / "Index" / "`<family>` — Cover" labels), not just grid pages.
+  Styled all-caps, smaller, bold per spec.
+- **Leaf content fades instead of hard-clipping** near the footer: added a
+  `mask-image` gradient over the last 64px of each leaf so scrolled
+  content visually tapers off before the arrow/pagination row rather than
+  stopping dead against the reserved padding.
+
+### Verification notes
+- Programmatic scan confirmed zero bare-number titles and the two named
+  fixes (`one-day-wonder`, `words-250`/`words-1500`/`words-75000` sample).
+- In-progress row count and descending-percent order confirmed after
+  seeding enough partial progress to exceed the cap.
+- Pagination label text and rect-overlap checks (indicator vs. last card,
+  indicator vs. its own arrow) confirmed on summary, cover, and full
+  6-card grid spreads, on both desktop and mobile - all clear, and
+  indicator vertically centered with its arrow (same row, not stacked).
+
+### Deployed
+- `claude/mobile-port` only (commit `5c4122e`).
+
 ## [2026-08-09, fourth round] – Achievement book: in-progress polish, numeric titles, bottom pagination
 
 Four adjustments requested after Aaron confirmed the book and both Text
