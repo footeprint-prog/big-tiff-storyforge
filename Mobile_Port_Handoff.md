@@ -1,16 +1,62 @@
 # Big Tiff StoryForge — Mobile Port Handoff
 
 ## For: whoever picks up mobile work next (agent or human)
-## From: Claude sessions, 2026-07-24 – 2026-08-09, at Aaron's/Erica's direction
-## Status (2026-08-09): `claude/mobile-port` is AHEAD of `main` and the live
-##         site — commit `1f31604` gives the achievement book its real
-##         open-book window shape (two leaf panels + spine + corner
-##         turn-arrows) and completes the family data for all 188
-##         achievements (was 18-card pilot only as of `62cdafe`). See
-##         CHANGELOG's 2026-08-09 entry. Pushed to `claude/mobile-port` only
-##         per the standing iteration-loop rule. `main` (`2546cdc`) and
-##         `bigtiffsworld.com` (`706a79d`) still reflect the 2026-08-04
-##         state below until an explicit merge/promote ask.
+## From: Claude sessions, 2026-07-24 – 2026-08-10, at Aaron's/Erica's direction
+## Status (2026-08-10): **fully caught up again — dev repo `main`,
+##         `claude/mobile-port`, and the live site all match.**
+##         `claude/mobile-port` tip `c73a49c`, merged to `main` at `3476e85`,
+##         promoted to `bigtiffsworld.com` at `big_tiff_launchpage` commit
+##         `8dc3e5e` — verified **byte-identical** against the live domain
+##         response directly (not just the Pages build API), same method as
+##         every prior promotion (see the autocrlf note further down).
+##         **What shipped this stretch (2026-08-07 → 2026-08-10), full detail
+##         in CHANGELOG under those dates, not repeated here:**
+##         1. **Achievement card-collector book**, replacing the Stats
+##            window entirely. Built in an explicit plan-mode round after a
+##            design discussion with Aaron (double-sided cards, 6 families,
+##            188 achievements + a separate weekly-jars concept he
+##            deliberately deferred - see "Achievements & usage-tracking"
+##            section below).
+##         2. **Full 188-achievement family data**, sourced from Aaron's
+##            Google Drive doc ("Rewards Project - Achievement Family Sort &
+##            Icon Plan") after the initial build only had the 18-card pilot
+##            wired in - cross-validated against the live `ACHIEVEMENTS`
+##            array by id spot-checks and exact category-total reconciliation
+##            before trusting it.
+##         3. **Real open-book window shape** - two independent leaf panels
+##            (asymmetric corner radii, square at the spine) with a shadowed
+##            spine seam, one flat sequence of page-turn spreads
+##            (`buildBookSpreads()`), corner turn-arrows, pagination text
+##            beside each arrow on every page (not just grid pages).
+##         4. **Several rounds of Aaron's direct UI feedback**, each verified
+##            in the browser before shipping: in-progress list showing every
+##            genuinely-in-progress achievement but deduped by shared rule
+##            metric (word-count/streak/usage-counter "ladders" collapse to
+##            just the closest rung); numeric titles shown as digits except
+##            one deliberate idiom exception (`one-day-wonder`); no bare-
+##            number titles anywhere; descriptions shown everywhere an
+##            achievement appears; cards standardized to identical size
+##            (fixed title/desc box heights, not just line-clamp) and scaled
+##            up to fill the page (window default 760x560 -> 960x700); a
+##            visible header "Index" button reachable from any page; a
+##            steeper/earlier bottom text fade so nothing conflicts visually
+##            with the footer chrome.
+##         5. **Two real, unrelated bugs found and fixed on desktop**: the
+##            Text Size window's toggle-close depended on
+##            `mobileCloseEverything(null)`, a deliberate no-op on desktop -
+##            so it opened once but never closed again on a second click.
+##            Once that was fixed, `applyUiScale()` itself turned out to
+##            still have a mobile-only early-return left over from before
+##            this control had a desktop entry point - the window opened but
+##            its slider/buttons did nothing at all. Both fixed; see
+##            CHANGELOG's two "Fixed:" entries under 2026-08-09.
+##         **Open/deferred, not started this round:** weekly achievements
+##         (pool/rotation/jar UI - Aaron confirmed the engine design itself
+##         isn't settled yet); most of the 188 achievements still render via
+##         the CSS placeholder since only the 18-card pilot has real art;
+##         family assignment beyond that same 18-card pilot is complete (all
+##         188 have a real family now) but per-card/per-family artwork is a
+##         separate, ongoing pipeline on Aaron's side.
 ## Status as of 2026-08-04 (superseded above, kept for history): **fully
 ##         caught up — dev repo `main`, `claude/mobile-port`, and the live
 ##         site all matched**
@@ -76,9 +122,9 @@
 ##             still the working branch for ongoing mobile UI iteration
 ##             (its GitHub Pages config is what gives the ~1min preview
 ##             rebuild). Merged to `main` periodically, not abandoned.
-## Dev repo main: https://github.com/footeprint-prog/big-tiff-storyforge — **matches `claude/mobile-port` exactly** (merge commit `2546cdc`, 2026-08-04). Expect `main` to trail again once new commits land on the branch - that's normal, re-sync before the next promotion.
+## Dev repo main: https://github.com/footeprint-prog/big-tiff-storyforge — **matches `claude/mobile-port` exactly** (merge commit `3476e85`, 2026-08-10). Expect `main` to trail again once new commits land on the branch - that's normal, re-sync before the next promotion.
 ## Live preview (dev repo Pages): https://footeprint-prog.github.io/big-tiff-storyforge/writing.html (tracks `claude/mobile-port`)
-## **Real live site: https://bigtiffsworld.com/app/ — matches `main`/`claude/mobile-port` as of 2026-08-04, verified against the live domain directly.**
+## **Real live site: https://bigtiffsworld.com/app/ — matches `main`/`claude/mobile-port` as of 2026-08-10 (`big_tiff_launchpage` commit `8dc3e5e`), verified against the live domain directly.**
 
 ## Library review markers — a debugging story worth reading before touching this code
 This round involved a long, winding investigation into Library review
@@ -266,9 +312,9 @@ Two real bugs were caught this way that a naive test would have missed:
 
 | Where | Repo | What's there |
 |---|---|---|
-| Dev repo Pages preview | `big-tiff-storyforge`, branch `claude/mobile-port` (Pages config) | **Current** — `writing.html` content has everything through the 2026-08-04 Notepad/Draft-Pad viewer-role-gating round, commit `92c83a8`. Rebuilds ~1 min after any push to that branch. |
-| Dev repo `main` | `big-tiff-storyforge` | **Merged and current as of 2026-08-04** (merge commit `2546cdc`). `main` and `claude/mobile-port` are identical at time of writing; expect `main` to trail again once new commits land on the branch. |
-| **Real live site** | `big_tiff_launchpage`, branch `main`, custom domain `bigtiffsworld.com` via Porkbun DNS (no Cloudflare in the path) | **Promoted 2026-08-04** (commit `706a79d`, copied from dev repo commit `2546cdc`). Assets/manifest unchanged this round (checksums verified identical against the dev repo), only `app/index.html` needed copying; `start_url` was already `./index.html` from a prior round. Verified byte-identical against `https://bigtiffsworld.com/app/` directly (line-ending-normalized — this Windows checkout's `core.autocrlf` makes local/live diffs look nonzero even when content is identical; don't mistake that for drift). |
+| Dev repo Pages preview | `big-tiff-storyforge`, branch `claude/mobile-port` (Pages config) | **Current** — `writing.html` content has everything through the 2026-08-10 card-standardization/fade round, commit `c73a49c`. Rebuilds ~1 min after any push to that branch. |
+| Dev repo `main` | `big-tiff-storyforge` | **Merged and current as of 2026-08-10** (merge commit `3476e85`). `main` and `claude/mobile-port` are identical at time of writing; expect `main` to trail again once new commits land on the branch. |
+| **Real live site** | `big_tiff_launchpage`, branch `main`, custom domain `bigtiffsworld.com` via Porkbun DNS (no Cloudflare in the path) | **Promoted 2026-08-10** (commit `8dc3e5e`, copied from dev repo commit `3476e85`). Assets/manifest unchanged this round (checksums verified identical against the dev repo), only `app/index.html` needed copying; `start_url` was already `./index.html` from a prior round. Verified byte-identical against `https://bigtiffsworld.com/app/` directly (line-ending-normalized — this Windows checkout's `core.autocrlf` makes local/live diffs look nonzero even when content is identical; don't mistake that for drift). |
 
 ## Complete workflow: edit → verify → push → (optional) promote
 
@@ -495,11 +541,17 @@ mobile-specific: `mobileDrawerOpen`, mobile write-day tracking, etc.). This
 is genuinely a different concern from the touch-interaction work above —
 **see the CHANGELOG entry "Achievements & Usage Tracking (data layer)"
 (2026-07-26) for the full architecture, and `CHECKLIST.md`'s "Achievements
-— UI phase" item for what's left (icons, achievement book, trophy
-shelves).** Not duplicated here to avoid the two docs drifting apart; if
-you're doing mobile interaction work and need to know whether it should
-also fire a tracking event, check that CHANGELOG entry for the
-`trackEvent()` call-site pattern.
+— UI phase" item for current status.** Not duplicated here to avoid the two
+docs drifting apart; if you're doing mobile interaction work and need to
+know whether it should also fire a tracking event, check that CHANGELOG
+entry for the `trackEvent()` call-site pattern.
+
+**UPDATE 2026-08-10:** the card-collector book (replacing the old Stats
+window entirely) shipped and is live — see the Status header at the very
+top of this doc and CHANGELOG's 2026-08-07 through 2026-08-10 entries for
+the full build. Still open: weekly achievements (pool/rotation/jar UI —
+the engine design itself isn't settled, not just the UI) and per-card art
+for the ~170 achievements beyond the 18-card pilot, both on Aaron's side.
 
 One item from that system is genuinely mobile-relevant and worth flagging
 here directly: `full-outline-clear` is **human-confirmed**, not automatic —
